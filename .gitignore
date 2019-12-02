@@ -1,12 +1,11 @@
-# output dir
-output
-instant_test_output
-inference_test_output
 
 
+*.mp4
 *.jpg
+*.JPEG
 *.png
 *.txt
+
 
 # compilation and distribution
 __pycache__
@@ -35,7 +34,18 @@ dist/
 # Pycharm editor settings
 .idea
 
+#other files
+*.tag
+*.value
+*.node3
+*.node*
+*.zip
+
 # project dirs
+/output
+*/tensorboardx_log
 /detectron2/model_zoo/configs
 /datasets
 /models
+instant_test_output
+inference_test_output
