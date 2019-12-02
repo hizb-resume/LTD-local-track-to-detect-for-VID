@@ -1,0 +1,36 @@
+
+
+*.mp4
+*.jpg
+*.JPEG
+*.png
+*.txt
+
+*.pyc
+
+# pytorch/python/numpy formats
+*.pth
+*.pkl
+*.npy
+
+
+
+# Editor temporaries
+*.swn
+*.swo
+*.swp
+*~
+
+# Pycharm editor settings
+.idea
+
+#other files
+*.tag
+*.value
+*.node3
+*.node*
+*.zip
+
+# project dirs
+/output
+*/tensorboardx_log
