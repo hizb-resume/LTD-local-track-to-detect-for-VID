@@ -1,4 +1,7 @@
 import argparse
+import sys
+sys.path.append("..")
+import _init_paths
 from options.general import opts
 from models.ADNet import adnet
 from utils.get_train_videos import get_train_videos
