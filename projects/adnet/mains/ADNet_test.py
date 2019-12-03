@@ -1,6 +1,12 @@
 import argparse
 import sys
-sys.path.append("..")
+import os
+# sys.path.append("..")
+# import _init_paths
+
+# dir_mytest = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# sys.path.insert(0, dir_mytest)
+
 import _init_paths
 from options.general import opts
 from models.ADNet import adnet
@@ -10,7 +16,7 @@ import torch
 torch.multiprocessing.set_start_method('spawn', force=True)
 import torch.backends.cudnn as cudnn
 import torch.nn as nn
-import os
+
 import glob
 
 def str2bool(v):

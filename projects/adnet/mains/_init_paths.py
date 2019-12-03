@@ -19,20 +19,24 @@ def add_path(path):
 
 this_dir = osp.dirname(__file__)
 
-lib_path1 = osp.join(this_dir, 'options')
-add_path(lib_path1)
+lib_path = osp.join(this_dir, '..')
+add_path(lib_path)
 
-lib_path2 = osp.join(this_dir, 'mains')
-add_path(lib_path2)
+# lib_path1 = osp.join(this_dir, 'options')
+# add_path(lib_path1)
 
-lib_path2 = osp.join(this_dir, 'models')
-add_path(lib_path2)
+# lib_path2 = osp.join(this_dir, 'mains')
+# add_path(lib_path2)
+#
+# lib_path2 = osp.join(this_dir, 'models')
+# add_path(lib_path2)
+#
+# lib_path2 = osp.join(this_dir, 'trainers')
+# add_path(lib_path2)
+#
+# lib_path2 = osp.join(this_dir, 'utils')
+# add_path(lib_path2)
 
-lib_path2 = osp.join(this_dir, 'trainers')
-add_path(lib_path2)
-
-lib_path2 = osp.join(this_dir, 'utils')
-add_path(lib_path2)
 # def init_path():
 #     this_dir = osp.dirname(__file__)
 #
