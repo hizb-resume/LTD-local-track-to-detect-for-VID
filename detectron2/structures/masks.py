@@ -1,10 +1,12 @@
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 import copy
+import itertools
 import numpy as np
 from typing import Any, Iterator, List, Union
 import pycocotools.mask as mask_utils
 import torch
 
+from detectron2.layers import cat
 from detectron2.layers.roi_align import ROIAlign
 
 from .boxes import Boxes
@@ -102,6 +104,10 @@ class BitMasks:
     def to(self, device: str) -> "BitMasks":
         return BitMasks(self.tensor.to(device))
 
+    @property
+    def device(self) -> torch.device:
+        return self.tensor.device
+
     def __getitem__(self, item: Union[int, slice, torch.BoolTensor]) -> "BitMasks":
         """
         Returns:
@@ -197,6 +203,24 @@ class BitMasks:
         # not needed now
         raise NotImplementedError
 
+    @staticmethod
+    def cat(bitmasks_list: List["BitMasks"]) -> "BitMasks":
+        """
+        Concatenates a list of BitMasks into a single BitMasks
+
+        Arguments:
+            bitmasks_list (list[BitMasks])
+
+        Returns:
+            BitMasks: the concatenated BitMasks
+        """
+        assert isinstance(bitmasks_list, (list, tuple))
+        assert len(bitmasks_list) > 0
+        assert all(isinstance(bitmask, BitMasks) for bitmask in bitmasks_list)
+
+        cat_bitmasks = type(bitmasks_list[0])(cat([bm.tensor for bm in bitmasks_list], dim=0))
+        return cat_bitmasks
+
 
 class PolygonMasks:
     """
@@ -216,7 +240,10 @@ class PolygonMasks:
                 The third level Tensor should have the format of
                 torch.Tensor([x0, y0, x1, y1, ..., xn, yn]) (n >= 3).
         """
-        assert isinstance(polygons, list)
+        assert isinstance(polygons, list), (
+            "Cannot create PolygonMasks: Expect a list of list of polygons per image. "
+            "Got '{}' instead.".format(type(polygons))
+        )
 
         def _make_array(t: Union[torch.Tensor, np.ndarray]) -> torch.Tensor:
             # Use float64 for higher precision, because why not?
@@ -230,7 +257,10 @@ class PolygonMasks:
         def process_polygons(
             polygons_per_instance: List[Union[torch.Tensor, np.ndarray]]
         ) -> List[torch.Tensor]:
-            assert isinstance(polygons_per_instance, list), type(polygons_per_instance)
+            assert isinstance(polygons_per_instance, list), (
+                "Cannot create polygons: Expect a list of polygons per instance. "
+                "Got '{}' instead.".format(type(polygons_per_instance))
+            )
             # transform the polygon to a tensor
             polygons_per_instance = [_make_array(p) for p in polygons_per_instance]
             for polygon in polygons_per_instance:
@@ -243,6 +273,10 @@ class PolygonMasks:
 
     def to(self, *args: Any, **kwargs: Any) -> "PolygonMasks":
         return self
+
+    @property
+    def device(self) -> torch.device:
+        return self.tensor.device
 
     def get_bounding_boxes(self) -> Boxes:
         """
@@ -368,3 +402,23 @@ class PolygonMasks:
             area.append(area_per_instance)
 
         return torch.tensor(area)
+
+    @staticmethod
+    def cat(polymasks_list: List["PolygonMasks"]) -> "PolygonMasks":
+        """
+        Concatenates a list of PolygonMasks into a single PolygonMasks
+
+        Arguments:
+            polymasks_list (list[PolygonMasks])
+
+        Returns:
+            PolygonMasks: the concatenated PolygonMasks
+        """
+        assert isinstance(polymasks_list, (list, tuple))
+        assert len(polymasks_list) > 0
+        assert all(isinstance(polymask, PolygonMasks) for polymask in polymasks_list)
+
+        cat_polymasks = type(polymasks_list[0])(
+            list(itertools.chain.from_iterable(pm.polygons for pm in polymasks_list))
+        )
+        return cat_polymasks

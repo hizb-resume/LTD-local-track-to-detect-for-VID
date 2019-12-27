@@ -46,7 +46,7 @@ will load the image from "file_name" and load "sem_seg" from "sem_seg_file_name"
 + `file_name`: the full path to the image file. Will apply rotation and flipping if the image has such exif information.
 + `sem_seg_file_name`: the full path to the ground truth semantic segmentation file.
 + `sem_seg`: semantic segmentation ground truth in a 2D `torch.Tensor`. Values in the array represent
-   category labels.
+   category labels starting from 0.
 + `height`, `width`: integer. The shape of image.
 + `image_id` (str or int): a unique id that identifies this image. Used
 	during evaluation to identify the images, but a dataset may use it for different purposes.
@@ -64,7 +64,8 @@ will load the image from "file_name" and load "sem_seg" from "sem_seg_file_name"
       of the object. Each `list[float]` is one simple polygon in the format of `[x1, y1, ..., xn, yn]`.
       The Xs and Ys are either relative coordinates in [0, 1], or absolute coordinates,
       depend on whether "bbox_mode" is relative.
-    + If `dict`, it represents the per-pixel segmentation mask in COCO's RLE format.
+    + If `dict`, it represents the per-pixel segmentation mask in COCO's RLE format. The dict should have
+			keys "size" and "counts".
   + `keypoints` (list[float]): in the format of [x1, y1, v1,..., xn, yn, vn].
     v[i] means the [visibility](http://cocodataset.org/#format-data) of this keypoint.
     `n` must be equal to the number of keypoint categories.
@@ -74,7 +75,8 @@ will load the image from "file_name" and load "sem_seg" from "sem_seg_file_name"
     Note that the coordinate annotations in COCO format are integers in range [0, H-1 or W-1].
     By default, detectron2 adds 0.5 to absolute keypoint coordinates to convert them from discrete
     pixel indices to floating point coordinates.
-  + `iscrowd`: 0 or 1. Whether this instance is labeled as COCO's "crowd region".
+  + `iscrowd`: 0 or 1. Whether this instance is labeled as COCO's "crowd
+    region". Don't include this field if you don't know what it means.
 + `proposal_boxes` (array): 2D numpy array with shape (K, 4) representing K precomputed proposal boxes for this image.
 + `proposal_objectness_logits` (array): numpy array with shape (K, ), which corresponds to the objectness
   logits of proposals in 'proposal_boxes'.
