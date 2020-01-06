@@ -1,7 +1,7 @@
 import detectron2
 from detectron2.utils.logger import setup_logger
 setup_logger()
-
+import time
 # import some common libraries
 import numpy as np
 import cv2
@@ -21,12 +21,18 @@ cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # set threshold for this model
 cfg.MODEL.WEIGHTS = "faster_rcnn_R_101_FPN_3x.pkl"
 predictor = DefaultPredictor(cfg)
 
-vidpath="./examples/jiaotong.mp4"
+vidpath="./examples/jiaotong2.avi"
 cap = cv2.VideoCapture(vidpath)
 length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+'''
+i=160
+length=length//5
+d=length//20
+while i<length+length:
+'''
 i=0
-length=length//3
-d=length//5
+d=1
+tic=time.time()
 while i<length:
     cap.set(cv2.CAP_PROP_POS_FRAMES, float(i))
     success, im = cap.read()
@@ -37,9 +43,9 @@ while i<length:
     cv2.imwrite('./examples/output/%d.jpg'%i,v.get_image(),[int(cv2.IMWRITE_JPEG_QUALITY),70])
     #cv2_imshow(im)
     i+=d
-
-
-
+toc = time.time() - tic
+print(toc,"s")
+print(length/toc," fps")
 
 '''
 im = cv2.imread("demo/input.jpg")
