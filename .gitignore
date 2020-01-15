@@ -4,7 +4,7 @@
 *.jpg
 *.JPEG
 *.png
-*.txt
+
 
 
 # compilation and distribution
@@ -49,3 +49,4 @@ dist/
 /models
 instant_test_output
 inference_test_output
+*/datasets/data/*
