@@ -2,6 +2,7 @@ import argparse
 import glob
 import os
 import numpy as np
+import _init_paths
 from utils.precision_plot import iou_precision_plot, distance_precision_plot
 
 parser = argparse.ArgumentParser(

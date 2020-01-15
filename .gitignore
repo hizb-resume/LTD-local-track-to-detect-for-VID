@@ -4,8 +4,9 @@
 *.jpg
 *.JPEG
 *.png
-*.txt
 
+!*.py
+!*.sh
 
 # compilation and distribution
 __pycache__
@@ -42,10 +43,10 @@ dist/
 *.zip
 
 # project dirs
-/output
-*/tensorboardx_log
+output/*
+tensorboardx_log/
 /detectron2/model_zoo/configs
-/datasets
-/models
+datasets/
 instant_test_output
 inference_test_output
+datasets/data/*
