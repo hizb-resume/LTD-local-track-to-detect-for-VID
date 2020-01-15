@@ -10,7 +10,7 @@ from utils.display import draw_box
 
 def draw_box_from_npy(video_path, npy_file, save_path):
     if not os.path.exists(save_path):
-        os.mkdir(save_path)
+        os.makedirs(save_path)
 
     bboxes = np.load(npy_file)
 

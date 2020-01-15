@@ -35,7 +35,7 @@ def adnet_train_rl(net, domain_specific_nets, train_videos, opts, args):
         torch.set_default_tensor_type('torch.FloatTensor')
 
     if not os.path.exists(args.save_folder):
-        os.mkdir(args.save_folder)
+        os.makedirs(args.save_folder)
 
     if args.visualize:
         writer = SummaryWriter(log_dir=os.path.join('tensorboardx_log', args.save_file_RL))

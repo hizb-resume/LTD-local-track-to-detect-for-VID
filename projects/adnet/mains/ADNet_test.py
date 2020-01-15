@@ -74,12 +74,12 @@ if __name__ == "__main__":
         args.save_result_images = os.path.join(args.save_result_images,
                                                os.path.basename(args.weight_file)[:-4] + '-' + str(args.pos_samples_ratio))
         if not os.path.exists(args.save_result_images):
-            os.mkdir(args.save_result_images)
+            os.makedirs(args.save_result_images)
 
     args.save_result_npy = os.path.join(args.save_result_npy, os.path.basename(args.weight_file)[:-4] + '-' +
                                         str(args.pos_samples_ratio))
     if not os.path.exists(args.save_result_npy):
-        os.mkdir(args.save_result_npy)
+        os.makedirs(args.save_result_npy)
 
     if torch.cuda.is_available():
         if args.cuda:
@@ -119,7 +119,7 @@ if __name__ == "__main__":
         if args.save_result_images is not None:
             args.save_result_images = os.path.join(save_root, vid_folder)
             if not os.path.exists(args.save_result_images):
-                os.mkdir(args.save_result_images)
+                os.makedirs(args.save_result_images)
 
         args.save_result_npy = os.path.join(save_root_npy, vid_folder)
 
