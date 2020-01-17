@@ -5,6 +5,7 @@ from models.ADNet import adnet
 from utils.get_train_videos import get_train_videos
 from trainers.adnet_train_rl import adnet_train_rl
 import torch
+torch.multiprocessing.set_start_method('spawn', force=True)
 import torch.backends.cudnn as cudnn
 import torch.nn as nn
 import os
@@ -15,7 +16,7 @@ def str2bool(v):
 parser = argparse.ArgumentParser(
     description='ADNet training')
 parser.add_argument('--resume', default=None, type=str, help='Resume from checkpoint')
-parser.add_argument('--num_workers', default=0, type=int, help='Number of workers used in dataloading')
+parser.add_argument('--num_workers', default=4, type=int, help='Number of workers used in dataloading')
 parser.add_argument('--start_iter', default=0, type=int, help='Begin counting iterations starting from this value (should be used with resume)')
 parser.add_argument('--cuda', default=True, type=str2bool, help='Use cuda to train model')
 parser.add_argument('--gamma', default=0.1, type=float, help='Gamma update for SGD')
@@ -34,44 +35,46 @@ parser.add_argument('--multidomain', default=True, type=str2bool, help='Separati
 parser.add_argument('--save_result_images', default=True, type=str2bool, help='Whether to save the results or not. Save folder: images/')
 parser.add_argument('--display_images', default=False, type=str2bool, help='Whether to display images or not')
 
-args = parser.parse_args()
+if __name__ == "__main__":
+    args = parser.parse_args()
 
-# Supervised Learning part
-if args.run_supervised:
-    #opts['minibatch_size'] = 128
-    opts['minibatch_size'] = 512
-    # train with supervised learning
-    _, _, train_videos = adnet_train_sl(args, opts)
-    args.resume = os.path.join(args.save_folder, args.save_file) + '.pth'
 
-    # reinitialize the network with network from SL
-    net, domain_specific_nets = adnet(opts, trained_file=args.resume, random_initialize_domain_specific=True,
-                                      multidomain=args.multidomain)
+    # Supervised Learning part
+    if args.run_supervised:
+        #opts['minibatch_size'] = 128
+        opts['minibatch_size'] = 512
+        # train with supervised learning
+        _, _, train_videos = adnet_train_sl(args, opts)
+        args.resume = os.path.join(args.save_folder, args.save_file) + '.pth'
 
-    args.start_epoch = 0
-    args.start_iter = 0
+        # reinitialize the network with network from SL
+        net, domain_specific_nets = adnet(opts, trained_file=args.resume, random_initialize_domain_specific=True,
+                                          multidomain=args.multidomain)
 
-else:
-    assert args.resume is not None, \
-        "Please put result of supervised learning or reinforcement learning with --resume (filename)"
-    train_videos = get_train_videos(opts)
-    opts['num_videos'] = len(train_videos['video_names'])
+        args.start_epoch = 0
+        args.start_iter = 0
 
-    if args.start_iter == 0:  # means the weight came from the SL
-        net, domain_specific_nets = adnet(opts, trained_file=args.resume, random_initialize_domain_specific=True, multidomain=args.multidomain)
-    else:  # resume the adnet
-        net, domain_specific_nets = adnet(opts, trained_file=args.resume, random_initialize_domain_specific=False, multidomain=args.multidomain)
+    else:
+        assert args.resume is not None, \
+            "Please put result of supervised learning or reinforcement learning with --resume (filename)"
+        train_videos = get_train_videos(opts)
+        opts['num_videos'] = len(train_videos['video_names'])
 
-if args.cuda:
-    net = nn.DataParallel(net)
-    cudnn.benchmark = True
+        if args.start_iter == 0:  # means the weight came from the SL
+            net, domain_specific_nets = adnet(opts, trained_file=args.resume, random_initialize_domain_specific=True, multidomain=args.multidomain)
+        else:  # resume the adnet
+            net, domain_specific_nets = adnet(opts, trained_file=args.resume, random_initialize_domain_specific=False, multidomain=args.multidomain)
 
-    net = net.cuda()
+    if args.cuda:
+        net = nn.DataParallel(net)
+        cudnn.benchmark = True
 
-# Reinforcement Learning part
-opts['minibatch_size'] = 32
+        net = net.cuda()
 
-net = adnet_train_rl(net, domain_specific_nets, train_videos, opts, args)
+    # Reinforcement Learning part
+    opts['minibatch_size'] = 32
+
+    net = adnet_train_rl(net, domain_specific_nets, train_videos, opts, args)
 
 
 

@@ -291,7 +291,7 @@ def adnet_test(net, vid_path, opts, args):
             # generate dataset just before training
             dataset_pos = OnlineAdaptationDataset(dataset_storage_pos)
             data_loader_pos = data.DataLoader(dataset_pos, opts['minibatch_size'], num_workers=args.num_workers,
-                                              shuffle=True, pin_memory=False)
+                                              shuffle=True, pin_memory=True)
             batch_iterator_pos = None
 
             if opts['nNeg_init'] != 0:  # (thanks to small hack in adnet_test) the nNeg_online is also 0
