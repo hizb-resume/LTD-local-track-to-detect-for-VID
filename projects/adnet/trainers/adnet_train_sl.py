@@ -9,6 +9,7 @@ if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
 from models.ADNet import adnet
 from utils.get_train_videos import get_train_videos
 from datasets.sl_dataset import initialize_pos_neg_dataset
+from datasets.sl_dataset import initialize_pos_neg_dataset_ILSVR
 from utils.augmentations import ADNet_Augmentation
 
 import torch
@@ -44,8 +45,7 @@ def adnet_train_sl(args, opts):
     if args.visualize:
         writer = SummaryWriter(log_dir=os.path.join('tensorboardx_log', args.save_file))
 
-    train_videos = get_train_videos(opts)
-    opts['num_videos'] = len(train_videos['video_names'])
+
 
     net, domain_specific_nets = adnet(opts=opts, trained_file=args.resume, multidomain=args.multidomain)
 
@@ -123,12 +123,19 @@ def adnet_train_sl(args, opts):
     action_criterion = nn.CrossEntropyLoss()
     score_criterion = nn.CrossEntropyLoss()
 
-
     print('generating Supervised Learning dataset..')
-    # dataset = SLDataset(train_videos, opts, transform=
 
-    datasets_pos, datasets_neg = initialize_pos_neg_dataset(train_videos, opts, transform=ADNet_Augmentation(opts))
-    number_domain = opts['num_videos']
+    train_videos = get_train_videos(opts)
+    if train_videos==None:
+        datasets_pos, datasets_neg = initialize_pos_neg_dataset(train_videos,opts, transform=ADNet_Augmentation(opts))
+    else:
+        opts['num_videos'] = len(train_videos['video_names'])
+
+        # dataset = SLDataset(train_videos, opts, transform=
+
+        datasets_pos, datasets_neg = initialize_pos_neg_dataset(train_videos, opts, transform=ADNet_Augmentation(opts))
+        number_domain = opts['num_videos']
+
 
     batch_iterators_pos = []
     batch_iterators_neg = []

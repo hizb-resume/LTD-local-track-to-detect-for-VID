@@ -69,6 +69,9 @@ def initialize_pos_neg_dataset(train_videos, opts, transform=None, multidomain=T
     datasets_pos = []
     datasets_neg = []
 
+    if train_videos==None:
+        num_videos=1
+
     for vid_idx in range(num_videos):
         train_db_pos = {
             'img_path': [],  # list of string
@@ -85,15 +88,19 @@ def initialize_pos_neg_dataset(train_videos, opts, transform=None, multidomain=T
             'vid_idx': []  # list of int. Each video (or domain) index
         }
 
-        print("generating dataset from video " + str(vid_idx + 1) + "/" + str(num_videos) +
+        if train_videos == None:
+            print("generating dataset from ILSVR dataset...")
+            train_db_pos_, train_db_neg_ = get_train_dbs_ILSVR(opts)
+        else:
+            print("generating dataset from video " + str(vid_idx + 1) + "/" + str(num_videos) +
               "(current total data (pos-neg): " + str(len(train_db_pos['labels'])) +
               "-" + str(len(train_db_neg['labels'])) + ")")
 
-        bench_name = train_videos['bench_names'][vid_idx]
-        video_name = train_videos['video_names'][vid_idx]
-        video_path = train_videos['video_paths'][vid_idx]
-        vid_info = get_video_infos(bench_name, video_path, video_name)
-        train_db_pos_, train_db_neg_ = get_train_dbs(vid_info, opts)
+            bench_name = train_videos['bench_names'][vid_idx]
+            video_name = train_videos['video_names'][vid_idx]
+            video_path = train_videos['video_paths'][vid_idx]
+            vid_info = get_video_infos(bench_name, video_path, video_name)
+            train_db_pos_, train_db_neg_ = get_train_dbs(vid_info, opts)
         # separate for each bboxes sample
         for sample_idx in range(len(train_db_pos_)):
             # for img_path_idx in range(len(train_db_pos_[sample_idx]['score_labels'])):
@@ -126,3 +133,4 @@ def initialize_pos_neg_dataset(train_videos, opts, transform=None, multidomain=T
             datasets_neg.extend(dataset_neg)
 
     return datasets_pos, datasets_neg
+
