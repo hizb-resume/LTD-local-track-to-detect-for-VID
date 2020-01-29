@@ -45,6 +45,18 @@ def adnet_train_sl(args, opts):
         writer = SummaryWriter(log_dir=os.path.join('tensorboardx_log', args.save_file))
 
 
+    print('generating Supervised Learning dataset..')
+
+    train_videos = get_train_videos(opts)
+    if train_videos==None:
+        datasets_pos, datasets_neg = initialize_pos_neg_dataset(train_videos,opts, transform=ADNet_Augmentation(opts),multidomain=args.multidomain)
+    else:
+        opts['num_videos'] = len(train_videos['video_names'])
+
+        # dataset = SLDataset(train_videos, opts, transform=
+
+        datasets_pos, datasets_neg = initialize_pos_neg_dataset(train_videos, opts, transform=ADNet_Augmentation(opts),multidomain=args.multidomain)
+        number_domain = opts['num_videos']
 
     net, domain_specific_nets = adnet(opts=opts, trained_file=args.resume, multidomain=args.multidomain)
 
@@ -121,19 +133,6 @@ def adnet_train_sl(args, opts):
 
     action_criterion = nn.CrossEntropyLoss()
     score_criterion = nn.CrossEntropyLoss()
-
-    print('generating Supervised Learning dataset..')
-
-    train_videos = get_train_videos(opts)
-    if train_videos==None:
-        datasets_pos, datasets_neg = initialize_pos_neg_dataset(train_videos,opts, transform=ADNet_Augmentation(opts),multidomain=args.multidomain)
-    else:
-        opts['num_videos'] = len(train_videos['video_names'])
-
-        # dataset = SLDataset(train_videos, opts, transform=
-
-        datasets_pos, datasets_neg = initialize_pos_neg_dataset(train_videos, opts, transform=ADNet_Augmentation(opts),multidomain=args.multidomain)
-        number_domain = opts['num_videos']
 
 
     batch_iterators_pos = []
