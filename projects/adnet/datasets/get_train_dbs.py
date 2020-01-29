@@ -208,20 +208,26 @@ def get_train_dbs_ILSVR(opts):
 
         img_ii += 1
 
+        if img_ii==3471:
+            print("stop")
+
         if img_ii%100==0 and img_ii!=0:
             t9=time.time()
+            real_time=t9-t2
             all_time=t9-t0
-            speed_img=100/(t9-t2)
-            speed_box=(box_ii-box_ii_start)/(t9-t2)
-            all_speed_img=img_ii/(t9-t0)
-            all_speed_box = box_ii / (t9 - t0)
+            all_h=all_time//3600
+            all_m=all_time%3600//60
+            all_s=all_time%60
+            speed_img=100/real_time
+            speed_box=(box_ii-box_ii_start)/real_time
+            all_speed_img=img_ii/all_time
+            all_speed_box = box_ii/all_time
             print('\ndone imgs: %d , done boxes: %d , all imgs: %d. '%(img_ii,box_ii,all_img_num))
             print('real_time speed: %d imgs/s, %d boxes/s'%(speed_img,speed_box))
             print('avg_time speed: %d imgs/s, %d boxes/s' % (all_speed_img, all_speed_box))
+            print('spend time: %d h  %d m  %d s (%d s)'%(all_h,all_m,all_s,all_time))
             box_ii_start=box_ii
             t2=time.time()
-
-
 
     return train_db_pos, train_db_neg
 

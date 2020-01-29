@@ -126,13 +126,13 @@ def adnet_train_sl(args, opts):
 
     train_videos = get_train_videos(opts)
     if train_videos==None:
-        datasets_pos, datasets_neg = initialize_pos_neg_dataset(train_videos,opts, transform=ADNet_Augmentation(opts))
+        datasets_pos, datasets_neg = initialize_pos_neg_dataset(train_videos,opts, transform=ADNet_Augmentation(opts),multidomain=args.multidomain)
     else:
         opts['num_videos'] = len(train_videos['video_names'])
 
         # dataset = SLDataset(train_videos, opts, transform=
 
-        datasets_pos, datasets_neg = initialize_pos_neg_dataset(train_videos, opts, transform=ADNet_Augmentation(opts))
+        datasets_pos, datasets_neg = initialize_pos_neg_dataset(train_videos, opts, transform=ADNet_Augmentation(opts),multidomain=args.multidomain)
         number_domain = opts['num_videos']
 
 

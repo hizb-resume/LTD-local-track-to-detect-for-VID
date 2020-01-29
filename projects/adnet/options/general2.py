@@ -21,7 +21,7 @@ opts = {
         'momentum' : 0.9,
         'learningRate' : 10e-5,
         'conserveMemory' : True,
-        'gt_skip' : 30,
+        'gt_skip' : 200,
         'rl_num_batches' : 5,
         'RL_steps' : 10
     },
