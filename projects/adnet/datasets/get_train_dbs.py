@@ -212,8 +212,9 @@ def get_train_dbs_ILSVR(opts):
         img_ii += 1
 
         if img_ii==3471:
-            print("when gt_skip set to 200, and the img_ii=3471, the gen_samples function can't produce examples that iou>thred")
-
+            print("when gt_skip set to 200, and the img_ii=3472, the gen_samples function can't produce examples that iou>thred")
+            #'ILSVRC2015_VID_train_0002/ILSVRC2015_train_00633000/000025'
+            #reason:the img is so small and unclear
         if img_ii%100==0 and img_ii!=0:
             t9=time.time()
             real_time=t9-t2
