@@ -11,8 +11,8 @@ GT_anno_interval = 1
 # ============================
 opts = {
     'imgSize' : [112, 112, 3],
-    # 'train_dbs' : ['vot15', 'vot14', 'vot13'],
-    'train_dbs' : ['ILSVRC-VID'],
+    'train_dbs' : ['vot15', 'vot14', 'vot13'],
+    # 'train_dbs' : ['ILSVRC-VID'],
     'test_db' : 'otb',
     #'test_db' : 'ILSVRC/Data/VID/',
     #'test_db' : 'test/vid',
@@ -21,7 +21,7 @@ opts = {
         'momentum' : 0.9,
         'learningRate' : 10e-5,
         'conserveMemory' : True,
-        'gt_skip' : 200,
+        'gt_skip' : 2000,
         'rl_num_batches' : 5,
         'RL_steps' : 10
     },

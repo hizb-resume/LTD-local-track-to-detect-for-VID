@@ -30,7 +30,7 @@ parser.add_argument('--start_epoch', default=0, type=int, help='Begin counting e
 
 parser.add_argument('--run_supervised', default=True, type=str2bool, help='Whether to run supervised learning or not')
 
-parser.add_argument('--multidomain', default=False, type=str2bool, help='Separating weight for each videos (default) or not')
+parser.add_argument('--multidomain', default=True, type=str2bool, help='Separating weight for each videos (default) or not')
 
 parser.add_argument('--save_result_images', default=True, type=str2bool, help='Whether to save the results or not. Save folder: images/')
 parser.add_argument('--display_images', default=False, type=str2bool, help='Whether to display images or not')
