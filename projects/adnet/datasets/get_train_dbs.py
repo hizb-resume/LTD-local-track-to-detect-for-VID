@@ -1,6 +1,6 @@
 # matlab code:
 # https://github.com/hellbell/ADNet/blob/3a7955587b5d395401ebc94a5ab067759340680d/train/get_train_dbs.m
-import sys,os
+import sys,os,time
 if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
     sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
 
@@ -122,6 +122,12 @@ def get_train_dbs_ILSVR(opts):
 
     #gt_file_path = '../datasets/data/ILSVRC/Annotations/VID/train/' + img_paths[0] + '.xml'
 
+    img_ii = 0
+    box_ii = 0
+    box_ii_start=0
+    all_img_num = len(img_paths)
+    t0=time.time()
+    t2 = time.time()
 
     for train_i in img_paths:
         train_db_pos_ = {
@@ -197,6 +203,25 @@ def get_train_dbs_ILSVR(opts):
 
             train_db_pos.append(train_db_pos_)
             train_db_neg.append(train_db_neg_)
+
+            box_ii += 1
+
+        img_ii += 1
+
+        if img_ii%100==0 and img_ii!=0:
+            t9=time.time()
+            all_time=t9-t0
+            speed_img=100/(t9-t2)
+            speed_box=(box_ii-box_ii_start)/(t9-t2)
+            all_speed_img=img_ii/(t9-t0)
+            all_speed_box = box_ii / (t9 - t0)
+            print('\ndone imgs: %d , done boxes: %d , all imgs: %d. '%(img_ii,box_ii,all_img_num))
+            print('real_time speed: %d imgs/s, %d boxes/s'%(speed_img,speed_box))
+            print('avg_time speed: %d imgs/s, %d boxes/s' % (all_speed_img, all_speed_box))
+            box_ii_start=box_ii
+            t2=time.time()
+
+
 
     return train_db_pos, train_db_neg
 

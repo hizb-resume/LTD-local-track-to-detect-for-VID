@@ -21,7 +21,7 @@ opts = {
         'momentum' : 0.9,
         'learningRate' : 10e-5,
         'conserveMemory' : True,
-        'gt_skip' : 10,
+        'gt_skip' : 30,
         'rl_num_batches' : 5,
         'RL_steps' : 10
     },
@@ -66,8 +66,8 @@ opts = {
 
     #'nPos_train' : 150,
     #'nNeg_train' : 50,
-    'nPos_train': 9,
-    'nNeg_train': 3,
+    'nPos_train': 4,
+    'nNeg_train': 2,
     'posThre_train' : 0.5,
     'negThre_train' : 0.3,
 
