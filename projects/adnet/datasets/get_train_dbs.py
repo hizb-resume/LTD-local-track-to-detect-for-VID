@@ -12,6 +12,8 @@ from utils.gen_samples import gen_samples
 from utils.overlap_ratio import overlap_ratio
 from utils.gen_action_labels import gen_action_labels
 from utils.my_util import get_xml_box_label
+from utils.my_util import get_xml_img_size
+from utils.my_util import get_xml_img_info
 
 def get_train_dbs(vid_info, opts):
     img = cv2.imread(vid_info['img_files'][0])
@@ -99,7 +101,8 @@ def get_train_dbs(vid_info, opts):
 
 
 def get_train_dbs_ILSVR(opts):
-    #img = cv2.imread(vid_info['img_files'][0])
+    #gt_file_path = '../datasets/data/ILSVRC/Data/VID/train/ILSVRC2017_VID_train_0000/ILSVRC2017_train_00137000/000305.JPEG'
+    #img = cv2.imread(gt_file_path)
 
     opts['scale_factor'] = 1.05
     #opts['imgSize'] = list(img.shape)
@@ -116,6 +119,9 @@ def get_train_dbs_ILSVR(opts):
     img_paths = img_paths[::gt_skip + 1]
     img_paths=[line.split(' ')[0] for line in img_paths]
     train_img_info.close()
+
+    #gt_file_path = '../datasets/data/ILSVRC/Annotations/VID/train/' + img_paths[0] + '.xml'
+
 
     for train_i in img_paths:
         train_db_pos_ = {
@@ -137,55 +143,60 @@ def get_train_dbs_ILSVR(opts):
         #if len(gt_bbox) == 0:
         #    continue
         gt_file_path='../datasets/data/ILSVRC/Annotations/VID/train/'+train_i+'.xml'
-        gt_bbox=get_xml_box_label(gt_file_path)
+        #gt_bbox=get_xml_box_label(gt_file_path)
+        #opts['imgSize'] = get_xml_img_size(gt_file_path)
+        imginfo=get_xml_img_info(gt_file_path)
+        gt_bboxs=imginfo['gts']
+        opts['imgSize'] =imginfo['imgsize']
 
-        pos_examples = []
-        while len(pos_examples) < opts['nPos_train']:
-            pos = gen_samples('gaussian', gt_bbox, opts['nPos_train']*5, opts, 0.1, 5)
-            r = overlap_ratio(pos, np.matlib.repmat(gt_bbox, len(pos), 1))
-            pos = pos[np.array(r) > opts['posThre_train']]
-            if len(pos) == 0:
-                continue
-            pos = pos[np.random.randint(low=0, high=len(pos),
-                                        size=min(len(pos), opts['nPos_train']-len(pos_examples))), :]
-            pos_examples.extend(pos)
+        for gt_bbox in gt_bboxs:
+            pos_examples = []
+            while len(pos_examples) < opts['nPos_train']:
+                pos = gen_samples('gaussian', gt_bbox, opts['nPos_train']*5, opts, 0.1, 5)
+                r = overlap_ratio(pos, np.matlib.repmat(gt_bbox, len(pos), 1))
+                pos = pos[np.array(r) > opts['posThre_train']]
+                if len(pos) == 0:
+                    continue
+                pos = pos[np.random.randint(low=0, high=len(pos),
+                                            size=min(len(pos), opts['nPos_train']-len(pos_examples))), :]
+                pos_examples.extend(pos)
 
-        neg_examples = []
-        while len(neg_examples) < opts['nNeg_train']:
-            # in original code, this 1 line below use opts['nPos_train'] instead of opts['nNeg_train']
-            neg = gen_samples('gaussian', gt_bbox, opts['nNeg_train']*5, opts, 2, 10)
-            r = overlap_ratio(neg, np.matlib.repmat(gt_bbox, len(neg), 1))
-            neg = neg[np.array(r) < opts['negThre_train']]
-            if len(neg) == 0:
-                continue
-            neg = neg[np.random.randint(low=0, high=len(neg),
-                                        size=min(len(neg), opts['nNeg_train']-len(neg_examples))), :]
-            neg_examples.extend(neg)
+            neg_examples = []
+            while len(neg_examples) < opts['nNeg_train']:
+                # in original code, this 1 line below use opts['nPos_train'] instead of opts['nNeg_train']
+                neg = gen_samples('gaussian', gt_bbox, opts['nNeg_train']*5, opts, 2, 10)
+                r = overlap_ratio(neg, np.matlib.repmat(gt_bbox, len(neg), 1))
+                neg = neg[np.array(r) < opts['negThre_train']]
+                if len(neg) == 0:
+                    continue
+                neg = neg[np.random.randint(low=0, high=len(neg),
+                                            size=min(len(neg), opts['nNeg_train']-len(neg_examples))), :]
+                neg_examples.extend(neg)
 
-        # examples = pos_examples + neg_examples
-        action_labels_pos = gen_action_labels(opts['num_actions'], opts, np.array(pos_examples), gt_bbox)
-        action_labels_neg = np.full((opts['num_actions'], len(neg_examples)), fill_value=-1)
+            # examples = pos_examples + neg_examples
+            action_labels_pos = gen_action_labels(opts['num_actions'], opts, np.array(pos_examples), gt_bbox)
+            action_labels_neg = np.full((opts['num_actions'], len(neg_examples)), fill_value=-1)
 
-        action_labels_pos = np.transpose(action_labels_pos).tolist()
-        action_labels_neg = np.transpose(action_labels_neg).tolist()
+            action_labels_pos = np.transpose(action_labels_pos).tolist()
+            action_labels_neg = np.transpose(action_labels_neg).tolist()
 
-        # action_labels = action_labels_pos + action_labels_neg
-        img_path='../datasets/data/ILSVRC/Data/VID/train/'+train_i+'.JPEG'
+            # action_labels = action_labels_pos + action_labels_neg
+            img_path='../datasets/data/ILSVRC/Data/VID/train/'+train_i+'.JPEG'
 
-        train_db_pos_['img_path'] = np.full(len(pos_examples), img_path)
-        train_db_pos_['bboxes'] = pos_examples
-        train_db_pos_['labels'] = action_labels_pos
-        # score labels: 1 is positive. 0 is negative
-        train_db_pos_['score_labels'] = list(np.ones(len(pos_examples), dtype=int))
+            train_db_pos_['img_path'] = np.full(len(pos_examples), img_path)
+            train_db_pos_['bboxes'] = pos_examples
+            train_db_pos_['labels'] = action_labels_pos
+            # score labels: 1 is positive. 0 is negative
+            train_db_pos_['score_labels'] = list(np.ones(len(pos_examples), dtype=int))
 
-        train_db_neg_['img_path'] = np.full(len(neg_examples), img_path)
-        train_db_neg_['bboxes'] = neg_examples
-        train_db_neg_['labels'] = action_labels_neg
-        # score labels: 1 is positive. 0 is negative
-        train_db_neg_['score_labels'] = list(np.zeros(len(neg_examples), dtype=int))
+            train_db_neg_['img_path'] = np.full(len(neg_examples), img_path)
+            train_db_neg_['bboxes'] = neg_examples
+            train_db_neg_['labels'] = action_labels_neg
+            # score labels: 1 is positive. 0 is negative
+            train_db_neg_['score_labels'] = list(np.zeros(len(neg_examples), dtype=int))
 
-        train_db_pos.append(train_db_pos_)
-        train_db_neg.append(train_db_neg_)
+            train_db_pos.append(train_db_pos_)
+            train_db_neg.append(train_db_neg_)
 
     return train_db_pos, train_db_neg
 

@@ -9,6 +9,49 @@ import numpy as np
 #import scipy.io as sio
 #import tracker_util as tutil
 
+def get_xml_img_info(xmlpath):
+    img_info = {
+        'imgsize': [],
+        'gts': []
+    }
+    in_file = open(xmlpath)
+    tree = ET.parse(in_file)
+    root = tree.getroot()
+    imgsize = [0, 0]
+    siz = root.find('size')
+    imgsize[1] = int(siz.find('width').text)
+    imgsize[0] = int(siz.find('height').text)
+    gts = []
+    for obj in root.iter('object'):
+        bb = obj.find('bndbox')
+        gt = [0, 0, 0, 0]
+        gt[0] = int(bb.find('xmin').text)
+        gt[1] = int(bb.find('ymin').text)
+        gt[2] = int(bb.find('xmax').text)
+        gt[3] = int(bb.find('ymax').text)
+        gt[2] = gt[2] - gt[0]
+        gt[3] = gt[3] - gt[1]
+
+        gts.append(gt)
+
+        # track_id=int(obj.find('trackid').text)
+        # if track_id==0:
+        #     break
+    in_file.close()
+    img_info['imgsize'] =imgsize
+    img_info['gts']=gts
+    return img_info
+
+def get_xml_img_size(xmlpath):
+    in_file = open(xmlpath)
+    tree = ET.parse(in_file)
+    root = tree.getroot()
+    imgsize = [0, 0]
+    siz=root.find('size')
+    imgsize[1]=int(siz.find('width').text)
+    imgsize[0] = int(siz.find('height').text)
+    in_file.close()
+    return imgsize
 
 def get_xml_box_label(xmlpath):
     '''
