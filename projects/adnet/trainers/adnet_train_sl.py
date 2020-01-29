@@ -9,7 +9,6 @@ if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
 from models.ADNet import adnet
 from utils.get_train_videos import get_train_videos
 from datasets.sl_dataset import initialize_pos_neg_dataset
-from datasets.sl_dataset import initialize_pos_neg_dataset_ILSVR
 from utils.augmentations import ADNet_Augmentation
 
 import torch

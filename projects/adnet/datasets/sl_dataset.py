@@ -10,6 +10,7 @@ import numpy as np
 import torch
 import torch.utils.data as data
 from datasets.get_train_dbs import get_train_dbs
+from datasets.get_train_dbs import get_train_dbs_ILSVR
 from utils.get_video_infos import get_video_infos
 
 
@@ -64,13 +65,14 @@ def initialize_pos_neg_dataset(train_videos, opts, transform=None, multidomain=T
         datasets_pos: (list of SLDataset) List length: if multidomain, #videos (or domain). Else: 1
         datasets_neg: (list of SLDataset) List length: if multidomain, #videos (or domain). Else: 1
     """
-    num_videos = len(train_videos['video_names'])
 
     datasets_pos = []
     datasets_neg = []
 
     if train_videos==None:
         num_videos=1
+    else:
+        num_videos = len(train_videos['video_names'])
 
     for vid_idx in range(num_videos):
         train_db_pos = {

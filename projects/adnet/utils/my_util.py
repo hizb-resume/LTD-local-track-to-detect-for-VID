@@ -6,8 +6,36 @@ slim = tf.contrib.slim
 
 import cv2, glob, os, re
 import numpy as np
-import scipy.io as sio
-import tracker_util as tutil
+#import scipy.io as sio
+#import tracker_util as tutil
+
+
+def get_xml_box_label(xmlpath):
+    '''
+    get an image's bounding box label from a .xml file
+    :param xmlpath: xml file path
+    :return: bounding box ground trouth
+    '''
+
+    in_file = open(xmlpath)
+    tree = ET.parse(in_file)
+    root = tree.getroot()
+    gt = [0, 0, 0, 0]
+    for obj in root.iter('object'):
+        bb = obj.find('bndbox')
+        #gt = [1,2,3,4]
+        gt[0] = int(bb.find('xmin').text)
+        gt[1] = int(bb.find('ymin').text)
+        gt[2] = int(bb.find('xmax').text)
+        gt[3] = int(bb.find('ymax').text)
+        gt[2] = gt[2] - gt[0]
+        gt[3] = gt[3] - gt[1]
+        track_id=int(obj.find('trackid').text)
+        if track_id==0:
+            break
+    in_file.close()
+    return gt
+
 
 def generate_vid_box_label(path_home):
     '''
@@ -36,6 +64,8 @@ def generate_vid_box_label(path_home):
             if track_id==0:
                 out_file.write(str(gt[0])+','+str(gt[1])+','+str(gt[2])+','+str(gt[3])+'\n')
                 break
+    in_file.close()
+    out_file.close()
 
 def show_gt_box(vidpath,gt_path=None):
     '''

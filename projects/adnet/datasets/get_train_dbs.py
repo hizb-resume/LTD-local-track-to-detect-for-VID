@@ -1,6 +1,6 @@
 # matlab code:
 # https://github.com/hellbell/ADNet/blob/3a7955587b5d395401ebc94a5ab067759340680d/train/get_train_dbs.m
-import sys
+import sys,os
 if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
     sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
 
@@ -11,7 +11,7 @@ import numpy.matlib
 from utils.gen_samples import gen_samples
 from utils.overlap_ratio import overlap_ratio
 from utils.gen_action_labels import gen_action_labels
-
+from utils.my_util import get_xml_box_label
 
 def get_train_dbs(vid_info, opts):
     img = cv2.imread(vid_info['img_files'][0])
@@ -99,21 +99,25 @@ def get_train_dbs(vid_info, opts):
 
 
 def get_train_dbs_ILSVR(opts):
-    img = cv2.imread(vid_info['img_files'][0])
+    #img = cv2.imread(vid_info['img_files'][0])
 
     opts['scale_factor'] = 1.05
-    opts['imgSize'] = list(img.shape)
+    #opts['imgSize'] = list(img.shape)
     gt_skip = opts['train']['gt_skip']
 
-    if vid_info['db_name'] == 'alov300':
-        train_sequences = vid_info['gt_use'] == 1
-    else:
-        train_sequences = list(range(0, vid_info['nframes'], gt_skip))
+    #train_sequences = list(range(0, vid_info['nframes'], gt_skip))
 
     train_db_pos = []
     train_db_neg = []
 
-    for train_i in range(len(train_sequences)):
+    train_img_info_file=os.path.join('../datasets/data/ILSVRC/ImageSets/VID/train.txt')
+    train_img_info = open(train_img_info_file, "r")
+    img_paths = train_img_info.readlines()
+    img_paths = img_paths[::gt_skip + 1]
+    img_paths=[line.split(' ')[0] for line in img_paths]
+    train_img_info.close()
+
+    for train_i in img_paths:
         train_db_pos_ = {
             'img_path': [],
             'bboxes': [],
@@ -127,11 +131,13 @@ def get_train_dbs_ILSVR(opts):
             'score_labels': []
         }
 
-        img_idx = train_sequences[train_i]
-        gt_bbox = vid_info['gt'][img_idx]
+        #img_idx = train_sequences[train_i]
+        #gt_bbox = vid_info['gt'][img_idx]
 
-        if len(gt_bbox) == 0:
-            continue
+        #if len(gt_bbox) == 0:
+        #    continue
+        gt_file_path='../datasets/data/ILSVRC/Annotations/VID/train/'+train_i+'.xml'
+        gt_bbox=get_xml_box_label(gt_file_path)
 
         pos_examples = []
         while len(pos_examples) < opts['nPos_train']:
@@ -164,14 +170,15 @@ def get_train_dbs_ILSVR(opts):
         action_labels_neg = np.transpose(action_labels_neg).tolist()
 
         # action_labels = action_labels_pos + action_labels_neg
+        img_path='../datasets/data/ILSVRC/Data/VID/train/'+train_i+'.JPEG'
 
-        train_db_pos_['img_path'] = np.full(len(pos_examples), vid_info['img_files'][img_idx])
+        train_db_pos_['img_path'] = np.full(len(pos_examples), img_path)
         train_db_pos_['bboxes'] = pos_examples
         train_db_pos_['labels'] = action_labels_pos
         # score labels: 1 is positive. 0 is negative
         train_db_pos_['score_labels'] = list(np.ones(len(pos_examples), dtype=int))
 
-        train_db_neg_['img_path'] = np.full(len(neg_examples), vid_info['img_files'][img_idx])
+        train_db_neg_['img_path'] = np.full(len(neg_examples), img_path)
         train_db_neg_['bboxes'] = neg_examples
         train_db_neg_['labels'] = action_labels_neg
         # score labels: 1 is positive. 0 is negative
