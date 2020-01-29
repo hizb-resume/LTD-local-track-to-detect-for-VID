@@ -162,7 +162,8 @@ def get_train_dbs_ILSVR(opts):
                 r = overlap_ratio(pos, np.matlib.repmat(gt_bbox, len(pos), 1))
                 pos = pos[np.array(r) > opts['posThre_train']]
                 if len(pos) == 0:
-                    continue
+                    #continue
+                    break
                 pos = pos[np.random.randint(low=0, high=len(pos),
                                             size=min(len(pos), opts['nPos_train']-len(pos_examples))), :]
                 pos_examples.extend(pos)
@@ -174,7 +175,8 @@ def get_train_dbs_ILSVR(opts):
                 r = overlap_ratio(neg, np.matlib.repmat(gt_bbox, len(neg), 1))
                 neg = neg[np.array(r) < opts['negThre_train']]
                 if len(neg) == 0:
-                    continue
+                    #continue
+                    break
                 neg = neg[np.random.randint(low=0, high=len(neg),
                                             size=min(len(neg), opts['nNeg_train']-len(neg_examples))), :]
                 neg_examples.extend(neg)
@@ -201,15 +203,16 @@ def get_train_dbs_ILSVR(opts):
             # score labels: 1 is positive. 0 is negative
             train_db_neg_['score_labels'] = list(np.zeros(len(neg_examples), dtype=int))
 
-            train_db_pos.append(train_db_pos_)
-            train_db_neg.append(train_db_neg_)
+            if len(train_db_pos_['img_path'])!=0 and len(train_db_neg_['img_path'])!=0:
+                train_db_pos.append(train_db_pos_)
+                train_db_neg.append(train_db_neg_)
 
             box_ii += 1
 
         img_ii += 1
 
         if img_ii==3471:
-            print("stop")
+            print("when gt_skip set to 200, and the img_ii=3471, the gen_samples function can't produce examples that iou>thred")
 
         if img_ii%100==0 and img_ii!=0:
             t9=time.time()
