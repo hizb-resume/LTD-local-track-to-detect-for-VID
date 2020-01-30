@@ -16,7 +16,7 @@ def str2bool(v):
 parser = argparse.ArgumentParser(
     description='ADNet training')
 parser.add_argument('--resume', default=None, type=str, help='Resume from checkpoint')
-parser.add_argument('--num_workers', default=8, type=int, help='Number of workers used in dataloading')
+parser.add_argument('--num_workers', default=1, type=int, help='Number of workers used in dataloading')
 parser.add_argument('--start_iter', default=0, type=int, help='Begin counting iterations starting from this value (should be used with resume)')
 parser.add_argument('--cuda', default=True, type=str2bool, help='Use cuda to train model')
 parser.add_argument('--gamma', default=0.1, type=float, help='Gamma update for SGD')

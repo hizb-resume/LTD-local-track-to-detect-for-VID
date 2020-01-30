@@ -215,6 +215,8 @@ def adnet_train_sl(args, opts):
         # or just resuming where batch_iterator_pos and neg haven't been initialized
         if iteration % epoch_size == 0 or len(batch_iterators_pos) == 0 or len(batch_iterators_neg) == 0:
             # create batch iterator
+            batch_iterators_pos = []
+            batch_iterators_neg = []
             for data_loader_pos in data_loaders_pos:
                 batch_iterators_pos.append(iter(data_loader_pos))
             for data_loader_neg in data_loaders_neg:
