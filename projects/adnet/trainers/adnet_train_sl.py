@@ -158,9 +158,9 @@ def adnet_train_sl(args, opts):
     data_loaders_neg = []
 
     for dataset_pos in datasets_pos:
-        data_loaders_pos.append(data.DataLoader(dataset_pos, opts['minibatch_size'], num_workers=args.num_workers, shuffle=True, pin_memory=True))
+        data_loaders_pos.append(data.DataLoader(dataset_pos, opts['minibatch_size'], num_workers=args.num_workers, shuffle=True, pin_memory=False))
     for dataset_neg in datasets_neg:
-        data_loaders_neg.append(data.DataLoader(dataset_neg, opts['minibatch_size'], num_workers=args.num_workers, shuffle=True, pin_memory=True))
+        data_loaders_neg.append(data.DataLoader(dataset_neg, opts['minibatch_size'], num_workers=args.num_workers, shuffle=True, pin_memory=False))
 
     epoch = args.start_epoch
     if epoch != 0 and args.start_iter == 0:

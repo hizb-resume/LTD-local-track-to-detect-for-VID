@@ -297,7 +297,7 @@ def adnet_test(net, vid_path, opts, args):
             if opts['nNeg_init'] != 0:  # (thanks to small hack in adnet_test) the nNeg_online is also 0
                 dataset_neg = OnlineAdaptationDataset(dataset_storage_neg)
                 data_loader_neg = data.DataLoader(dataset_neg, opts['minibatch_size'], num_workers=args.num_workers,
-                                                  shuffle=True, pin_memory=False)
+                                                  shuffle=True, pin_memory=True)
                 batch_iterator_neg = None
             else:
                 dataset_neg = []
