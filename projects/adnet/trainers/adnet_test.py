@@ -151,7 +151,6 @@ def adnet_test(net, vid_path, opts, args):
         if args.save_result_images:
             filename = os.path.join(args.save_result_images, str(frame_idx) + '-' + str(t) + '.jpg')
             cv2.imwrite(filename, im_with_bb)
-            pass
 
         curr_bbox_old = curr_bbox
         cont_negatives = 0
