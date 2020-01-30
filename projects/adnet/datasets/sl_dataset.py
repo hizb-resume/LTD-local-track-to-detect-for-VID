@@ -131,8 +131,21 @@ def initialize_pos_neg_dataset(train_videos, opts, transform=None, multidomain=T
             datasets_pos.append(dataset_pos)
             datasets_neg.append(dataset_neg)
         else:
-            datasets_pos.extend(dataset_pos)
-            datasets_neg.extend(dataset_neg)
+            if len(datasets_pos)==0:
+                datasets_pos.append(dataset_pos)
+                datasets_neg.append(dataset_neg)
+            else:
+                datasets_pos[0].train_db['img_path'].extend(dataset_pos.train_db['img_path'])
+                datasets_pos[0].train_db['bboxes'].extend(dataset_pos.train_db['bboxes'])
+                datasets_pos[0].train_db['labels'].extend(dataset_pos.train_db['labels'])
+                datasets_pos[0].train_db['score_labels'].extend(dataset_pos.train_db['score_labels'])
+                datasets_pos[0].train_db['vid_idx'].extend(dataset_pos.train_db['vid_idx'])
+
+                datasets_neg[0].train_db['img_path'].extend(dataset_neg.train_db['img_path'])
+                datasets_neg[0].train_db['bboxes'].extend(dataset_neg.train_db['bboxes'])
+                datasets_neg[0].train_db['labels'].extend(dataset_neg.train_db['labels'])
+                datasets_neg[0].train_db['score_labels'].extend(dataset_neg.train_db['score_labels'])
+                datasets_neg[0].train_db['vid_idx'].extend(dataset_neg.train_db['vid_idx'])
 
     return datasets_pos, datasets_neg
 
