@@ -58,7 +58,10 @@ if __name__ == "__main__":
         assert args.resume is not None, \
             "Please put result of supervised learning or reinforcement learning with --resume (filename)"
         train_videos = get_train_videos(opts)
-        opts['num_videos'] = len(train_videos['video_names'])
+        if train_videos == None:
+            opts['num_videos'] = 1
+        else:
+            opts['num_videos'] = len(train_videos['video_names'])
 
         if args.start_iter == 0:  # means the weight came from the SL
             net, domain_specific_nets = adnet(opts, trained_file=args.resume, random_initialize_domain_specific=True, multidomain=args.multidomain)
