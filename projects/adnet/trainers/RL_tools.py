@@ -151,7 +151,7 @@ class TrackingEnvironment(object):
 
             frameStart = self.videos[self.vid_idx]['frame_start'][self.clip_idx]
             #self.current_img_idx = 1  # self.current_img_idx = frameStart + 1
-            self.current_img_idx = 1    #Modified by zb --- 2019-11-16 21:48:28
+            self.current_img_idx = 1   #the frameStart(the 0th img,idx:0) is for initial, the current_img(idx:1) is for training.
             self.current_img = cv2.imread(self.videos[self.vid_idx]['img_path'][self.clip_idx][self.current_img_idx])
             self.current_patch, _, _, _ = self.transform(self.current_img, np.array(self.state))
             #Modified by zb --- 2019-11-16 22:11:16 --- to check : at this step ,the data of patch seems have some problem\
