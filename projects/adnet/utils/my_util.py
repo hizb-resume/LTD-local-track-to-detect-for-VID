@@ -9,6 +9,18 @@ import numpy as np
 #import scipy.io as sio
 #import tracker_util as tutil
 
+def get_ILSVRC_videos_infos(file_path):
+    '''
+    get {gts,img_files(path),name,db_name,nframes}for all videos
+    :param file_path: the path of the train.txt
+    :return: 
+    '''
+    videos_infos =[]
+    video_infos = {
+        'imgsize': [],
+        'gts': []
+    }
+
 def get_xml_img_info(xmlpath):
     img_info = {
         'imgsize': [],
