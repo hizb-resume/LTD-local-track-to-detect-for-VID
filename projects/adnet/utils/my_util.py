@@ -13,13 +13,22 @@ def get_ILSVRC_videos_infos(file_path):
     '''
     get {gts,img_files(path),name,db_name,nframes}for all videos
     :param file_path: the path of the train.txt
-    :return: 
+    :return:
     '''
     videos_infos =[]
     video_infos = {
-        'imgsize': [],
-        'gts': []
+        #'imgsize': [], #in supervised training, imgsize is used for generating boxes that near the gt box
+        'gts': [],
+        'img_files':[],
+        'nframes':0
     }
+    train_img_info_file = os.path.join('../datasets/data/ILSVRC/ImageSets/VID/train.txt')
+    train_img_info = open(train_img_info_file, "r")
+    img_paths = train_img_info.readlines()
+    #img_paths = img_paths[::gt_skip + 1]
+    img_paths = [line.split(' ')[0] for line in img_paths]
+    train_img_info.close()
+    
 
 def get_xml_img_info(xmlpath):
     img_info = {
