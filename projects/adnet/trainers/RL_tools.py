@@ -114,8 +114,8 @@ class TrackingEnvironment(object):
         }
 
         # do action
-        self.state = do_action(self.state, self.opts, action, self.current_img.shape)
-        self.current_patch, _, _, _ = self.transform(self.current_img, self.state)
+        #self.state = do_action(self.state, self.opts, action, self.current_img.shape)
+        #self.current_patch, _, _, _ = self.transform(self.current_img, self.state)
 
         if action == self.opts['stop_action']:
             reward, done, finish_epoch = self.go_to_next_frame()
@@ -125,7 +125,8 @@ class TrackingEnvironment(object):
         else:   # just go to the next patch (still same frame/current_img)
             reward = 0
             done = False
-            #todo: is the next line of code redundant?
+            # do action
+            self.state = do_action(self.state, self.opts, action, self.current_img.shape)
             self.current_patch, _, _, _ = self.transform(self.current_img, self.state)
 
         return self.state, reward, done, info

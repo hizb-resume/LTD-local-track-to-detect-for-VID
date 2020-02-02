@@ -87,6 +87,8 @@ class RLDataset(data.Dataset):
                     im_with_bb = draw_box(self.env.get_current_img(), self.env.get_state())
 
                 if args.save_result_images:
+                    if not os.path.exists('images'):
+                        os.makedirs('images')
                     cv2.imwrite('images/' + str(clip_idx) + '-' + str(t) + '.jpg', im_with_bb)
 
                 curr_patch = self.env.get_current_patch()
