@@ -43,7 +43,7 @@ class TrackingEnvironment(object):
         self.RL_steps = self.opts['train']['RL_steps']  # clip length
 
         if train_videos==None:
-            videos_infos=get_ILSVRC_videos_infos()
+            videos_infos,_=get_ILSVRC_videos_infos()
             vid_idxs = np.random.permutation(len(videos_infos['video_names']))
         else:
             video_names = train_videos['video_names']
