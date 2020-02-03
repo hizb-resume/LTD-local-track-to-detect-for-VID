@@ -156,6 +156,8 @@ class TrackingEnvironment(object):
             # initialize state, gt, current_img_idx, current_img, and current_patch with new clip
             self.state = self.videos[self.vid_idx]['init_bbox'][self.clip_idx]
             self.gt = self.videos[self.vid_idx]['end_bbox'][self.clip_idx]
+            if self.state==[0,0,0,0]:
+                print("debug")
 
             frameStart = self.videos[self.vid_idx]['frame_start'][self.clip_idx]
             #self.current_img_idx = 1  # self.current_img_idx = frameStart + 1

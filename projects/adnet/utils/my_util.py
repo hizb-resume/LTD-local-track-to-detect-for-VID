@@ -10,9 +10,17 @@ import numpy as np
 #import tracker_util as tutil
 
 def test():
-    vidDir = os.path.join('../datasets/data/ILSVRC/Data/VID/snippets/train')
-    img_files = glob.glob(os.path.join(vidDir,'ILSVRC201*_VID_train_000*','*.mp4'))
-    img_files.sort(key=str.lower)
+    video_infos = {
+        # 'imgsize': [], #in supervised training, imgsize is used for generating boxes that near the gt box
+        'gts': []
+    }
+    video_infos['gts'].append([0,0,0,0])
+    state=video_infos['gts'][0]
+    # if state == [0, 0, 0, 0]:
+    #     print("debug")
+    # vidDir = os.path.join('../datasets/data/ILSVRC/Data/VID/snippets/train')
+    # img_files = glob.glob(os.path.join(vidDir,'ILSVRC201*_VID_train_000*','*.mp4'))
+    # img_files.sort(key=str.lower)
 
 def get_ILSVRC_videos_infos():
     '''
@@ -32,6 +40,7 @@ def get_ILSVRC_videos_infos():
         'img_files':[],
         'nframes':0
     }
+    last_video_full=True
     train_img_info_file = os.path.join('../datasets/data/ILSVRC/ImageSets/VID/train.txt')
     train_img_info = open(train_img_info_file, "r")
     img_paths = train_img_info.readlines()
@@ -41,25 +50,44 @@ def get_ILSVRC_videos_infos():
     for train_i in range(len(img_paths)):
         if img_paths[train_i][-6:]=='000000':
             if train_i!=0:
-                video_infos['nframes']=int(img_paths[train_i-1][-6:])+1
-                videos_infos.append(video_infos)
-                train_videos['video_names'].append(img_paths[train_i-1][-32:-7])
-                train_videos['video_paths'].append('../datasets/data/ILSVRC/Data/VID/train/' + img_paths[train_i-1][:-32])
-                #train_videos['bench_names'] =
+                if last_video_full==False:
+                    last_video_full=True
+                else:
+                    video_infos['nframes']=int(img_paths[train_i-1][-6:])+1
+                    videos_infos.append(video_infos)
+                    train_videos['video_names'].append(img_paths[train_i-1][-32:-7])
+                    train_videos['video_paths'].append('../datasets/data/ILSVRC/Data/VID/train/' + img_paths[train_i-1][:-32])
+                    #train_videos['bench_names'] =
 
-                video_infos = {
-                    # 'imgsize': [], #in supervised training, imgsize is used for generating boxes that near the gt box
-                    'gt': [],
-                    'img_files': [],
-                    'nframes': 0
-                }
+                    video_infos = {
+                        # 'imgsize': [], #in supervised training, imgsize is used for generating boxes that near the gt box
+                        'gt': [],
+                        'img_files': [],
+                        'nframes': 0
+                    }
+        elif last_video_full==False:
+            continue
         gt_file_path = '../datasets/data/ILSVRC/Annotations/VID/train/' + img_paths[train_i] + '.xml'
         # gt_bbox=get_xml_box_label(gt_file_path)
         # opts['imgSize'] = get_xml_img_size(gt_file_path)
         imginfo = get_xml_img_info(gt_file_path)
         if(len(imginfo['gts'])==0):
             #print("stop")
-            imginfo['gts'].append([0,0,0,0])
+            #imginfo['gts'].append([0,0,0,0])
+            last_video_full=False
+            if img_paths[train_i][-6:]!='000000':
+                video_infos['nframes'] = int(img_paths[train_i - 1][-6:]) + 1
+                videos_infos.append(video_infos)
+                train_videos['video_names'].append(img_paths[train_i - 1][-32:-7])
+                train_videos['video_paths'].append(
+                    '../datasets/data/ILSVRC/Data/VID/train/' + img_paths[train_i - 1][:-32])
+                video_infos = {
+                    # 'imgsize': [], #in supervised training, imgsize is used for generating boxes that near the gt box
+                    'gt': [],
+                    'img_files': [],
+                    'nframes': 0
+                }
+            continue
         video_infos['gt'].append(imginfo['gts'][0])
         img_path = '../datasets/data/ILSVRC/Data/VID/train/' + img_paths[train_i] + '.JPEG'
         video_infos['img_files'].append(img_path)
@@ -285,7 +313,7 @@ if __name__ == '__main__':
     #show_gt_box(vidpath='datasets/data/test/ILSVRC2015_train_00146003.mp4',gt_path='datasets/data/test/vid/ILSVRC2015_train_00146003/groundtruth.txt')
     #imgs_to_mp4('/home/zb/project/ADNet_pytorch/mains/save_result_images/ADNet_SL_925000_epoch29-0.5/ILSVRC2015_train_00146003/','jpg')
     #do_iou_precise("mains/results_on_test_images_part2/ADNet_RL_epoch29-0.5/ILSVRC2015_train_00146003-bboxes.npy","mains/results_on_test_images_part2/ADNet_RL_epoch29-0.5/ILSVRC2015_train_00146003-ground_truth.npy")
-    #test()
+    test()
 
-    get_ILSVRC_videos_infos()
+    #get_ILSVRC_videos_infos()
     print("over")
