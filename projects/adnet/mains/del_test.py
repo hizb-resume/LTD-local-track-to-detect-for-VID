@@ -5,6 +5,9 @@ import torchvision
 # a = torch.Tensor(5,3)
 # a=a.cuda()
 # print(a)
-layers=[1,2,3,4,5,6,7,8,9]
-for l in layers[::-1]:
-    print(l)
+# layers=[1,2,3,4,5,6,7,8,9]
+
+layers="hello"
+print(layers[-2:])
+# for l in layers[::-1]:
+#     print(l)

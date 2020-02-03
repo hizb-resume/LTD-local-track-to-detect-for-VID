@@ -7,6 +7,7 @@ import torch.nn as nn
 import math
 import torch
 from utils.augmentations import CropRegion
+from utils.my_util import get_ILSVRC_videos_infos
 
 class TrackingPolicyLoss(nn.Module):
     def __init__(self):
@@ -41,11 +42,14 @@ class TrackingEnvironment(object):
 
         self.RL_steps = self.opts['train']['RL_steps']  # clip length
 
-        video_names = train_videos['video_names']
-        video_paths = train_videos['video_paths']
-        bench_names = train_videos['bench_names']
-
-        vid_idxs = np.random.permutation(len(video_names))
+        if train_videos==None:
+            videos_infos=get_ILSVRC_videos_infos()
+            vid_idxs = np.random.permutation(len(videos_infos['video_names']))
+        else:
+            video_names = train_videos['video_names']
+            video_paths = train_videos['video_paths']
+            bench_names = train_videos['bench_names']
+            vid_idxs = np.random.permutation(len(video_names))
 
         for vid_idx in vid_idxs:
             # dict consist of set of clips in ONE video
@@ -57,12 +61,15 @@ class TrackingEnvironment(object):
                 'end_bbox': [],
                 'vid_idx': [],
             }
-            # Load current training video info
-            video_name = video_names[vid_idx]
-            video_path = video_paths[vid_idx]
-            bench_name = bench_names[vid_idx]
+            if train_videos==None:
+                vid_info=videos_infos[vid_idx]
+            else:
+                # Load current training video info
+                video_name = video_names[vid_idx]
+                video_path = video_paths[vid_idx]
+                bench_name = bench_names[vid_idx]
 
-            vid_info = get_video_infos(bench_name, video_path, video_name)
+                vid_info = get_video_infos(bench_name, video_path, video_name)
 
             if self.RL_steps is None:
                 self.RL_steps = len(vid_info['gt'])-1
