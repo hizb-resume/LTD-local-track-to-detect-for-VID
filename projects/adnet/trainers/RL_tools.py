@@ -44,7 +44,7 @@ class TrackingEnvironment(object):
 
         if train_videos==None:
             videos_infos,_=get_ILSVRC_videos_infos()
-            vid_idxs = np.random.permutation(len(videos_infos['video_names']))
+            vid_idxs = np.random.permutation(len(videos_infos))
         else:
             video_names = train_videos['video_names']
             video_paths = train_videos['video_paths']

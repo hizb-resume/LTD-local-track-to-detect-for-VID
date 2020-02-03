@@ -28,7 +28,7 @@ def get_ILSVRC_videos_infos():
     }
     video_infos = {
         #'imgsize': [], #in supervised training, imgsize is used for generating boxes that near the gt box
-        'gts': [],
+        'gt': [],
         'img_files':[],
         'nframes':0
     }
@@ -49,7 +49,7 @@ def get_ILSVRC_videos_infos():
 
                 video_infos = {
                     # 'imgsize': [], #in supervised training, imgsize is used for generating boxes that near the gt box
-                    'gts': [],
+                    'gt': [],
                     'img_files': [],
                     'nframes': 0
                 }
@@ -60,7 +60,7 @@ def get_ILSVRC_videos_infos():
         if(len(imginfo['gts'])==0):
             #print("stop")
             imginfo['gts'].append([0,0,0,0])
-        video_infos['gts'].append(imginfo['gts'][0])
+        video_infos['gt'].append(imginfo['gts'][0])
         img_path = '../datasets/data/ILSVRC/Data/VID/train/' + img_paths[train_i] + '.JPEG'
         video_infos['img_files'].append(img_path)
     video_infos['nframes'] = int(img_paths[-1][-6:]) + 1
