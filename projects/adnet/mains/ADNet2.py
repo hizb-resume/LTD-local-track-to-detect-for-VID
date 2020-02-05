@@ -20,7 +20,7 @@ parser.add_argument('--num_workers', default=1, type=int, help='Number of worker
 parser.add_argument('--start_iter', default=0, type=int, help='Begin counting iterations starting from this value (should be used with resume)')
 parser.add_argument('--cuda', default=True, type=str2bool, help='Use cuda to train model')
 parser.add_argument('--gamma', default=0.1, type=float, help='Gamma update for SGD')
-parser.add_argument('--visualize', default=False, type=str2bool, help='Use tensorboardx to for loss visualization')
+parser.add_argument('--visualize', default=True, type=str2bool, help='Use tensorboardx to for loss visualization')
 parser.add_argument('--send_images_to_visualization', type=str2bool, default=False, help='Sample a random image from each 10th batch, send it to visdom after augmentations step')
 parser.add_argument('--save_folder', default='weights', help='Location to save checkpoint models')
 
@@ -32,7 +32,7 @@ parser.add_argument('--run_supervised', default=True, type=str2bool, help='Wheth
 
 parser.add_argument('--multidomain', default=False, type=str2bool, help='Separating weight for each videos (default) or not')
 
-parser.add_argument('--save_result_images', default=True, type=str2bool, help='Whether to save the results or not. Save folder: images/')
+parser.add_argument('--save_result_images', default=False, type=str2bool, help='Whether to save the results or not. Save folder: images/')
 parser.add_argument('--display_images', default=False, type=str2bool, help='Whether to display images or not')
 
 if __name__ == "__main__":
@@ -42,7 +42,7 @@ if __name__ == "__main__":
     # Supervised Learning part
     if args.run_supervised:
         #opts['minibatch_size'] = 128
-        opts['minibatch_size'] = 100
+        opts['minibatch_size'] = 256
         # train with supervised learning
         _, _, train_videos = adnet_train_sl(args, opts)
         args.resume = os.path.join(args.save_folder, args.save_file) + '.pth'
@@ -75,7 +75,8 @@ if __name__ == "__main__":
         net = net.cuda()
 
     # Reinforcement Learning part
-    opts['minibatch_size'] = 32
+    #opts['minibatch_size'] = 32
+    opts['minibatch_size'] = 128
 
     net = adnet_train_rl(net, domain_specific_nets, train_videos, opts, args)
 

@@ -22,14 +22,15 @@ opts = {
         'momentum' : 0.9,
         'learningRate' : 10e-5,
         'conserveMemory' : True,
-        'gt_skip' : 2000,
+        #'gt_skip' : 1,
+        'gt_skip' : 5,
         'rl_num_batches' : 5,
         'RL_steps' : 10
     },
     #in ADNet.py (train), the minibatch_size is not the num below, instead, it's fixed in the code.
     'minibatch_size' : 32,
     #'numEpoch' : 30,
-    'numEpoch' : 2,
+    'numEpoch' : 10,
     'numInnerEpoch' : 3,
     'continueTrain' : False,
     'samplePerFrame_large' : 40,
@@ -67,8 +68,8 @@ opts = {
 
     #'nPos_train' : 150,
     #'nNeg_train' : 50,
-    'nPos_train': 4,
-    'nNeg_train': 2,
+    'nPos_train': 15,
+    'nNeg_train': 5,
     'posThre_train' : 0.5,
     'negThre_train' : 0.3,
 
