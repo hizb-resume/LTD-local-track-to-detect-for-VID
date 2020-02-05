@@ -1,3 +1,4 @@
+import _init_paths
 from trainers.adnet_train_sl import adnet_train_sl
 import argparse
 from options.general import opts
