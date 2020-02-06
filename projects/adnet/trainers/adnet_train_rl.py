@@ -121,7 +121,7 @@ def adnet_train_rl(net, domain_specific_nets, train_videos, opts, args):
 
             reward_sum = reward_sum/len(vid_idx_unique)
 
-            if iteration % 500 == 0 and iteration != 0:
+            if iteration % 2000 == 0 and iteration != 0:
                 t2 = time.time()
                 t3 = t2 - t1
                 t3_m = t3 // 60
@@ -133,7 +133,8 @@ def adnet_train_rl(net, domain_specific_nets, train_videos, opts, args):
                 all_m = all_time % 3600 // 60
                 all_s = all_time % 60
 
-                print('epoch ' + str(epoch) + ' - iteration ' + str(iteration) + 'Timer-iter: %d m %d s || Timer-all: %d d %d h %d m %d s.' % (t3_m,t3_s,all_d,all_h,all_m,all_s))
+                print('epoch ' + str(epoch) + ' - iteration ' + str(iteration) + ' || Timer-iter: %d m %d s || Timer-all: %d d %d h %d m %d s || Timer-now: ' % (t3_m,t3_s,all_d,all_h,all_m,all_s),end='')
+                print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
                 t1 = time.time()
 
             if args.visualize:

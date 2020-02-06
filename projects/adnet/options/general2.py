@@ -30,7 +30,7 @@ opts = {
     #in ADNet.py (train), the minibatch_size is not the num below, instead, it's fixed in the code.
     'minibatch_size' : 32,
     #'numEpoch' : 30,
-    'numEpoch' : 10,
+    'numEpoch' : 30,
     'numInnerEpoch' : 3,
     'continueTrain' : False,
     'samplePerFrame_large' : 40,
