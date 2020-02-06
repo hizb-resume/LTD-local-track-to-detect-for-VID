@@ -179,6 +179,9 @@ def adnet_train_sl(args, opts):
 
     # training loop
     for iteration in range(start_iter, max_iter):
+        if iteration == start_iter:
+            t1 = time.time()
+            t4 = time.time()
         if args.multidomain:
             curr_domain = which_domain[iteration % len(which_domain)]
         else:
@@ -288,17 +291,26 @@ def adnet_train_sl(args, opts):
         else:
             domain_specific_nets[curr_domain].load_weights_from_adnet(net)
 
-        t1 = time.time()
+        #t1 = time.time()
 
-        if iteration % 500 == 0:
+        if iteration % 500 == 0 and iteration!=start_iter:
             #print('Timer: %.4f sec.' % (t1 - t0))
             #print('iter ' + repr(iteration) + ' || Loss: %.4f ||' % (loss.data.item()), end=' ')
-            if iteration==0:
-                t4=time.time()
+            #if iteration==start_iter:
+                # t4=time.time()
             t5=time.time()
-            t3='Timer: %.4f sec.' % (t5 - t4)
+            #t3='Timer: %.4f sec.' % (t5 - t4)
+            t3=t5-t4
+            t3_m = t3 // 60
+            t3_s = t3 % 60
+
+            all_time = t5 - t1
+            all_d = all_time//86400
+            all_h = all_time %86400 // 3600
+            all_m = all_time % 3600 // 60
+            all_s = all_time % 60
             t4=time.time()
-            print('iter ' + repr(iteration) + ' || Loss: %.4f || %s' % (loss.data.item(),t3))
+            print('iter ' + repr(iteration) + ' || Loss: %.4f || Timer-iter: %d m %d s || Timer-all: %d d %d h %d m %d s.' % (loss.data.item(),t3_m,t3_s,all_d,all_h,all_m,all_s))
 
             if args.visualize and args.send_images_to_visualization:
                 random_batch_index = np.random.randint(images.size(0))
@@ -314,7 +326,7 @@ def adnet_train_sl(args, opts):
                                                        'score_loss': score_loss,
                                                        'total': (action_loss + score_loss)}, global_step=epoch)
 
-        if iteration % 5000 == 0:
+        if iteration % 5000 == 0 and iteration!=start_iter:
             print('Saving state, iter:', iteration)
 
             domain_specific_nets_state_dict = []
