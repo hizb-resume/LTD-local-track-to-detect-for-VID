@@ -16,20 +16,10 @@ from utils.my_util import get_xml_box_label
 from utils.my_util import get_xml_img_size
 from utils.my_util import get_xml_img_info
 
-def get_train_dbs(vid_info, opts):
-    img = cv2.imread(vid_info['img_files'][0])
-
-    opts['scale_factor'] = 1.05
-    opts['imgSize'] = list(img.shape)
-    gt_skip = opts['train']['gt_skip']
-
-    if vid_info['db_name'] == 'alov300':
-        train_sequences = vid_info['gt_use'] == 1
-    else:
-        train_sequences = list(range(0, vid_info['nframes'], gt_skip))
-
-    train_db_pos = []
-    train_db_neg = []
+def process_data_vot(train_sequences, opt,train_db_pos,train_db_neg,lock):
+    opts=opt.copy()
+    train_db_pos_gpu = []
+    train_db_neg_gpu = []
 
     for train_i in range(len(train_sequences)):
         train_db_pos_ = {
@@ -98,6 +88,50 @@ def get_train_dbs(vid_info, opts):
         train_db_pos.append(train_db_pos_)
         train_db_neg.append(train_db_neg_)
 
+    try:
+        lock.acquire()
+        train_db_pos.extend(train_db_pos_gpu)
+        train_db_neg.extend(train_db_neg_gpu)
+    except Exception as err:
+        raise err
+    finally:
+        lock.release()
+
+
+
+def get_train_dbs(vid_info, opts):
+    img = cv2.imread(vid_info['img_files'][0])
+
+    opts['scale_factor'] = 1.05
+    opts['imgSize'] = list(img.shape)
+    gt_skip = opts['train']['gt_skip']
+
+    if vid_info['db_name'] == 'alov300':
+        train_sequences = vid_info['gt_use'] == 1
+    else:
+        train_sequences = list(range(0, vid_info['nframes'], gt_skip))
+
+    train_db_pos = []
+    train_db_neg = []
+    t0 = time.time()
+
+    gpu_num = 27
+
+    lock = multiprocessing.Lock()
+    record = []
+    for i in range(gpu_num):
+        process = multiprocessing.Process(target=process_data_vot,
+                                          args=(img_paths_as[i], opts, train_db_pos, train_db_neg, lock))
+        process.start()
+        record.append(process)
+    for process in record:
+        process.join()
+
+    t1 = time.time()
+    all_time = t1 - t0
+    all_m = all_time // 60
+    all_s = all_time % 60
+    print('spend time: %d m  %d s (%d s)' % (all_m, all_s, all_time))
     return train_db_pos, train_db_neg
 
 # img_ii = 0
@@ -106,7 +140,7 @@ def get_train_dbs(vid_info, opts):
 # train_db_pos = []
 # train_db_neg = []
 
-def process_data(img_paths, opt,train_db_pos,train_db_neg,lock):
+def process_data_ILSVR(img_paths, opt,train_db_pos,train_db_neg,lock):
     opts=opt.copy()
     train_db_pos_gpu = []
     train_db_neg_gpu = []
@@ -264,7 +298,7 @@ def get_train_dbs_ILSVR(opts):
     lock = multiprocessing.Lock()
     record = []
     for i in range(gpu_num):
-        process = multiprocessing.Process(target=process_data, args=(img_paths_as[i], opts,train_db_pos,train_db_neg,lock))
+        process = multiprocessing.Process(target=process_data_ILSVR, args=(img_paths_as[i], opts,train_db_pos,train_db_neg,lock))
         process.start()
         record.append(process)
     for process in record:
