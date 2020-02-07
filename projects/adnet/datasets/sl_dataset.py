@@ -4,7 +4,7 @@
 # reference:
 # https://github.com/amdegroot/ssd.pytorch/blob/master/data/voc0712.py
 
-import os
+import os,time
 import cv2
 import numpy as np
 import torch
@@ -73,7 +73,7 @@ def initialize_pos_neg_dataset(train_videos, opts, transform=None, multidomain=T
         num_videos=1
     else:
         num_videos = len(train_videos['video_names'])
-
+    t0 = time.time()
     for vid_idx in range(num_videos):
         train_db_pos = {
             'img_path': [],  # list of string
@@ -146,6 +146,10 @@ def initialize_pos_neg_dataset(train_videos, opts, transform=None, multidomain=T
                 datasets_neg[0].train_db['labels'].extend(dataset_neg.train_db['labels'])
                 datasets_neg[0].train_db['score_labels'].extend(dataset_neg.train_db['score_labels'])
                 datasets_neg[0].train_db['vid_idx'].extend(dataset_neg.train_db['vid_idx'])
-
+    t1 = time.time()
+    all_time = t1 - t0
+    all_m = all_time // 60
+    all_s = all_time % 60
+    print('time of generating dataset: %d m  %d s (%d s)' % (all_m, all_s, all_time))
     return datasets_pos, datasets_neg
 
