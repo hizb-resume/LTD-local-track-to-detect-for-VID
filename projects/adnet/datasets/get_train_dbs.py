@@ -103,10 +103,10 @@ def get_train_dbs(vid_info, opts):
 # img_ii = 0
 # box_ii = 0
 # box_ii_start=0
-train_db_pos = []
-train_db_neg = []
+# train_db_pos = []
+# train_db_neg = []
 
-def process_data(img_paths, opt,lock):
+def process_data(img_paths, opt,train_db_pos,train_db_neg,lock):
     opts=opt.copy()
     train_db_pos_gpu = []
     train_db_neg_gpu = []
@@ -235,8 +235,8 @@ def get_train_dbs_ILSVR(opts):
 
     #train_sequences = list(range(0, vid_info['nframes'], gt_skip))
 
-    #train_db_pos = []
-    #train_db_neg = []
+    train_db_pos = []
+    train_db_neg = []
 
     train_img_info_file=os.path.join('../datasets/data/ILSVRC/ImageSets/VID/train.txt')
     train_img_info = open(train_img_info_file, "r")
@@ -264,7 +264,7 @@ def get_train_dbs_ILSVR(opts):
     lock = multiprocessing.Lock()
     record = []
     for i in range(gpu_num):
-        process = multiprocessing.Process(target=process_data, args=(img_paths_as[i], opts,lock))
+        process = multiprocessing.Process(target=process_data, args=(img_paths_as[i], opts,train_db_pos,train_db_neg,lock))
         process.start()
         record.append(process)
     for process in record:
