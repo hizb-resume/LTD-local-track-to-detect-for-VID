@@ -90,12 +90,12 @@ def process_data_vot(train_sequences, vid_info, opt,train_db_pos,train_db_neg,lo
 
     try:
         lock.acquire()
-        print("len(train_db_pos_gpu): %d"%len(train_db_pos_gpu))
+        #print("len(train_db_pos_gpu): %d"%len(train_db_pos_gpu))
         train_db_pos.extend(train_db_pos_gpu)
-        print("len(train_db_pos): %d" % len(train_db_pos))
-        print("len(train_db_neg_gpu): %d" % len(train_db_neg_gpu))
+        #print("len(train_db_pos): %d" % len(train_db_pos))
+        #print("len(train_db_neg_gpu): %d" % len(train_db_neg_gpu))
         train_db_neg.extend(train_db_neg_gpu)
-        print("len(train_db_neg): %d" % len(train_db_neg))
+        #print("len(train_db_neg): %d" % len(train_db_neg))
     except Exception as err:
         raise err
     finally:
@@ -144,8 +144,8 @@ def get_train_dbs(vid_info, opts):
     # all_m = all_time // 60
     # all_s = all_time % 60
     # print('spend time: %d m  %d s (%d s)' % (all_m, all_s, all_time))
-    print("finally: len(train_db_pos): %d" % len(train_db_pos))
-    print("finally: len(train_db_neg): %d" % len(train_db_neg))
+    #print("finally: len(train_db_pos): %d" % len(train_db_pos))
+    #print("finally: len(train_db_neg): %d" % len(train_db_neg))
     train_db_pos=list(train_db_pos)
     train_db_neg=list(train_db_neg)
     return train_db_pos, train_db_neg
@@ -265,12 +265,12 @@ def process_data_ILSVR(img_paths, opt,train_db_pos,train_db_neg,lock):
         #     t2=time.time()
     try:
         lock.acquire()
-        print("len(train_db_pos_gpu): %d" % len(train_db_pos_gpu))
+        # print("len(train_db_pos_gpu): %d" % len(train_db_pos_gpu))
         train_db_pos.extend(train_db_pos_gpu)
-        print("len(train_db_pos): %d" % len(train_db_pos))
-        print("len(train_db_neg_gpu): %d" % len(train_db_neg_gpu))
+        # print("len(train_db_pos): %d" % len(train_db_pos))
+        # print("len(train_db_neg_gpu): %d" % len(train_db_neg_gpu))
         train_db_neg.extend(train_db_neg_gpu)
-        print("len(train_db_neg): %d" % len(train_db_neg))
+        # print("len(train_db_neg): %d" % len(train_db_neg))
     except Exception as err:
         raise err
     finally:
@@ -332,8 +332,8 @@ def get_train_dbs_ILSVR(opts):
     # all_s = all_time % 60
     # print('spend time: %d m  %d s (%d s)' % (all_m, all_s, all_time))
 
-    print("finally: len(train_db_pos): %d" % len(train_db_pos))
-    print("finally: len(train_db_neg): %d" % len(train_db_neg))
+    # print("finally: len(train_db_pos): %d" % len(train_db_pos))
+    # print("finally: len(train_db_neg): %d" % len(train_db_neg))
     train_db_pos=list(train_db_pos)
     train_db_neg=list(train_db_neg)
     return train_db_pos, train_db_neg
