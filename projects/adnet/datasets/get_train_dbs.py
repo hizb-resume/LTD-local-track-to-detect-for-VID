@@ -1,6 +1,7 @@
 # matlab code:
 # https://github.com/hellbell/ADNet/blob/3a7955587b5d395401ebc94a5ab067759340680d/train/get_train_dbs.m
 import sys,os,time
+import multiprocessing
 if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
     sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
 
@@ -99,36 +100,16 @@ def get_train_dbs(vid_info, opts):
 
     return train_db_pos, train_db_neg
 
+# img_ii = 0
+# box_ii = 0
+# box_ii_start=0
+train_db_pos = []
+train_db_neg = []
 
-def get_train_dbs_ILSVR(opts):
-    #gt_file_path = '../datasets/data/ILSVRC/Data/VID/train/ILSVRC2017_VID_train_0000/ILSVRC2017_train_00137000/000305.JPEG'
-    #img = cv2.imread(gt_file_path)
-
-    opts['scale_factor'] = 1.05
-    #opts['imgSize'] = list(img.shape)
-    gt_skip = opts['train']['gt_skip']
-
-    #train_sequences = list(range(0, vid_info['nframes'], gt_skip))
-
-    train_db_pos = []
-    train_db_neg = []
-
-    train_img_info_file=os.path.join('../datasets/data/ILSVRC/ImageSets/VID/train.txt')
-    train_img_info = open(train_img_info_file, "r")
-    img_paths = train_img_info.readlines()
-    img_paths = img_paths[::gt_skip + 1]
-    img_paths=[line.split(' ')[0] for line in img_paths]
-    train_img_info.close()
-
-    #gt_file_path = '../datasets/data/ILSVRC/Annotations/VID/train/' + img_paths[0] + '.xml'
-
-    img_ii = 0
-    box_ii = 0
-    box_ii_start=0
-    all_img_num = len(img_paths)
-    t0=time.time()
-    t2 = time.time()
-
+def process_data(img_paths, opt,lock):
+    opts=opt.copy()
+    train_db_pos_gpu = []
+    train_db_neg_gpu = []
     for train_i in img_paths:
         train_db_pos_ = {
             'img_path': [],
@@ -204,34 +185,97 @@ def get_train_dbs_ILSVR(opts):
             train_db_neg_['score_labels'] = list(np.zeros(len(neg_examples), dtype=int))
 
             if len(train_db_pos_['img_path'])!=0 and len(train_db_neg_['img_path'])!=0:
-                train_db_pos.append(train_db_pos_)
-                train_db_neg.append(train_db_neg_)
+                train_db_pos_gpu.append(train_db_pos_)
+                train_db_neg_gpu.append(train_db_neg_)
 
-            box_ii += 1
+            # box_ii += 1
 
-        img_ii += 1
+        # img_ii += 1
 
-        if img_ii==3471:
-            print("when gt_skip set to 200, and the img_ii=3472, the gen_samples function can't produce examples that iou>thred")
-            #'ILSVRC2015_VID_train_0002/ILSVRC2015_train_00633000/000025'
+        # if img_ii==3471:
+        #     print("when gt_skip set to 200, and the img_ii=3472, the gen_samples function can't produce examples that iou>thred")
+        #     #'ILSVRC2015_VID_train_0002/ILSVRC2015_train_00633000/000025'
             #reason:the img is so small and unclear
-        if img_ii%1000==0 and img_ii!=0:
-            t9=time.time()
-            real_time=t9-t2
-            all_time=t9-t0
-            all_h=all_time//3600
-            all_m=all_time%3600//60
-            all_s=all_time%60
-            speed_img=1000/real_time
-            speed_box=(box_ii-box_ii_start)/real_time
-            all_speed_img=img_ii/all_time
-            all_speed_box = box_ii/all_time
-            print('\ndone imgs: %d , done boxes: %d , all imgs: %d. '%(img_ii,box_ii,all_img_num))
-            print('real_time speed: %d imgs/s, %d boxes/s'%(speed_img,speed_box))
-            print('avg_time speed: %d imgs/s, %d boxes/s' % (all_speed_img, all_speed_box))
-            print('spend time: %d h  %d m  %d s (%d s)'%(all_h,all_m,all_s,all_time))
-            box_ii_start=box_ii
-            t2=time.time()
+        # if img_ii%1000==0 and img_ii!=0:
+        #     t9=time.time()
+        #     real_time=t9-t2
+        #     all_time=t9-t0
+        #     all_h=all_time//3600
+        #     all_m=all_time%3600//60
+        #     all_s=all_time%60
+        #     speed_img=1000/real_time
+        #     speed_box=(box_ii-box_ii_start)/real_time
+        #     all_speed_img=img_ii/all_time
+        #     all_speed_box = box_ii/all_time
+        #     print('\ndone imgs: %d , done boxes: %d , all imgs: %d. '%(img_ii,box_ii,all_img_num))
+        #     print('real_time speed: %d imgs/s, %d boxes/s'%(speed_img,speed_box))
+        #     print('avg_time speed: %d imgs/s, %d boxes/s' % (all_speed_img, all_speed_box))
+        #     print('spend time: %d h  %d m  %d s (%d s)'%(all_h,all_m,all_s,all_time))
+        #     box_ii_start=box_ii
+        #     t2=time.time()
+    try:
+        lock.acquire()
+        train_db_pos.extend(train_db_pos_gpu)
+        train_db_neg.extend(train_db_neg_gpu)
+    except Exception as err:
+        raise err
+    finally:
+        lock.release()
+    #lock.acquire()
+    #print(sign, os.getpid())
+    #lock.release()
+
+def get_train_dbs_ILSVR(opts):
+    #gt_file_path = '../datasets/data/ILSVRC/Data/VID/train/ILSVRC2017_VID_train_0000/ILSVRC2017_train_00137000/000305.JPEG'
+    #img = cv2.imread(gt_file_path)
+
+    opts['scale_factor'] = 1.05
+    #opts['imgSize'] = list(img.shape)
+    gt_skip = opts['train']['gt_skip']
+
+    #train_sequences = list(range(0, vid_info['nframes'], gt_skip))
+
+    #train_db_pos = []
+    #train_db_neg = []
+
+    train_img_info_file=os.path.join('../datasets/data/ILSVRC/ImageSets/VID/train.txt')
+    train_img_info = open(train_img_info_file, "r")
+    img_paths = train_img_info.readlines()
+    img_paths = img_paths[::gt_skip + 1]
+    img_paths=[line.split(' ')[0] for line in img_paths]
+    train_img_info.close()
+
+    #gt_file_path = '../datasets/data/ILSVRC/Annotations/VID/train/' + img_paths[0] + '.xml'
+
+    # img_ii = 0
+    # box_ii = 0
+    # box_ii_start=0
+    all_img_num = len(img_paths)
+    t0=time.time()
+    #t2 = time.time()
+
+    gpu_num=27
+    every_gpu_img=all_img_num//gpu_num
+    img_paths_as=[]
+    for gn in range(gpu_num-1):
+        img_paths_as.append(img_paths[gn*every_gpu_img:(gn+1)*every_gpu_img])
+    img_paths_as.append(img_paths[(gpu_num-1) * every_gpu_img:])
+
+    lock = multiprocessing.Lock()
+    record = []
+    for i in range(gpu_num):
+        process = multiprocessing.Process(target=process_data, args=(img_paths_as[i], opts,lock))
+        process.start()
+        record.append(process)
+    for process in record:
+        process.join()
+
+    t1=time.time()
+    all_time=t1-t0
+    all_m = all_time // 60
+    all_s = all_time % 60
+    print('spend time: %d m  %d s (%d s)' % (all_m, all_s, all_time))
+
 
     return train_db_pos, train_db_neg
 
