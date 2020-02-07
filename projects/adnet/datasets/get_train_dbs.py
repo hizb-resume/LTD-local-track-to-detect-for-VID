@@ -121,6 +121,8 @@ def get_train_dbs(vid_info, opts):
 
     gpu_num = 27
     all_img_num=len(train_sequences)
+    if all_img_num<gpu_num:
+        gpu_num=all_img_num
     every_gpu_img = all_img_num // gpu_num
     img_paths_as = []
     for gn in range(gpu_num - 1):
@@ -307,6 +309,8 @@ def get_train_dbs_ILSVR(opts):
     #t2 = time.time()
 
     gpu_num=27
+    if all_img_num<gpu_num:
+        gpu_num=all_img_num
     every_gpu_img=all_img_num//gpu_num
     img_paths_as=[]
     for gn in range(gpu_num-1):
