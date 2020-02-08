@@ -51,11 +51,14 @@ def adnet_train_sl(args, opts):
     if train_videos==None:
         opts['num_videos'] =1
         number_domain = opts['num_videos']
-        datasets_pos, datasets_neg = initialize_pos_neg_dataset(train_videos,opts, transform=ADNet_Augmentation(opts),multidomain=args.multidomain)
+        # datasets_pos, datasets_neg = initialize_pos_neg_dataset(train_videos,opts, transform=ADNet_Augmentation(opts),multidomain=args.multidomain)
+        datasets_pos_neg = initialize_pos_neg_dataset(train_videos, opts, transform=ADNet_Augmentation(opts),multidomain=args.multidomain)
     else:
         opts['num_videos'] = len(train_videos['video_names'])
         number_domain = opts['num_videos']
-        datasets_pos, datasets_neg = initialize_pos_neg_dataset(train_videos, opts, transform=ADNet_Augmentation(opts),multidomain=args.multidomain)
+        # datasets_pos, datasets_neg = initialize_pos_neg_dataset(train_videos, opts, transform=ADNet_Augmentation(opts),multidomain=args.multidomain)
+        datasets_pos_neg = initialize_pos_neg_dataset(train_videos, opts, transform=ADNet_Augmentation(opts),multidomain=args.multidomain)
+
         # dataset = SLDataset(train_videos, opts, transform=
 
     net, domain_specific_nets = adnet(opts=opts, trained_file=args.resume, multidomain=args.multidomain)
@@ -134,47 +137,48 @@ def adnet_train_sl(args, opts):
     action_criterion = nn.CrossEntropyLoss()
     score_criterion = nn.CrossEntropyLoss()
 
-
-    batch_iterators_pos = []
-    batch_iterators_neg = []
+    # batch_iterators_pos = []
+    # batch_iterators_neg = []
 
     # calculating number of data
-    len_dataset_pos = 0
-    len_dataset_neg = 0
-    for dataset_pos in datasets_pos:
-        len_dataset_pos += len(dataset_pos)
-    for dataset_neg in datasets_neg:
-        len_dataset_neg += len(dataset_neg)
+    # len_dataset_pos = 0
+    # len_dataset_neg = 0
+    len_dataset = 0
+    for dataset_pos_neg in datasets_pos_neg:
+        len_dataset += len(dataset_pos_neg)
+    # for dataset_neg in datasets_neg:
+    #     len_dataset_neg += len(dataset_neg)
 
-    epoch_size_pos = len_dataset_pos // opts['minibatch_size']
-    epoch_size_neg = len_dataset_neg // opts['minibatch_size']
-    epoch_size = epoch_size_pos + epoch_size_neg  # 1 epoch, how many iterations
+    # epoch_size_pos = len_dataset_pos // opts['minibatch_size']
+    # epoch_size_neg = len_dataset_neg // opts['minibatch_size']
+    # epoch_size = epoch_size_pos + epoch_size_neg  # 1 epoch, how many iterations
+    epoch_size = len_dataset // opts['minibatch_size']
     print("1 epoch = " + str(epoch_size) + " iterations")
 
-    max_iter = opts['numEpoch'] * epoch_size
-    print("maximum iteration = " + str(max_iter))
+    # max_iter = opts['numEpoch'] * epoch_size
+    # print("maximum iteration = " + str(max_iter))
 
-    data_loaders_pos = []
-    data_loaders_neg = []
+    data_loaders = []
+    # data_loaders_neg = []
 
-    print("before data_loaders_pos.append(data.DataLoader(dataset_pos", end=' : ')
+    print("before  data_loaders.append(data.DataLoader(dataset_pos_neg", end=' : ')
     print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
-    for dataset_pos in datasets_pos:
-        data_loaders_pos.append(data.DataLoader(dataset_pos, opts['minibatch_size'], num_workers=args.num_workers, shuffle=True, pin_memory=True))
-    for dataset_neg in datasets_neg:
-        data_loaders_neg.append(data.DataLoader(dataset_neg, opts['minibatch_size'], num_workers=args.num_workers, shuffle=True, pin_memory=True))
-    print("after data_loaders_neg.append(data.DataLoader(dataset_neg", end=' : ')
+    for dataset_pos_neg in datasets_pos_neg:
+        data_loaders.append(data.DataLoader(dataset_pos_neg, opts['minibatch_size'], num_workers=args.num_workers, shuffle=True, pin_memory=True))
+    # for dataset_neg in datasets_neg:
+    #     data_loaders_neg.append(data.DataLoader(dataset_neg, opts['minibatch_size'], num_workers=args.num_workers, shuffle=True, pin_memory=True))
+    print("after  data_loaders.append(data.DataLoader(dataset_pos_neg", end=' : ')
     print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
 
-    epoch = args.start_epoch
-    if epoch != 0 and args.start_iter == 0:
-        start_iter = epoch * epoch_size
-    else:
-        start_iter = args.start_iter
+    # epoch = args.start_epoch
+    # if epoch != 0 and args.start_iter == 0:
+    #     start_iter = epoch * epoch_size
+    # else:
+    #     start_iter = args.start_iter
 
-    which_dataset = list(np.full(epoch_size_pos, fill_value=1))
-    which_dataset.extend(np.zeros(epoch_size_neg, dtype=int))
-    shuffle(which_dataset)
+    # which_dataset = list(np.full(epoch_size_pos, fill_value=1))
+    # which_dataset.extend(np.zeros(epoch_size_neg, dtype=int))
+    # shuffle(which_dataset)
 
     which_domain = np.random.permutation(number_domain)
 
@@ -182,37 +186,35 @@ def adnet_train_sl(args, opts):
     score_loss = 0
 
     # training loop
-    for iteration in range(start_iter, max_iter):
-        if iteration == start_iter:
+    # for iteration in range(start_iter, max_iter):
+    iteration=-1
+    for epoch in range(args.start_epoch, opts['numEpoch']):
+        if epoch == args.start_epoch:
             t1 = time.time()
             t4 = time.time()
-        if args.multidomain:
-            curr_domain = which_domain[iteration % len(which_domain)]
-        else:
-            curr_domain = 0
         # if new epoch (not including the very first iteration)
-        if (iteration != start_iter) and (iteration % epoch_size == 0):
-            epoch += 1
-            shuffle(which_dataset)
-            np.random.shuffle(which_domain)
+        if (epoch != args.start_epoch) :
+            # epoch += 1
+            # shuffle(which_dataset)
+            # np.random.shuffle(which_domain)
 
-            print('Saving state, epoch:', epoch)
+            print('Saving state, epoch:', epoch-1)
             domain_specific_nets_state_dict = []
             for domain_specific_net in domain_specific_nets:
                 domain_specific_nets_state_dict.append(domain_specific_net.state_dict())
 
             torch.save({
-                'epoch': epoch,
+                'epoch': epoch-1,
                 'adnet_state_dict': net.state_dict(),
                 'adnet_domain_specific_state_dict': domain_specific_nets,
                 'optimizer_state_dict': optimizer.state_dict(),
             }, os.path.join(args.save_folder, args.save_file) +
-                       'epoch' + repr(epoch) + '.pth')
+                       'epoch' + repr(epoch-1) + '.pth')
 
             if args.visualize:
                 writer.add_scalars('data/epoch_loss', {'action_loss': action_loss / epoch_size,
                                                        'score_loss': score_loss / epoch_size,
-                                                       'total': (action_loss + score_loss) / epoch_size}, global_step=epoch)
+                                                       'total': (action_loss + score_loss) / epoch_size}, global_step=epoch-1)
 
             # reset epoch loss counters
             action_loss = 0
@@ -220,18 +222,18 @@ def adnet_train_sl(args, opts):
 
         # if new epoch (including the first iteration), initialize the batch iterator
         # or just resuming where batch_iterator_pos and neg haven't been initialized
-        if iteration % epoch_size == 0 or len(batch_iterators_pos) == 0 or len(batch_iterators_neg) == 0:
+        # if iteration % epoch_size == 0 or len(batch_iterators_pos) == 0 or len(batch_iterators_neg) == 0:
             # create batch iterator
-            batch_iterators_pos = []
-            batch_iterators_neg = []
-            print("before batch_iterators_pos.append(iter(data_loader_pos", end=' : ')
-            print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
-            for data_loader_pos in data_loaders_pos:
-                batch_iterators_pos.append(iter(data_loader_pos))
-            for data_loader_neg in data_loaders_neg:
-                batch_iterators_neg.append(iter(data_loader_neg))
-            print("after batch_iterators_neg.append(iter(data_loader_neg", end=' : ')
-            print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+            # batch_iterators_pos = []
+            # batch_iterators_neg = []
+            # print("before batch_iterators_pos.append(iter(data_loader_pos", end=' : ')
+            # print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+            # for data_loader_pos in data_loaders_pos:
+            #     batch_iterators_pos.append(iter(data_loader_pos))
+            # for data_loader_neg in data_loaders_neg:
+            #     batch_iterators_neg.append(iter(data_loader_neg))
+            # print("after batch_iterators_neg.append(iter(data_loader_neg", end=' : ')
+            # print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
 
         # if not batch_iterators_pos[curr_domain]:
         #     # create batch iterator
@@ -242,129 +244,135 @@ def adnet_train_sl(args, opts):
         #     batch_iterators_neg[curr_domain] = iter(data_loaders_neg[curr_domain])
 
         # load train data
-        if which_dataset[iteration % len(which_dataset)]:  # if positive
-            try:
-                # print("before next(batch_iterators_pos", end=' : ')
-                # print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
-                images, bbox, action_label, score_label, vid_idx = next(batch_iterators_pos[curr_domain])
-                # print("after next(batch_iterators_pos", end=' : ')
-                # print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
-            except StopIteration:
-                batch_iterators_pos[curr_domain] = iter(data_loaders_pos[curr_domain])
-                images, bbox, action_label, score_label, vid_idx = next(batch_iterators_pos[curr_domain])
-        else:
-            try:
-                # print("before next(batch_iterators_neg", end=' : ')
-                # print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
-                images, bbox, action_label, score_label, vid_idx = next(batch_iterators_neg[curr_domain])
-                # print("after next(batch_iterators_neg", end=' : ')
-                # print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
-            except StopIteration:
-                batch_iterators_neg[curr_domain] = iter(data_loaders_neg[curr_domain])
-                images, bbox, action_label, score_label, vid_idx = next(batch_iterators_neg[curr_domain])
+        # if which_dataset[iteration % len(which_dataset)]:  # if positive
+        #     try:
+        #         # print("before next(batch_iterators_pos", end=' : ')
+        #         # print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+        #         images, bbox, action_label, score_label, vid_idx = next(batch_iterators_pos[curr_domain])
+        #         # print("after next(batch_iterators_pos", end=' : ')
+        #         # print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+        #     except StopIteration:
+        #         batch_iterators_pos[curr_domain] = iter(data_loaders_pos[curr_domain])
+        #         images, bbox, action_label, score_label, vid_idx = next(batch_iterators_pos[curr_domain])
+        # else:
+        #     try:
+        #         # print("before next(batch_iterators_neg", end=' : ')
+        #         # print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+        #         images, bbox, action_label, score_label, vid_idx = next(batch_iterators_neg[curr_domain])
+        #         # print("after next(batch_iterators_neg", end=' : ')
+        #         # print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+        #     except StopIteration:
+        #         batch_iterators_neg[curr_domain] = iter(data_loaders_neg[curr_domain])
+        #         images, bbox, action_label, score_label, vid_idx = next(batch_iterators_neg[curr_domain])
 
-        # TODO: check if this requires grad is really false like in Variable
-        if args.cuda:
-            images = torch.Tensor(images.cuda())
-            bbox = torch.Tensor(bbox.cuda())
-            action_label = torch.Tensor(action_label.cuda())
-            score_label = torch.Tensor(score_label.float().cuda())
+        for images, bbox, action_label, score_label, vid_idx in data_loaders[curr_domain]:
+            iteration=iteration+1
+            if args.multidomain:
+                curr_domain = which_domain[iteration % len(which_domain)]
+            else:
+                curr_domain = 0
+            # TODO: check if this requires grad is really false like in Variable
+            if args.cuda:
+                images = torch.Tensor(images.cuda())
+                bbox = torch.Tensor(bbox.cuda())
+                action_label = torch.Tensor(action_label.cuda())
+                score_label = torch.Tensor(score_label.float().cuda())
 
-        else:
-            images = torch.Tensor(images)
-            bbox = torch.Tensor(bbox)
-            action_label = torch.Tensor(action_label)
-            score_label = torch.Tensor(score_label)
+            else:
+                images = torch.Tensor(images)
+                bbox = torch.Tensor(bbox)
+                action_label = torch.Tensor(action_label)
+                score_label = torch.Tensor(score_label)
 
-        t0 = time.time()
+            t0 = time.time()
 
-        # load ADNetDomainSpecific with video index
-        if args.cuda:
-            net.module.load_domain_specific(domain_specific_nets[curr_domain])
-        else:
-            net.load_domain_specific(domain_specific_nets[curr_domain])
+            # load ADNetDomainSpecific with video index
+            if args.cuda:
+                net.module.load_domain_specific(domain_specific_nets[curr_domain])
+            else:
+                net.load_domain_specific(domain_specific_nets[curr_domain])
 
-        # forward
-        # print("before forward net", end=' : ')
-        # print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
-        action_out, score_out = net(images)
-        # print("after forward net", end=' : ')
-        # print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+            # forward
+            # print("before forward net", end=' : ')
+            # print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+            action_out, score_out = net(images)
+            # print("after forward net", end=' : ')
+            # print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
 
-        # backprop
-        optimizer.zero_grad()
-        if which_dataset[iteration % len(which_dataset)]:  # if positive
-            action_l = action_criterion(action_out, torch.max(action_label, 1)[1])
-        else:
-            action_l = torch.Tensor([0])
-        score_l = score_criterion(score_out, score_label.long())
-        loss = action_l + score_l
-        loss.backward()
-        optimizer.step()
+            # backprop
+            optimizer.zero_grad()
+            if which_dataset[iteration % len(which_dataset)]:  # if positive
+                action_l = action_criterion(action_out, torch.max(action_label, 1)[1])
+            else:
+                action_l = torch.Tensor([0])
+            score_l = score_criterion(score_out, score_label.long())
+            loss = action_l + score_l
+            loss.backward()
+            optimizer.step()
 
-        action_loss += action_l.item()
-        score_loss += score_l.item()
+            action_loss += action_l.item()
+            score_loss += score_l.item()
 
-        # save the ADNetDomainSpecific back to their module
-        if args.cuda:
-            domain_specific_nets[curr_domain].load_weights_from_adnet(net.module)
-        else:
-            domain_specific_nets[curr_domain].load_weights_from_adnet(net)
+            # save the ADNetDomainSpecific back to their module
+            if args.cuda:
+                domain_specific_nets[curr_domain].load_weights_from_adnet(net.module)
+            else:
+                domain_specific_nets[curr_domain].load_weights_from_adnet(net)
 
-        #t1 = time.time()
+            #t1 = time.time()
 
-        if iteration % 2000 == 0 and iteration!=start_iter:
-            #print('Timer: %.4f sec.' % (t1 - t0))
-            #print('iter ' + repr(iteration) + ' || Loss: %.4f ||' % (loss.data.item()), end=' ')
-            #if iteration==start_iter:
-                # t4=time.time()
-            t5=time.time()
-            #t3='Timer: %.4f sec.' % (t5 - t4)
-            t3=t5-t4
-            t3_m = t3 // 60
-            t3_s = t3 % 60
+            if iteration % 2000 == 0 and iteration!=0:
+                #print('Timer: %.4f sec.' % (t1 - t0))
+                #print('iter ' + repr(iteration) + ' || Loss: %.4f ||' % (loss.data.item()), end=' ')
+                #if iteration==start_iter:
+                    # t4=time.time()
+                t5=time.time()
+                #t3='Timer: %.4f sec.' % (t5 - t4)
+                t3=t5-t4
+                t3_m = t3 // 60
+                t3_s = t3 % 60
 
-            all_time = t5 - t1
-            all_d = all_time//86400
-            all_h = all_time %86400 // 3600
-            all_m = all_time % 3600 // 60
-            all_s = all_time % 60
-            t4=time.time()
-            print('epoch '+repr(epoch)+' || iter ' + repr(iteration) + ' || Loss: %.4f || Timer-iter: %d m %d s || Timer-all: %d d %d h %d m %d s || Timer-now: ' % (loss.data.item(),t3_m,t3_s,all_d,all_h,all_m,all_s),end='')
-            print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+                all_time = t5 - t1
+                all_d = all_time//86400
+                all_h = all_time %86400 // 3600
+                all_m = all_time % 3600 // 60
+                all_s = all_time % 60
+                t4=time.time()
+                print('epoch '+repr(epoch)+' || iter ' + repr(iteration) + ' || Loss: %.4f || Timer-iter: %d m %d s || Timer-all: %d d %d h %d m %d s || Timer-now: ' % (loss.data.item(),t3_m,t3_s,all_d,all_h,all_m,all_s),end='')
+                print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
 
-            if args.visualize and args.send_images_to_visualization:
-                random_batch_index = np.random.randint(images.size(0))
-                writer.add_image('image', images.data[random_batch_index].cpu().numpy(), random_batch_index)
+                if args.visualize and args.send_images_to_visualization:
+                    random_batch_index = np.random.randint(images.size(0))
+                    writer.add_image('image', images.data[random_batch_index].cpu().numpy(), random_batch_index)
 
-        if args.visualize:
-            writer.add_scalars('data/iter_loss', {'action_loss': action_l.item(),
-                                                  'score_loss': score_l.item(),
-                                                  'total': (action_l.item() + score_l.item())}, global_step=iteration)
-            # hacky fencepost solution for 0th epoch plot
-            if iteration == 0:
-                writer.add_scalars('data/epoch_loss', {'action_loss': action_loss,
-                                                       'score_loss': score_loss,
-                                                       'total': (action_loss + score_loss)}, global_step=epoch)
+            if args.visualize:
+                writer.add_scalars('data/iter_loss', {'action_loss': action_l.item(),
+                                                      'score_loss': score_l.item(),
+                                                      'total': (action_l.item() + score_l.item())}, global_step=iteration)
+                # hacky fencepost solution for 0th epoch plot
+                if iteration == 0:
+                    writer.add_scalars('data/epoch_loss', {'action_loss': action_loss,
+                                                           'score_loss': score_loss,
+                                                           'total': (action_loss + score_loss)}, global_step=epoch)
 
-        if iteration % 5000 == 0 and iteration!=start_iter:
-            print('Saving state, iter:', iteration)
+            if iteration % 5000 == 0 and iteration!=0:
+                print('Saving state, iter:', iteration)
 
-            domain_specific_nets_state_dict = []
-            for domain_specific_net in domain_specific_nets:
-                domain_specific_nets_state_dict.append(domain_specific_net.state_dict())
+                domain_specific_nets_state_dict = []
+                for domain_specific_net in domain_specific_nets:
+                    domain_specific_nets_state_dict.append(domain_specific_net.state_dict())
 
-            torch.save({
-                'epoch': epoch,
-                'adnet_state_dict': net.state_dict(),
-                'adnet_domain_specific_state_dict': domain_specific_nets,
-                'optimizer_state_dict': optimizer.state_dict(),
-            }, os.path.join(args.save_folder, args.save_file) +
-                       repr(iteration) + '_epoch' + repr(epoch) +'.pth')
+                torch.save({
+                    'epoch': epoch,
+                    'adnet_state_dict': net.state_dict(),
+                    'adnet_domain_specific_state_dict': domain_specific_nets,
+                    'optimizer_state_dict': optimizer.state_dict(),
+                }, os.path.join(args.save_folder, args.save_file) +
+                           repr(iteration) + '_epoch' + repr(epoch) +'.pth')
 
     # final save
     torch.save({
-        'epoch': epoch,
+        'epoch': opts['numEpoch']-1,
         'adnet_state_dict': net.state_dict(),
         'adnet_domain_specific_state_dict': domain_specific_nets,
         'optimizer_state_dict': optimizer.state_dict(),

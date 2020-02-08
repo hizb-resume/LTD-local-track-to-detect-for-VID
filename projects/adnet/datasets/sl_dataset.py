@@ -66,8 +66,9 @@ def initialize_pos_neg_dataset(train_videos, opts, transform=None, multidomain=T
         datasets_neg: (list of SLDataset) List length: if multidomain, #videos (or domain). Else: 1
     """
 
-    datasets_pos = []
-    datasets_neg = []
+    # datasets_pos = []
+    # datasets_neg = []
+    datasets_pos_neg = []
 
     if train_videos==None:
         num_videos=1
@@ -75,28 +76,30 @@ def initialize_pos_neg_dataset(train_videos, opts, transform=None, multidomain=T
         num_videos = len(train_videos['video_names'])
     t0 = time.time()
     for vid_idx in range(num_videos):
-        train_db_pos = {
+        train_db = {
             'img_path': [],  # list of string
             'bboxes': [],  # list of ndarray left top coordinate [left top width height]
             'labels': [],  # list of ndarray #action elements. One hot vector
             'score_labels': [],  # list of scalar 0 (negative) or 1 (positive)
             'vid_idx': []  # list of int. Each video (or domain) index
         }
-        train_db_neg = {
-            'img_path': [],  # list of string
-            'bboxes': [],  # list of ndarray left top coordinate [left top width height]
-            'labels': [],  # list of ndarray #action elements. One hot vector
-            'score_labels': [],  # list of scalar 0 (negative) or 1 (positive)
-            'vid_idx': []  # list of int. Each video (or domain) index
-        }
+        # train_db_neg = {
+        #     'img_path': [],  # list of string
+        #     'bboxes': [],  # list of ndarray left top coordinate [left top width height]
+        #     'labels': [],  # list of ndarray #action elements. One hot vector
+        #     'score_labels': [],  # list of scalar 0 (negative) or 1 (positive)
+        #     'vid_idx': []  # list of int. Each video (or domain) index
+        # }
 
         if train_videos == None:
             print("generating dataset from ILSVR dataset...")
             train_db_pos_, train_db_neg_ = get_train_dbs_ILSVR(opts)
         else:
+            # print("generating dataset from video " + str(vid_idx + 1) + "/" + str(num_videos) +
+            #   "(current total data (pos-neg): " + str(len(train_db_pos['labels'])) +
+            #   "-" + str(len(train_db_neg['labels'])) + ")")
             print("generating dataset from video " + str(vid_idx + 1) + "/" + str(num_videos) +
-              "(current total data (pos-neg): " + str(len(train_db_pos['labels'])) +
-              "-" + str(len(train_db_neg['labels'])) + ")")
+                  "(current total data (pos+neg): " + str(len(train_db['labels']))  + ")")
 
             bench_name = train_videos['bench_names'][vid_idx]
             video_name = train_videos['video_names'][vid_idx]
@@ -108,59 +111,67 @@ def initialize_pos_neg_dataset(train_videos, opts, transform=None, multidomain=T
         print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
         for sample_idx in range(len(train_db_pos_)):
             # for img_path_idx in range(len(train_db_pos_[sample_idx]['score_labels'])):
-            train_db_pos['img_path'].extend(train_db_pos_[sample_idx]['img_path'])
-            train_db_pos['bboxes'].extend(train_db_pos_[sample_idx]['bboxes'])
-            train_db_pos['labels'].extend(train_db_pos_[sample_idx]['labels'])
-            train_db_pos['score_labels'].extend(train_db_pos_[sample_idx]['score_labels'])
-            train_db_pos['vid_idx'].extend(np.repeat(vid_idx, len(train_db_pos_[sample_idx]['img_path'])))
+            train_db['img_path'].extend(train_db_pos_[sample_idx]['img_path'])
+            train_db['bboxes'].extend(train_db_pos_[sample_idx]['bboxes'])
+            train_db['labels'].extend(train_db_pos_[sample_idx]['labels'])
+            train_db['score_labels'].extend(train_db_pos_[sample_idx]['score_labels'])
+            train_db['vid_idx'].extend(np.repeat(vid_idx, len(train_db_pos_[sample_idx]['img_path'])))
 
         print("\nFinish generating positive dataset... (current total data: " + str(len(train_db_pos['labels'])) + ")")
 
         for sample_idx in range(len(train_db_neg_)):
             # for img_path_idx in range(len(train_db_neg_[sample_idx]['score_labels'])):
-            train_db_neg['img_path'].extend(train_db_neg_[sample_idx]['img_path'])
-            train_db_neg['bboxes'].extend(train_db_neg_[sample_idx]['bboxes'])
-            train_db_neg['labels'].extend(train_db_neg_[sample_idx]['labels'])
-            train_db_neg['score_labels'].extend(train_db_neg_[sample_idx]['score_labels'])
-            train_db_neg['vid_idx'].extend(np.repeat(vid_idx, len(train_db_neg_[sample_idx]['img_path'])))
+            train_db['img_path'].extend(train_db_neg_[sample_idx]['img_path'])
+            train_db['bboxes'].extend(train_db_neg_[sample_idx]['bboxes'])
+            train_db['labels'].extend(train_db_neg_[sample_idx]['labels'])
+            train_db['score_labels'].extend(train_db_neg_[sample_idx]['score_labels'])
+            train_db['vid_idx'].extend(np.repeat(vid_idx, len(train_db_neg_[sample_idx]['img_path'])))
 
         print("\nFinish generating negative dataset... (current total data: " + str(len(train_db_neg['labels'])) + ")")
 
         print("after train_db_neg['img_path'].extend", end=' : ')
         print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
 
-        dataset_pos = SLDataset(train_db_pos, transform=transform)
-        print("after dataset_pos = SLDataset(train_db_pos", end=' : ')
+        #dataset_pos = SLDataset(train_db_pos, transform=transform)
+        dataset_pos_neg = SLDataset(train_db, transform=transform)
+        print("after dataset_pos_neg = SLDataset(train_db", end=' : ')
         print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
-        dataset_neg = SLDataset(train_db_neg, transform=transform)
-        print("after dataset_neg = SLDataset(train_db_neg", end=' : ')
-        print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+        # dataset_neg = SLDataset(train_db_neg, transform=transform)
+        # print("after dataset_neg = SLDataset(train_db_neg", end=' : ')
+        # print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
 
         if multidomain:
-            datasets_pos.append(dataset_pos)
-            datasets_neg.append(dataset_neg)
+            datasets_pos_neg.append(dataset_pos_neg)
+            #datasets_neg.append(dataset_neg)
         else:
-            if len(datasets_pos)==0:
-                datasets_pos.append(dataset_pos)
-                datasets_neg.append(dataset_neg)
-                print("after datasets_neg.append(dataset_neg)", end=' : ')
+            if len(datasets_pos_neg)==0:
+                datasets_pos_neg.append(dataset_pos_neg)
+                #datasets_neg.append(dataset_neg)
+                print("after datasets_pos_neg.append(dataset_pos_neg)", end=' : ')
                 print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
             else:
-                datasets_pos[0].train_db['img_path'].extend(dataset_pos.train_db['img_path'])
-                datasets_pos[0].train_db['bboxes'].extend(dataset_pos.train_db['bboxes'])
-                datasets_pos[0].train_db['labels'].extend(dataset_pos.train_db['labels'])
-                datasets_pos[0].train_db['score_labels'].extend(dataset_pos.train_db['score_labels'])
-                datasets_pos[0].train_db['vid_idx'].extend(dataset_pos.train_db['vid_idx'])
+                # datasets_pos[0].train_db['img_path'].extend(dataset_pos.train_db['img_path'])
+                # datasets_pos[0].train_db['bboxes'].extend(dataset_pos.train_db['bboxes'])
+                # datasets_pos[0].train_db['labels'].extend(dataset_pos.train_db['labels'])
+                # datasets_pos[0].train_db['score_labels'].extend(dataset_pos.train_db['score_labels'])
+                # datasets_pos[0].train_db['vid_idx'].extend(dataset_pos.train_db['vid_idx'])
+                #
+                # datasets_neg[0].train_db['img_path'].extend(dataset_neg.train_db['img_path'])
+                # datasets_neg[0].train_db['bboxes'].extend(dataset_neg.train_db['bboxes'])
+                # datasets_neg[0].train_db['labels'].extend(dataset_neg.train_db['labels'])
+                # datasets_neg[0].train_db['score_labels'].extend(dataset_neg.train_db['score_labels'])
+                # datasets_neg[0].train_db['vid_idx'].extend(dataset_neg.train_db['vid_idx'])
+                datasets_pos_neg[0].train_db['img_path'].extend(dataset_pos_neg.train_db['img_path'])
+                datasets_pos_neg[0].train_db['bboxes'].extend(dataset_pos_neg.train_db['bboxes'])
+                datasets_pos_neg[0].train_db['labels'].extend(dataset_pos_neg.train_db['labels'])
+                datasets_pos_neg[0].train_db['score_labels'].extend(dataset_pos_neg.train_db['score_labels'])
+                datasets_pos_neg[0].train_db['vid_idx'].extend(dataset_pos_neg.train_db['vid_idx'])
 
-                datasets_neg[0].train_db['img_path'].extend(dataset_neg.train_db['img_path'])
-                datasets_neg[0].train_db['bboxes'].extend(dataset_neg.train_db['bboxes'])
-                datasets_neg[0].train_db['labels'].extend(dataset_neg.train_db['labels'])
-                datasets_neg[0].train_db['score_labels'].extend(dataset_neg.train_db['score_labels'])
-                datasets_neg[0].train_db['vid_idx'].extend(dataset_neg.train_db['vid_idx'])
     t1 = time.time()
     all_time = t1 - t0
     all_m = all_time // 60
     all_s = all_time % 60
     print('time of generating dataset: %d m  %d s (%d s)' % (all_m, all_s, all_time))
-    return datasets_pos, datasets_neg
+    # return datasets_pos, datasets_neg
+    return datasets_pos_neg
 
