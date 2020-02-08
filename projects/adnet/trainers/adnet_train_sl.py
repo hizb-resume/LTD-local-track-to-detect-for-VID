@@ -157,10 +157,14 @@ def adnet_train_sl(args, opts):
     data_loaders_pos = []
     data_loaders_neg = []
 
+    print("before data_loaders_pos.append(data.DataLoader(dataset_pos", end=' : ')
+    print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
     for dataset_pos in datasets_pos:
         data_loaders_pos.append(data.DataLoader(dataset_pos, opts['minibatch_size'], num_workers=args.num_workers, shuffle=True, pin_memory=False))
     for dataset_neg in datasets_neg:
         data_loaders_neg.append(data.DataLoader(dataset_neg, opts['minibatch_size'], num_workers=args.num_workers, shuffle=True, pin_memory=False))
+    print("after data_loaders_neg.append(data.DataLoader(dataset_neg", end=' : ')
+    print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
 
     epoch = args.start_epoch
     if epoch != 0 and args.start_iter == 0:
@@ -220,10 +224,14 @@ def adnet_train_sl(args, opts):
             # create batch iterator
             batch_iterators_pos = []
             batch_iterators_neg = []
+            print("before batch_iterators_pos.append(iter(data_loader_pos", end=' : ')
+            print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
             for data_loader_pos in data_loaders_pos:
                 batch_iterators_pos.append(iter(data_loader_pos))
             for data_loader_neg in data_loaders_neg:
                 batch_iterators_neg.append(iter(data_loader_neg))
+            print("after batch_iterators_neg.append(iter(data_loader_neg", end=' : ')
+            print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
 
         # if not batch_iterators_pos[curr_domain]:
         #     # create batch iterator
@@ -236,13 +244,21 @@ def adnet_train_sl(args, opts):
         # load train data
         if which_dataset[iteration % len(which_dataset)]:  # if positive
             try:
+                print("before next(batch_iterators_pos", end=' : ')
+                print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
                 images, bbox, action_label, score_label, vid_idx = next(batch_iterators_pos[curr_domain])
+                print("after next(batch_iterators_pos", end=' : ')
+                print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
             except StopIteration:
                 batch_iterators_pos[curr_domain] = iter(data_loaders_pos[curr_domain])
                 images, bbox, action_label, score_label, vid_idx = next(batch_iterators_pos[curr_domain])
         else:
             try:
+                print("before next(batch_iterators_neg", end=' : ')
+                print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
                 images, bbox, action_label, score_label, vid_idx = next(batch_iterators_neg[curr_domain])
+                print("after next(batch_iterators_neg", end=' : ')
+                print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
             except StopIteration:
                 batch_iterators_neg[curr_domain] = iter(data_loaders_neg[curr_domain])
                 images, bbox, action_label, score_label, vid_idx = next(batch_iterators_neg[curr_domain])
@@ -269,7 +285,11 @@ def adnet_train_sl(args, opts):
             net.load_domain_specific(domain_specific_nets[curr_domain])
 
         # forward
+        print("before forward net", end=' : ')
+        print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
         action_out, score_out = net(images)
+        print("after forward net", end=' : ')
+        print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
 
         # backprop
         optimizer.zero_grad()

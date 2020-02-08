@@ -287,6 +287,9 @@ def get_train_dbs_ILSVR(opts):
     #opts['imgSize'] = list(img.shape)
     gt_skip = opts['train']['gt_skip']
 
+    print('before get_train_dbs_ILSVR', end=' : ')
+    print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+
     #train_sequences = list(range(0, vid_info['nframes'], gt_skip))
 
     train_db_pos = multiprocessing.Manager().list()
@@ -334,8 +337,14 @@ def get_train_dbs_ILSVR(opts):
 
     # print("finally: len(train_db_pos): %d" % len(train_db_pos))
     # print("finally: len(train_db_neg): %d" % len(train_db_neg))
+    print('before train_db_pos=list(train_db_pos)', end=' : ')
+    print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
     train_db_pos=list(train_db_pos)
+    print('before train_db_neg=list(train_db_neg)', end=' : ')
+    print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
     train_db_neg=list(train_db_neg)
+    print('after train_db_neg=list(train_db_neg)', end=' : ')
+    print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
     return train_db_pos, train_db_neg
 
 

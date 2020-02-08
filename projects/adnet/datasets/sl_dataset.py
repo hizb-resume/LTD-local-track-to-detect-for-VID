@@ -104,6 +104,8 @@ def initialize_pos_neg_dataset(train_videos, opts, transform=None, multidomain=T
             vid_info = get_video_infos(bench_name, video_path, video_name)
             train_db_pos_, train_db_neg_ = get_train_dbs(vid_info, opts)
         # separate for each bboxes sample
+        print("before train_db_pos['img_path'].extend", end=' : ')
+        print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
         for sample_idx in range(len(train_db_pos_)):
             # for img_path_idx in range(len(train_db_pos_[sample_idx]['score_labels'])):
             train_db_pos['img_path'].extend(train_db_pos_[sample_idx]['img_path'])
@@ -124,8 +126,15 @@ def initialize_pos_neg_dataset(train_videos, opts, transform=None, multidomain=T
 
         print("\nFinish generating negative dataset... (current total data: " + str(len(train_db_neg['labels'])) + ")")
 
+        print("after train_db_neg['img_path'].extend", end=' : ')
+        print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+
         dataset_pos = SLDataset(train_db_pos, transform=transform)
+        print("after dataset_pos = SLDataset(train_db_pos", end=' : ')
+        print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
         dataset_neg = SLDataset(train_db_neg, transform=transform)
+        print("after dataset_neg = SLDataset(train_db_neg", end=' : ')
+        print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
 
         if multidomain:
             datasets_pos.append(dataset_pos)
@@ -134,6 +143,8 @@ def initialize_pos_neg_dataset(train_videos, opts, transform=None, multidomain=T
             if len(datasets_pos)==0:
                 datasets_pos.append(dataset_pos)
                 datasets_neg.append(dataset_neg)
+                print("after datasets_neg.append(dataset_neg)", end=' : ')
+                print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
             else:
                 datasets_pos[0].train_db['img_path'].extend(dataset_pos.train_db['img_path'])
                 datasets_pos[0].train_db['bboxes'].extend(dataset_pos.train_db['bboxes'])
