@@ -268,6 +268,11 @@ def adnet_train_sl(args, opts):
 
         for images, bbox, action_label, score_label, vid_idx in data_loaders[curr_domain]:
             # TODO: check if this requires grad is really false like in Variable
+            pos_idx=torch.where(score_label>0.3)
+            pos_idx=pos_idx[0].tolist()
+            # pos_idx=ids.nonzero()
+            # neg_idx=torch.where(score_label<=0.3)
+            # neg_idx=neg_idx[0].tolist()
             if args.cuda:
                 images = torch.Tensor(images.cuda())
                 bbox = torch.Tensor(bbox.cuda())
@@ -297,10 +302,11 @@ def adnet_train_sl(args, opts):
 
             # backprop
             optimizer.zero_grad()
-            if which_dataset[iteration % len(which_dataset)]:  # if positive
-                action_l = action_criterion(action_out, torch.max(action_label, 1)[1])
-            else:
-                action_l = torch.Tensor([0])
+            # if which_dataset[iteration % len(which_dataset)]:  # if positive
+            #     action_l = action_criterion(action_out, torch.max(action_label, 1)[1])
+            # else:
+            #     action_l = torch.Tensor([0])
+            action_l = action_criterion(action_out[pos_idx], torch.max(action_label[pos_idx], 1)[1])
             score_l = score_criterion(score_out, score_label.long())
             loss = action_l + score_l
             loss.backward()
