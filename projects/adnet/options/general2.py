@@ -14,9 +14,9 @@ opts = {
     #'train_dbs' : ['vot15', 'vot14', 'vot13'],
     #'train_dbs' : ['vot13'],
     'train_dbs' : ['ILSVRC-VID'],
-    'test_db' : 'otb',
+    #'test_db' : 'otb',
     #'test_db' : 'ILSVRC/Data/VID/',
-    #'test_db' : 'test/vid',
+    'test_db' : 'test/vid',
     'train': {
         'weightDecay' : 0.0005,
         'momentum' : 0.9,

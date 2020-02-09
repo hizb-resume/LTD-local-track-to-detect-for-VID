@@ -24,8 +24,8 @@ def str2bool(v):
 
 parser = argparse.ArgumentParser(
     description='ADNet test')
-parser.add_argument('--weight_file', default='weights/ADNet_RL_epoch29.pth', type=str, help='The pretrained weight file')
-parser.add_argument('--num_workers', default=4, type=int, help='Number of workers used in dataloading')
+parser.add_argument('--weight_file', default='weights/ADNet_SL_655000_epoch27_backup.pth', type=str, help='The pretrained weight file')
+parser.add_argument('--num_workers', default=16, type=int, help='Number of workers used in dataloading')
 parser.add_argument('--cuda', default=True, type=str2bool, help='Use cuda to train model')
 parser.add_argument('--visualize', default=True, type=str2bool, help='Use tensorboardx to for visualization')
 parser.add_argument('--send_images_to_visualization', type=str2bool, default=False, help='Sample a random image from each 10th batch, send it to visdom after augmentations step')
