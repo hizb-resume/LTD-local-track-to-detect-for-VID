@@ -8,7 +8,7 @@ import os
 # sys.path.insert(0, dir_mytest)
 
 import _init_paths
-from options.general import opts
+from options.general2 import opts
 from models.ADNet import adnet
 from utils.get_train_videos import get_train_videos
 from trainers.adnet_test import adnet_test
