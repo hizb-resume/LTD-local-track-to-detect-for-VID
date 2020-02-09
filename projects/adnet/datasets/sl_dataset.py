@@ -117,7 +117,7 @@ def initialize_pos_neg_dataset(train_videos, opts, transform=None, multidomain=T
             train_db['score_labels'].extend(train_db_pos_[sample_idx]['score_labels'])
             train_db['vid_idx'].extend(np.repeat(vid_idx, len(train_db_pos_[sample_idx]['img_path'])))
 
-        print("\nFinish generating positive dataset... (current total data: " + str(len(train_db_pos['labels'])) + ")")
+        # print("\nFinish generating positive dataset... (current total data: " + str(len(train_db_pos['labels'])) + ")")
 
         for sample_idx in range(len(train_db_neg_)):
             # for img_path_idx in range(len(train_db_neg_[sample_idx]['score_labels'])):
@@ -127,7 +127,7 @@ def initialize_pos_neg_dataset(train_videos, opts, transform=None, multidomain=T
             train_db['score_labels'].extend(train_db_neg_[sample_idx]['score_labels'])
             train_db['vid_idx'].extend(np.repeat(vid_idx, len(train_db_neg_[sample_idx]['img_path'])))
 
-        print("\nFinish generating negative dataset... (current total data: " + str(len(train_db_neg['labels'])) + ")")
+        # print("\nFinish generating negative dataset... (current total data: " + str(len(train_db_neg['labels'])) + ")")
 
         print("after train_db_neg['img_path'].extend", end=' : ')
         print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))

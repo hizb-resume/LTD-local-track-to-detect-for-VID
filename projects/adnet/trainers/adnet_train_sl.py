@@ -187,7 +187,8 @@ def adnet_train_sl(args, opts):
 
     # training loop
     # for iteration in range(start_iter, max_iter):
-    iteration=-1
+    iteration=0
+    curr_domain = 0
     for epoch in range(args.start_epoch, opts['numEpoch']):
         if epoch == args.start_epoch:
             t1 = time.time()
@@ -266,11 +267,6 @@ def adnet_train_sl(args, opts):
         #         images, bbox, action_label, score_label, vid_idx = next(batch_iterators_neg[curr_domain])
 
         for images, bbox, action_label, score_label, vid_idx in data_loaders[curr_domain]:
-            iteration=iteration+1
-            if args.multidomain:
-                curr_domain = which_domain[iteration % len(which_domain)]
-            else:
-                curr_domain = 0
             # TODO: check if this requires grad is really false like in Variable
             if args.cuda:
                 images = torch.Tensor(images.cuda())
@@ -369,7 +365,11 @@ def adnet_train_sl(args, opts):
                     'optimizer_state_dict': optimizer.state_dict(),
                 }, os.path.join(args.save_folder, args.save_file) +
                            repr(iteration) + '_epoch' + repr(epoch) +'.pth')
-
+            iteration = iteration + 1
+            if args.multidomain:
+                curr_domain = which_domain[iteration % len(which_domain)]
+            else:
+                curr_domain = 0
     # final save
     torch.save({
         'epoch': opts['numEpoch']-1,
