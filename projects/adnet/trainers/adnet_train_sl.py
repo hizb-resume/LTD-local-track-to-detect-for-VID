@@ -187,8 +187,8 @@ def adnet_train_sl(args, opts):
 
     # training loop
     # for iteration in range(start_iter, max_iter):
-    iteration=0
-    curr_domain = 0
+    # iteration=0
+    # curr_domain = 0
     for epoch in range(args.start_epoch, opts['numEpoch']):
         if epoch == args.start_epoch:
             t1 = time.time()
@@ -266,7 +266,21 @@ def adnet_train_sl(args, opts):
         #         batch_iterators_neg[curr_domain] = iter(data_loaders_neg[curr_domain])
         #         images, bbox, action_label, score_label, vid_idx = next(batch_iterators_neg[curr_domain])
 
-        for images, bbox, action_label, score_label, vid_idx in data_loaders[curr_domain]:
+        batch_iterators = []
+        for data_loader in data_loaders:
+            batch_iterators.append(iter(data_loader))
+        for iteration in range(epoch_size):
+            if args.multidomain:
+                curr_domain = which_domain[iteration % len(which_domain)]
+            else:
+                curr_domain = 0
+            try:
+                images, bbox, action_label, score_label, vid_idx = next(batch_iterators[curr_domain])
+            except StopIteration:
+                batch_iterators[curr_domain] = iter(data_loader[curr_domain])
+                images, bbox, action_label, score_label, vid_idx = next(batch_iterators[curr_domain])
+
+        # for images, bbox, action_label, score_label, vid_idx in data_loaders[curr_domain]:
             # TODO: check if this requires grad is really false like in Variable
             pos_idx=torch.where(score_label>0.3)
             pos_idx=pos_idx[0].tolist()
@@ -371,11 +385,11 @@ def adnet_train_sl(args, opts):
                     'optimizer_state_dict': optimizer.state_dict(),
                 }, os.path.join(args.save_folder, args.save_file) +
                            repr(iteration) + '_epoch' + repr(epoch) +'.pth')
-            iteration = iteration + 1
-            if args.multidomain:
-                curr_domain = which_domain[iteration % len(which_domain)]
-            else:
-                curr_domain = 0
+            # iteration = iteration + 1
+            # if args.multidomain:
+            #     curr_domain = which_domain[iteration % len(which_domain)]
+            # else:
+            #     curr_domain = 0
     # final save
     torch.save({
         'epoch': opts['numEpoch']-1,
