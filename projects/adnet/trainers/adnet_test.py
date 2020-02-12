@@ -103,6 +103,8 @@ def adnet_test(net, vid_path, opts, args):
 
     # catch the first box
     curr_bbox = vid_info['gt'][0]
+    # curr_bbox = [114,158,88,100]
+    
 
     # init containers
     bboxes = np.zeros(np.array(vid_info['gt']).shape)  # tracking result containers
@@ -148,9 +150,9 @@ def adnet_test(net, vid_path, opts, args):
         else:
             im_with_bb = draw_box(frame, curr_bbox)
 
-        # if args.save_result_images:
-        #     filename = os.path.join(args.save_result_images, str(frame_idx) + '-' + str(t) + '.jpg')
-        #     cv2.imwrite(filename, im_with_bb)
+        if args.save_result_images:
+            filename = os.path.join(args.save_result_images, str(frame_idx).rjust(4,'0')+'-00-patch_initial.jpg')
+            cv2.imwrite(filename, im_with_bb)
 
         curr_bbox_old = curr_bbox
         cont_negatives = 0
@@ -172,6 +174,8 @@ def adnet_test(net, vid_path, opts, args):
                 fc6_out, fc7_out = net.forward(curr_patch)
 
                 curr_score = fc7_out.detach().cpu().numpy()[0][1]
+                
+                # print(curr_score)
 
                 if ntraining > args.believe_score_result:
                     if curr_score < opts['failedThre']:
@@ -204,8 +208,8 @@ def adnet_test(net, vid_path, opts, args):
                     im_with_bb = draw_box(frame, curr_bbox)
 
                 if args.save_result_images:
-                    #filename = os.path.join(args.save_result_images, str(frame_idx) + '-' + str(t) + '.jpg')
-                    #cv2.imwrite(filename, im_with_bb)
+                    filename = os.path.join(args.save_result_images, str(frame_idx).rjust(4,'0')+'-' + str(t).rjust(2,'0') + '.jpg')
+                    cv2.imwrite(filename, im_with_bb)
                     pass
 
                 if action == opts['stop_action'] or t >= opts['num_action_step_max']:
@@ -214,48 +218,49 @@ def adnet_test(net, vid_path, opts, args):
             print('final curr_score: %.4f' % curr_score)
 
             # redetection when confidence < threshold 0.5. But when fc7 is already reliable. Else, just trust the ADNet
-            if ntraining > args.believe_score_result:
+            # if ntraining > args.believe_score_result:
+            if True:
                 if curr_score < 0.5:
                     print('redetection')
                     is_negative = True
 
                     # redetection process
-                    redet_samples = gen_samples('gaussian', curr_bbox_old, opts['redet_samples'], opts, min(1.5, 0.6 * 1.15 ** cont_negatives), opts['redet_scale_factor'])
-                    score_samples = []
-
-                    for redet_sample in redet_samples:
-                        temp_patch, temp_bbox, _, _ = transform(frame, redet_sample, None, None)
-                        if args.cuda:
-                            temp_patch = temp_patch.cuda()
-
-                        temp_patch = temp_patch.unsqueeze(0)  # 1 batch input [1, curr_patch.shape]
-
-                        fc6_out_temp, fc7_out_temp = net.forward(temp_patch)
-
-                        score_samples.append(fc7_out_temp.detach().cpu().numpy()[0][1])
-
-                    score_samples = np.array(score_samples)
-                    max_score_samples_idx = np.argmax(score_samples)
-
-                    # replace the curr_box with the samples with maximum score
-                    curr_bbox = redet_samples[max_score_samples_idx]
-
-                    # update the final result image
-                    if args.display_images:
-                        im_with_bb = display_result(frame, curr_bbox)  # draw box and display
-                    else:
-                        im_with_bb = draw_box(frame, curr_bbox)
-
-                    if args.save_result_images:
-                        filename = os.path.join(args.save_result_images, str(frame_idx) + '-redet.jpg')
-                        cv2.imwrite(filename, im_with_bb)
+                    # redet_samples = gen_samples('gaussian', curr_bbox_old, opts['redet_samples'], opts, min(1.5, 0.6 * 1.15 ** cont_negatives), opts['redet_scale_factor'])
+                    # score_samples = []
+                    #
+                    # for redet_sample in redet_samples:
+                    #     temp_patch, temp_bbox, _, _ = transform(frame, redet_sample, None, None)
+                    #     if args.cuda:
+                    #         temp_patch = temp_patch.cuda()
+                    #
+                    #     temp_patch = temp_patch.unsqueeze(0)  # 1 batch input [1, curr_patch.shape]
+                    #
+                    #     fc6_out_temp, fc7_out_temp = net.forward(temp_patch)
+                    #
+                    #     score_samples.append(fc7_out_temp.detach().cpu().numpy()[0][1])
+                    #
+                    # score_samples = np.array(score_samples)
+                    # max_score_samples_idx = np.argmax(score_samples)
+                    #
+                    # # replace the curr_box with the samples with maximum score
+                    # curr_bbox = redet_samples[max_score_samples_idx]
+                    #
+                    # # update the final result image
+                    # if args.display_images:
+                    #     im_with_bb = display_result(frame, curr_bbox)  # draw box and display
+                    # else:
+                    #     im_with_bb = draw_box(frame, curr_bbox)
+                    #
+                    # if args.save_result_images:
+                    #     filename = os.path.join(args.save_result_images, str(frame_idx).rjust(4,'0') + '-20-redet.jpg')
+                    #     cv2.imwrite(filename, im_with_bb)
                 else:
                     is_negative = False
             else:
                 is_negative = False
 
         if args.save_result_images:
-            filename = os.path.join(args.save_result_images, 'final-' + str(frame_idx).rjust(4,'0') + '.jpg')
+            filename = os.path.join(args.save_result_images, str(frame_idx).rjust(4,'0')+'-21-final' + '.jpg')
             cv2.imwrite(filename, im_with_bb)
 
         # record the curr_bbox result

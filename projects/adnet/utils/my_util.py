@@ -255,14 +255,15 @@ def imgs_to_mp4(imgspath,img_extension,outpath=None):
     #length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     length=len(paths)
     #ground_truth = open(gt_path)
-    out = cv2.VideoWriter(outpath, cv2.VideoWriter_fourcc(*'MP4V'), 20.0, (640, 480))
+    fps=20.0
+    out = cv2.VideoWriter(outpath, cv2.VideoWriter_fourcc(*'MP4V'), fps, (640, 480))
     for f in range(length):
         # print('%d / %d : %s'%(f,length,paths[f]))
         #success, img = cap.read()
         img=cv2.imread(paths[f])
         vid_width, vid_height = img.shape[:2]
         if f == 0:
-            out = cv2.VideoWriter(outpath, cv2.VideoWriter_fourcc(*'MP4V'), 20.0, (vid_height, vid_width))
+            out = cv2.VideoWriter(outpath, cv2.VideoWriter_fourcc(*'MP4V'), fps, (vid_height, vid_width))
         #gt = ground_truth.readline()
         # min_x,min_y,box_width,box_height
         #gt = np.array(re.findall('\d+', gt), dtype=int)
