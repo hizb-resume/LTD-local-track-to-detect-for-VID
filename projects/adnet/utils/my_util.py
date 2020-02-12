@@ -231,9 +231,9 @@ def show_gt_box(vidpath,gt_path=None):
         cv2.resizeWindow('image', vid_height, vid_width)
         cv2.imshow('image', frame)
         k = cv2.waitKey(1)
-        # q键退出
-        if (k & 0xff == ord('q')):
-            break
+        # press q to exit
+        # if (k & 0xff == ord('q')):
+        #     break
     cap.release()
     out.release()
     cv2.destroyAllWindows()
@@ -257,6 +257,7 @@ def imgs_to_mp4(imgspath,img_extension,outpath=None):
     #ground_truth = open(gt_path)
     out = cv2.VideoWriter(outpath, cv2.VideoWriter_fourcc(*'MP4V'), 20.0, (640, 480))
     for f in range(length):
+        # print('%d / %d : %s'%(f,length,paths[f]))
         #success, img = cap.read()
         img=cv2.imread(paths[f])
         vid_width, vid_height = img.shape[:2]
@@ -278,7 +279,7 @@ def imgs_to_mp4(imgspath,img_extension,outpath=None):
         cv2.resizeWindow('image', vid_height, vid_width)
         cv2.imshow('image', img)
         k = cv2.waitKey(1)
-        # q键退出
+        #press k to exit        
         if (k & 0xff == ord('q')):
             break
         '''
@@ -311,9 +312,9 @@ def do_iou_precise(path_exam,path_gt,thre=0.7):
 if __name__ == '__main__':
     #generate_vid_box_label('datasets/data/test/ILSVRC2015_train_00146003')
     #show_gt_box(vidpath='datasets/data/test/ILSVRC2015_train_00146003.mp4',gt_path='datasets/data/test/vid/ILSVRC2015_train_00146003/groundtruth.txt')
-    #imgs_to_mp4('/home/zb/project/ADNet_pytorch/mains/save_result_images/ADNet_SL_925000_epoch29-0.5/ILSVRC2015_train_00146003/','jpg')
+    imgs_to_mp4('/home/zb/project/detectron2/projects/adnet/mains/save_result_images/ADNet_SL_backup-0.5/ILSVRC2015_train_00146003/','jpg')
     #do_iou_precise("mains/results_on_test_images_part2/ADNet_RL_epoch29-0.5/ILSVRC2015_train_00146003-bboxes.npy","mains/results_on_test_images_part2/ADNet_RL_epoch29-0.5/ILSVRC2015_train_00146003-ground_truth.npy")
-    test()
+    # test()
 
     #get_ILSVRC_videos_infos()
     print("over")

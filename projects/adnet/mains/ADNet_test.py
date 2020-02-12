@@ -1,6 +1,8 @@
 import argparse
 import sys
 import os
+import tensorflow as tf
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 # sys.path.append("..")
 # import _init_paths
 
@@ -24,21 +26,22 @@ def str2bool(v):
 
 parser = argparse.ArgumentParser(
     description='ADNet test')
-parser.add_argument('--weight_file', default='weights/ADNet_SL_655000_epoch27_backup.pth', type=str, help='The pretrained weight file')
+parser.add_argument('--weight_file', default='weights/ADNet_SL_backup.pth', type=str, help='The pretrained weight file')
 parser.add_argument('--num_workers', default=16, type=int, help='Number of workers used in dataloading')
 parser.add_argument('--cuda', default=True, type=str2bool, help='Use cuda to train model')
 parser.add_argument('--visualize', default=True, type=str2bool, help='Use tensorboardx to for visualization')
 parser.add_argument('--send_images_to_visualization', type=str2bool, default=False, help='Sample a random image from each 10th batch, send it to visdom after augmentations step')
-parser.add_argument('--display_images', default=True, type=str2bool, help='Whether to display images or not')
+parser.add_argument('--display_images', default=False, type=str2bool, help='Whether to display images or not')
 parser.add_argument('--save_result_images', default='save_result_images', type=str, help='save results folder')
+# parser.add_argument('--save_result_images', default=None, type=str, help='save results folder')
 parser.add_argument('--save_result_npy', default='results_on_test_images_part2', type=str, help='save results folder')
 
-parser.add_argument('--initial_samples', default=3000, type=int, help='Number of training samples for the first frame. N_I')
-parser.add_argument('--online_samples', default=250, type=int, help='Number of training samples for the other frames. N_O')
+parser.add_argument('--initial_samples', default=300, type=int, help='Number of training samples for the first frame. N_I')
+parser.add_argument('--online_samples', default=25, type=int, help='Number of training samples for the other frames. N_O')
 parser.add_argument('--redetection_samples', default=256, type=int, help='Number of samples for redetection. N_det')
-parser.add_argument('--initial_iteration', default=300, type=int, help='Number of iteration in initial training. T_I')
+parser.add_argument('--initial_iteration', default=30, type=int, help='Number of iteration in initial training. T_I')
 parser.add_argument('--online_iteration', default=30, type=int, help='Number of iteration in online training. T_O')
-parser.add_argument('--online_adaptation_every_I_frames', default=10, type=int, help='Frequency of online training. I')
+parser.add_argument('--online_adaptation_every_I_frames', default=1000, type=int, help='Frequency of online training. I')
 # parser.add_argument('--number_past_frames', default=20, type=int, help='The training data were sampled from the past J frames. J')
 
 parser.add_argument('--believe_score_result', default=0, type=int, help='Believe score result after n training')
@@ -107,8 +110,10 @@ if __name__ == "__main__":
     for vid_folder in vid_folders:
         print('Loading {}...'.format(args.weight_file))
         opts['num_videos'] = 1
-        net, domain_nets = adnet(opts, trained_file=args.weight_file, random_initialize_domain_specific=True)
-        net.train()
+        # net, domain_nets = adnet(opts, trained_file=args.weight_file, random_initialize_domain_specific=True)
+        # net.train()
+        net, domain_nets = adnet(opts, trained_file=args.weight_file, random_initialize_domain_specific=False)
+        net.eval()
         if args.cuda:
             net = nn.DataParallel(net)
             cudnn.benchmark = True

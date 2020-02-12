@@ -148,9 +148,9 @@ def adnet_test(net, vid_path, opts, args):
         else:
             im_with_bb = draw_box(frame, curr_bbox)
 
-        if args.save_result_images:
-            filename = os.path.join(args.save_result_images, str(frame_idx) + '-' + str(t) + '.jpg')
-            cv2.imwrite(filename, im_with_bb)
+        # if args.save_result_images:
+        #     filename = os.path.join(args.save_result_images, str(frame_idx) + '-' + str(t) + '.jpg')
+        #     cv2.imwrite(filename, im_with_bb)
 
         curr_bbox_old = curr_bbox
         cont_negatives = 0
@@ -255,12 +255,12 @@ def adnet_test(net, vid_path, opts, args):
                 is_negative = False
 
         if args.save_result_images:
-            filename = os.path.join(args.save_result_images, 'final-' + str(frame_idx) + '.jpg')
+            filename = os.path.join(args.save_result_images, 'final-' + str(frame_idx).rjust(4,'0') + '.jpg')
             cv2.imwrite(filename, im_with_bb)
 
         # record the curr_bbox result
         bboxes[frame_idx] = curr_bbox
-
+        '''
         # create or update storage + set iteration_range for training
         if frame_idx == 0:
             dataset_storage_pos = OnlineAdaptationDatasetStorage(initial_frame=frame, first_box=curr_bbox, opts=opts, args=args, positive=True)
@@ -375,7 +375,7 @@ def adnet_test(net, vid_path, opts, args):
                                                           'score_loss': score_l.item(),
                                                           'total': (action_l.item() + score_l.item())},
                                        global_step=all_iteration)
-
+        '''
         t1_wholetracking = time.time()
         t_sum += t1_wholetracking - t0_wholetracking
         print('whole tracking time = %.4f sec.' % (t1_wholetracking - t0_wholetracking))
