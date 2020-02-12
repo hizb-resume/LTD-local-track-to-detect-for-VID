@@ -36,12 +36,12 @@ parser.add_argument('--save_result_images', default='save_result_images', type=s
 # parser.add_argument('--save_result_images', default=None, type=str, help='save results folder')
 parser.add_argument('--save_result_npy', default='results_on_test_images_part2', type=str, help='save results folder')
 
-parser.add_argument('--initial_samples', default=300, type=int, help='Number of training samples for the first frame. N_I')
-parser.add_argument('--online_samples', default=25, type=int, help='Number of training samples for the other frames. N_O')
+parser.add_argument('--initial_samples', default=3000, type=int, help='Number of training samples for the first frame. N_I')
+parser.add_argument('--online_samples', default=250, type=int, help='Number of training samples for the other frames. N_O')
 parser.add_argument('--redetection_samples', default=256, type=int, help='Number of samples for redetection. N_det')
-parser.add_argument('--initial_iteration', default=30, type=int, help='Number of iteration in initial training. T_I')
+parser.add_argument('--initial_iteration', default=300, type=int, help='Number of iteration in initial training. T_I')
 parser.add_argument('--online_iteration', default=30, type=int, help='Number of iteration in online training. T_O')
-parser.add_argument('--online_adaptation_every_I_frames', default=1000, type=int, help='Frequency of online training. I')
+parser.add_argument('--online_adaptation_every_I_frames', default=10, type=int, help='Frequency of online training. I')
 # parser.add_argument('--number_past_frames', default=20, type=int, help='The training data were sampled from the past J frames. J')
 
 parser.add_argument('--believe_score_result', default=0, type=int, help='Believe score result after n training')
