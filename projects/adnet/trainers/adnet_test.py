@@ -22,9 +22,34 @@ from utils.gen_samples import gen_samples
 from utils.precision_plot import distance_precision_plot, iou_precision_plot
 from random import shuffle
 from tensorboardX import SummaryWriter
+from detectron2.structures import Boxes,RotatedBoxes
+
+def pred(predictor,frame):
+    outputs = predictor(frame)
+    predictions = outputs["instances"].to("cpu")
+    boxes = predictions.pred_boxes if predictions.has("pred_boxes") else None
+    scores = predictions.scores if predictions.has("scores") else None
+    classes = predictions.pred_classes if predictions.has("pred_classes") else None
+
+    if isinstance(boxes, Boxes) or isinstance(boxes, RotatedBoxes):
+        boxes = boxes.tensor.numpy()
+    else:
+        boxes = np.asarray(boxes)
+    num_instances = len(boxes)
+    if num_instances != 0:
+        boxes[:, 2] = boxes[:, 2] - boxes[:, 0]
+        boxes[:, 3] = boxes[:, 3] - boxes[:, 1]
+
+    scores = scores.tensor.numpy()
+    assert len(scores) == num_instances
+
+    classes = classes.tensor.numpy()
+    assert len(classes) == num_instances
+
+    return boxes
 
 # @torchsnooper.snoop()
-def adnet_test(net, vid_path, opts, args):
+def adnet_test(net, predictor,vid_path, opts, args):
 
     if torch.cuda.is_available():
         if args.cuda:
@@ -106,6 +131,7 @@ def adnet_test(net, vid_path, opts, args):
     # catch the first box
     curr_bbox = vid_info['gt'][0]
     # curr_bbox = [114,158,88,100]
+
     
 
     # init containers
@@ -145,6 +171,10 @@ def adnet_test(net, vid_path, opts, args):
         frame_path = vid_info['img_files'][idx]
         t0_wholetracking = time.time()
         frame = cv2.imread(frame_path)
+
+        if idx==0:
+            boxes = pred(predictor, frame)
+            curr_bbox = boxes[0]
 
         # draw box or with display, then save
         if args.display_images:
@@ -226,6 +256,11 @@ def adnet_test(net, vid_path, opts, args):
                     print('redetection')
                     is_negative = True
 
+                    boxes=pred(predictor,frame)
+                    curr_bbox=boxes[0]
+
+
+
                     # redetection process
                     # redet_samples = gen_samples('gaussian', curr_bbox_old, opts['redet_samples'], opts, min(1.5, 0.6 * 1.15 ** cont_negatives), opts['redet_scale_factor'])
                     # score_samples = []
@@ -247,11 +282,11 @@ def adnet_test(net, vid_path, opts, args):
                     # # replace the curr_box with the samples with maximum score
                     # curr_bbox = redet_samples[max_score_samples_idx]
                     #
-                    # # update the final result image
-                    # if args.display_images:
-                    #     im_with_bb = display_result(frame, curr_bbox)  # draw box and display
-                    # else:
-                    #     im_with_bb = draw_box(frame, curr_bbox)
+                    # update the final result image
+                    if args.display_images:
+                        im_with_bb = display_result(frame, curr_bbox)  # draw box and display
+                    else:
+                        im_with_bb = draw_box(frame, curr_bbox)
                     #
                     # if args.save_result_images:
                     #     filename = os.path.join(args.save_result_images, str(frame_idx).rjust(4,'0') + '-20-redet.jpg')

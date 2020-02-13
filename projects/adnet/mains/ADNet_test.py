@@ -21,6 +21,11 @@ import torch.nn as nn
 
 import glob
 
+from detectron2.engine import DefaultPredictor
+from detectron2.config import get_cfg
+# from detectron2.utils.visualizer import Visualizer
+# from detectron2.data import MetadataCatalog
+
 def str2bool(v):
     return v.lower() in ("yes", "true", "t", "1")
 
@@ -51,6 +56,14 @@ parser.add_argument('--pos_samples_ratio', default='0.5', type=float,
 
 
 if __name__ == "__main__":
+
+    cfg = get_cfg()
+    cfg.merge_from_file("../configs/COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml")
+    cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # set threshold for this model
+    # Find a model from detectron2's model zoo. You can either use the https://dl.fbaipublicfiles.... url, or use the following shorthand
+    cfg.MODEL.WEIGHTS = "faster_rcnn_R_101_FPN_3x.pkl"
+    predictor = DefaultPredictor(cfg)
+
     args = parser.parse_args()
     assert 0 < args.pos_samples_ratio <= 1, "the pos_samples_ratio valid range is (0, 1]"
 
@@ -137,9 +150,9 @@ if __name__ == "__main__":
             net.module.load_domain_specific(domain_nets[0])
         else:
             net.load_domain_specific(domain_nets[0])
-    '''
+        '''
 
-        bboxes, t_sum = adnet_test(net, vid_path, opts, args)
+        bboxes, t_sum = adnet_test(net,predictor, vid_path, opts, args)
     #     all_precisions.append(precisions)
     #
     # print(all_precisions)
