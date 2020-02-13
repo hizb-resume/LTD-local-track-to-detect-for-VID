@@ -40,10 +40,10 @@ def pred(predictor,frame):
         boxes[:, 2] = boxes[:, 2] - boxes[:, 0]
         boxes[:, 3] = boxes[:, 3] - boxes[:, 1]
 
-    scores = scores.tensor.numpy()
+    scores = scores.numpy()
     assert len(scores) == num_instances
 
-    classes = classes.tensor.numpy()
+    classes = classes.numpy()
     assert len(classes) == num_instances
 
     return boxes
@@ -182,9 +182,9 @@ def adnet_test(net, predictor,vid_path, opts, args):
         else:
             im_with_bb = draw_box(frame, curr_bbox)
 
-        if args.save_result_images:
-            filename = os.path.join(args.save_result_images, str(frame_idx).rjust(4,'0')+'-00-patch_initial.jpg')
-            cv2.imwrite(filename, im_with_bb)
+        # if args.save_result_images:
+        #     filename = os.path.join(args.save_result_images, str(frame_idx).rjust(4,'0')+'-00-patch_initial.jpg')
+        #     cv2.imwrite(filename, im_with_bb)
 
         curr_bbox_old = curr_bbox
         cont_negatives = 0
@@ -239,10 +239,10 @@ def adnet_test(net, predictor,vid_path, opts, args):
                 else:
                     im_with_bb = draw_box(frame, curr_bbox)
 
-                if args.save_result_images:
-                    filename = os.path.join(args.save_result_images, str(frame_idx).rjust(4,'0')+'-' + str(t).rjust(2,'0') + '.jpg')
-                    cv2.imwrite(filename, im_with_bb)
-                    pass
+                # if args.save_result_images:
+                #     filename = os.path.join(args.save_result_images, str(frame_idx).rjust(4,'0')+'-' + str(t).rjust(2,'0') + '.jpg')
+                #     cv2.imwrite(filename, im_with_bb)
+                #     pass
 
                 if action == opts['stop_action'] or t >= opts['num_action_step_max']:
                     break
