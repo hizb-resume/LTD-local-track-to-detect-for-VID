@@ -6,6 +6,7 @@ import cv2
 import os
 import numpy as np
 import torch
+import torchsnooper
 import torch.optim as optim
 from models.ADNet import adnet
 from options.general import opts
@@ -22,6 +23,7 @@ from utils.precision_plot import distance_precision_plot, iou_precision_plot
 from random import shuffle
 from tensorboardX import SummaryWriter
 
+# @torchsnooper.snoop()
 def adnet_test(net, vid_path, opts, args):
 
     if torch.cuda.is_available():
