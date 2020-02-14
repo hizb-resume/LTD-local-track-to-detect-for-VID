@@ -52,7 +52,7 @@ class TrackingEnvironment(object):
         #     bench_names = train_videos['bench_names']
         #     vid_idxs = np.random.permutation(len(video_names))
         vid_idxs = np.random.permutation(len(videos_infos))
-        print("num videos: %d "%len(vid_idxs))
+        # print("num videos: %d "%len(vid_idxs))
         for vid_idx in vid_idxs:
             # dict consist of set of clips in ONE video
             clips = {
@@ -101,7 +101,7 @@ class TrackingEnvironment(object):
             if num_train_clips > 0:  # small hack
                 self.videos.append(clips)
 
-        print('num used videos: %d'%len(self.videos))
+        # print('num used videos: %d'%len(self.videos))
         self.clip_idx = -1  # hack for reset function
         self.vid_idx = 0
 

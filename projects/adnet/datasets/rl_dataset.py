@@ -5,6 +5,7 @@
 # https://github.com/amdegroot/ssd.pytorch/blob/master/data/voc0712.py
 import multiprocessing
 import os
+import copy
 import cv2
 import numpy as np
 import torch
@@ -35,7 +36,6 @@ class RLDataset(data.Dataset):
         self.vid_idx_list = []
         self.opts=opts
         self.args=args
-
         self.reset(net, domain_specific_nets, train_videos, opts, args)
 
     def __getitem__(self, index):
@@ -50,7 +50,8 @@ class RLDataset(data.Dataset):
     def __len__(self):
         return len(self.log_probs_list)
 
-    def gen_data(self,videos_infos,transform,net,lock):
+    def gen_data(self,videos_infos,transform,net1,t_action_list,t_log_probs_list,t_reward_list,t_action_prob_list,t_patch_list,t_action_dynamic_list,t_result_box_list,t_vid_idx_list,lock):
+        net=copy.deepcopy(net1)
         env = TrackingEnvironment(videos_infos, self.opts, transform=transform, args=self.args)
         clip_idx = 0
         tic = time.time()
@@ -195,14 +196,14 @@ class RLDataset(data.Dataset):
                 break
         try:
             lock.acquire()
-            self.action_list.extend(action_list_)
-            self.log_probs_list.extend(log_probs_list_)
-            self.reward_list.extend(reward_list_)
-            # self.action_prob_list.extend(action_prob_list_)
-            # self.patch_list.extend(patch_list_)
-            # self.action_dynamic_list.extend(action_dynamic_list_)
-            # self.result_box_list.extend(result_box_list_)
-            self.vid_idx_list.extend(vid_idx_list_)
+            t_action_list.extend(action_list_)
+            t_log_probs_list.extend(log_probs_list_)
+            t_reward_list.extend(reward_list_)
+            # t_action_prob_list.extend(action_prob_list_)
+            # t_patch_list.extend(patch_list_)
+            # t_action_dynamic_list.extend(action_dynamic_list_)
+            # t_result_box_list.extend(result_box_list_)
+            t_vid_idx_list.extend(vid_idx_list_)
         except Exception as err:
             raise err
         finally:
@@ -222,9 +223,18 @@ class RLDataset(data.Dataset):
         transform = ADNet_Augmentation(opts)
 
         if train_videos==None:
+            t_action_list = multiprocessing.Manager().list()
+            t_log_probs_list = multiprocessing.Manager().list()
+            t_reward_list = multiprocessing.Manager().list()
+            t_action_prob_list = multiprocessing.Manager().list()
+            t_patch_list = multiprocessing.Manager().list()
+            t_action_dynamic_list = multiprocessing.Manager().list()
+            t_result_box_list = multiprocessing.Manager().list()
+            t_vid_idx_list = multiprocessing.Manager().list()
             videos_infos,_=get_ILSVRC_videos_infos()
             print("num all videos: %d " % len(videos_infos))
-            cpu_num = 27
+            # cpu_num = 27
+            cpu_num = 15
             all_vid_num = len(videos_infos)
             if all_vid_num < cpu_num:
                 cpu_num = all_vid_num
@@ -238,12 +248,20 @@ class RLDataset(data.Dataset):
             record = []
             for i in range(cpu_num):
                 process = multiprocessing.Process(target=self.gen_data,
-                                                  args=(vid_paths_as[i],transform,net,  lock))
+                                                  args=(vid_paths_as[i], transform, net,t_action_list,t_log_probs_list,t_reward_list,t_action_prob_list,t_patch_list,t_action_dynamic_list,t_result_box_list,t_vid_idx_list, lock))
                 process.start()
                 record.append(process)
             for process in record:
                 process.join()
-            vid_idxs = np.random.permutation(len(videos_infos))
+
+            self.action_list = list(t_action_list)
+            self.action_prob_list = list(t_action_prob_list)
+            self.log_probs_list = list(t_log_probs_list)
+            self.reward_list = list(t_reward_list)
+            self.patch_list = list(t_patch_list)
+            self.action_dynamic_list = list(t_action_dynamic_list)
+            self.result_box_list = list(t_result_box_list)
+            self.vid_idx_list = list(t_vid_idx_list)
         else:
             #not implement yet
             pass
