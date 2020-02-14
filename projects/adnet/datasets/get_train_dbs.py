@@ -311,18 +311,18 @@ def get_train_dbs_ILSVR(opts):
     # t0=time.time()
     #t2 = time.time()
 
-    gpu_num=27
-    if all_img_num<gpu_num:
-        gpu_num=all_img_num
-    every_gpu_img=all_img_num//gpu_num
+    cpu_num=27
+    if all_img_num<cpu_num:
+        cpu_num=all_img_num
+    every_gpu_img=all_img_num//cpu_num
     img_paths_as=[]
-    for gn in range(gpu_num-1):
+    for gn in range(cpu_num-1):
         img_paths_as.append(img_paths[gn*every_gpu_img:(gn+1)*every_gpu_img])
-    img_paths_as.append(img_paths[(gpu_num-1) * every_gpu_img:])
+    img_paths_as.append(img_paths[(cpu_num-1) * every_gpu_img:])
 
     lock = multiprocessing.Manager().Lock()
     record = []
-    for i in range(gpu_num):
+    for i in range(cpu_num):
         process = multiprocessing.Process(target=process_data_ILSVR, args=(img_paths_as[i], opts,train_db_pos,train_db_neg,lock))
         process.start()
         record.append(process)
