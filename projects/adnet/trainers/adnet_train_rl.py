@@ -141,7 +141,7 @@ def adnet_train_rl(net, domain_specific_nets, train_videos, opts, args):
                 writer.add_scalar('data/iter_reward_sum', reward_sum, iteration)
                 writer.add_scalar('data/iter_loss', loss, iteration)
 
-            if iteration % 1000 == 0 and iteration != 0:
+            if iteration % 10000 == 0 and iteration != 0:
                 torch.save({
                     'epoch': epoch,
                     'adnet_state_dict': net.state_dict(),

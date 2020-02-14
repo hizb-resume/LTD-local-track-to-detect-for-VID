@@ -62,6 +62,9 @@ class RLDataset(data.Dataset):
 
         self.env = TrackingEnvironment(train_videos, opts, transform=transform, args=args)
         clip_idx = 0
+        tic = time.time()
+        n_pos_clip=0
+        n_neg_clip=0
         while True:  # for every clip (l)
 
             num_step_history = []  # T_l
@@ -76,7 +79,7 @@ class RLDataset(data.Dataset):
                 net.reset_action_dynamic()  # action dynamic should be in a clip (what makes sense...)
 
             while True:  # for every frame in a clip (t)
-                tic = time.time()
+                # tic = time.time()
 
                 if args.display_images:
                     im_with_bb = display_result(self.env.get_current_img(), self.env.get_state())
@@ -163,9 +166,9 @@ class RLDataset(data.Dataset):
                     num_step_history.append(t)
                     t = 0
 
-                toc = time.time() - tic
-                print('forward time (clip ' + str(clip_idx) + " - frame " + str(num_frame) + " - t " + str(t) + ") = "
-                      + str(toc) + " s")
+                # toc = time.time() - tic
+                # print('forward time (clip ' + str(clip_idx) + " - frame " + str(num_frame) + " - t " + str(t) + ") = "
+                #       + str(toc) + " s")
 
                 if done:  # if finish the clip
                     break
@@ -177,6 +180,18 @@ class RLDataset(data.Dataset):
             # self.reward_list.append(tracking_scores)
 
             clip_idx += 1
+            if reward>0:
+                n_pos_clip+=1
+            else:
+                n_neg_clip+=1
+
+            if clip_idx%100==0 or info['finish_epoch']:
+                toc = time.time() - tic
+                print('forward time (clip ' + str(clip_idx) +  ") = "
+                      + str(toc) + " s")
+                print('n_pos_clip: '+str(n_pos_clip)+' all clip: '+str(n_pos_clip+n_neg_clip)
+                      +' ; n_pos_data: '+str(self.reward_list.count(1))+' n_all_data: '+str(len(self.reward_list)))
+                tic=time.time()
 
             if info['finish_epoch']:
                 break

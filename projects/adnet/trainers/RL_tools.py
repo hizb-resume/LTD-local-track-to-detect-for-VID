@@ -50,7 +50,7 @@ class TrackingEnvironment(object):
             video_paths = train_videos['video_paths']
             bench_names = train_videos['bench_names']
             vid_idxs = np.random.permutation(len(video_names))
-
+        print("num videos: %d "%len(vid_idxs))
         for vid_idx in vid_idxs:
             # dict consist of set of clips in ONE video
             clips = {
@@ -83,7 +83,7 @@ class TrackingEnvironment(object):
             # number of clips in one video
             num_train_clips = min(opts['train']['rl_num_batches'], len(vid_clip_starts))
 
-            print("num_train_clips of vid " + str(vid_idx) + ": ", str(num_train_clips))
+            # print("num_train_clips of vid " + str(vid_idx) + ": ", str(num_train_clips))
 
             for clipIdx in range(num_train_clips):
                 frameStart = vid_clip_starts[clipIdx]
@@ -99,6 +99,7 @@ class TrackingEnvironment(object):
             if num_train_clips > 0:  # small hack
                 self.videos.append(clips)
 
+        print('num used videos: %d'%len(self.videos))
         self.clip_idx = -1  # hack for reset function
         self.vid_idx = 0
 
@@ -201,7 +202,7 @@ class TrackingEnvironment(object):
             # calculate reward before reset
             reward = reward_original(np.array(self.gt), np.array(self.state))
 
-            print("reward=" + str(reward))
+            # print("reward=" + str(reward))
 
             # reset (reset state, gt, current_img_idx, current_img and current_img_patch)
             finish_epoch = self.reset()  # go to the next clip (or video)

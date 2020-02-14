@@ -165,16 +165,24 @@ def adnet_test(net, predictor,vid_path, opts, args):
     all_iteration = 0
     t = 0
 
-    for idx in range(vid_info['nframes']):
-    # for frame_idx, frame_path in enumerate(vid_info['img_files']):
+    vidpath = "../../../demo/examples/jiaotong2.avi"
+    cap = cv2.VideoCapture(vidpath)
+    length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    for idx in range(length):
+
+    # for idx in range(vid_info['nframes']):
+    ## for frame_idx, frame_path in enumerate(vid_info['img_files']):
         frame_idx = idx
-        frame_path = vid_info['img_files'][idx]
+    #     frame_path = vid_info['img_files'][idx]
         t0_wholetracking = time.time()
-        frame = cv2.imread(frame_path)
+        # frame = cv2.imread(frame_path)
+
+        cap.set(cv2.CAP_PROP_POS_FRAMES, float(idx))
+        success, frame = cap.read()
 
         if idx==0:
             boxes = pred(predictor, frame)
-            curr_bbox = boxes[0]
+            curr_bbox = boxes[2]
 
         # draw box or with display, then save
         if args.display_images:
@@ -301,7 +309,8 @@ def adnet_test(net, predictor,vid_path, opts, args):
             cv2.imwrite(filename, im_with_bb)
 
         # record the curr_bbox result
-        bboxes[frame_idx] = curr_bbox
+        # bboxes[frame_idx] = curr_bbox
+
         '''
         # create or update storage + set iteration_range for training
         if frame_idx == 0:

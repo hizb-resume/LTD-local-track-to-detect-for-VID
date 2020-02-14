@@ -260,6 +260,8 @@ def imgs_to_mp4(imgspath,img_extension,outpath=None):
     for f in range(length):
         # print('%d / %d : %s'%(f,length,paths[f]))
         #success, img = cap.read()
+        if f%10 !=0:
+            continue
         img=cv2.imread(paths[f])
         vid_width, vid_height = img.shape[:2]
         if f == 0:

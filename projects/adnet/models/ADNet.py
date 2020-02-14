@@ -140,8 +140,8 @@ class ADNet(nn.Module):
         fc7_out = self.fc7(x)
 
         if self.phase == 'test':
-            fc6_out = self.softmax(fc6_out)
-            fc7_out = self.softmax(fc7_out)
+            fc6_out = self.softmax(fc6_out,dim=1)
+            fc7_out = self.softmax(fc7_out,dim=1)
 
         if update_action_dynamic:
             selected_action = np.argmax(fc6_out.detach().cpu().numpy())  # TODO: really okay to detach?
