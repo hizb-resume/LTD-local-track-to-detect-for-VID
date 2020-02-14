@@ -50,8 +50,8 @@ class RLDataset(data.Dataset):
     def __len__(self):
         return len(self.log_probs_list)
 
-    def gen_data(self,videos_infos,transform,net1,t_action_list,t_log_probs_list,t_reward_list,t_action_prob_list,t_patch_list,t_action_dynamic_list,t_result_box_list,t_vid_idx_list,lock):
-        net=copy.deepcopy(net1)
+    def gen_data(self,videos_infos,transform,net,t_action_list,t_log_probs_list,t_reward_list,t_action_prob_list,t_patch_list,t_action_dynamic_list,t_result_box_list,t_vid_idx_list,lock):
+        # net=copy.deepcopy(net1)
         env = TrackingEnvironment(videos_infos, self.opts, transform=transform, args=self.args)
         clip_idx = 0
         tic = time.time()
@@ -234,7 +234,7 @@ class RLDataset(data.Dataset):
             videos_infos,_=get_ILSVRC_videos_infos()
             print("num all videos: %d " % len(videos_infos))
             # cpu_num = 27
-            cpu_num = 15
+            cpu_num = 10
             all_vid_num = len(videos_infos)
             if all_vid_num < cpu_num:
                 cpu_num = all_vid_num
