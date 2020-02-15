@@ -67,7 +67,8 @@ def adnet_train_rl(net, domain_specific_nets, train_videos, opts, args):
     clip_idx_epoch = 0
     prev_net = copy.deepcopy(net)
     dataset = RLDataset(prev_net, domain_specific_nets, train_videos, opts, args)
-
+    print('after dataset = RLDataset', end=' : ')
+    print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
     for epoch in range(args.start_epoch, opts['numEpoch']):
         if epoch != args.start_epoch:
             prev_net = copy.deepcopy(net)  # save the not updated net for generating data

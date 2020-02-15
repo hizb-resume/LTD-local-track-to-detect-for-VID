@@ -183,7 +183,7 @@ class RLDataset(data.Dataset):
             # else:
             #     n_neg_clip += 1
 
-            if clip_idx % 100 == 0 or info['finish_epoch']:
+            if clip_idx % 1000 == 0 or info['finish_epoch']:
                 toc = time.time() - tic
                 print('forward time (clip ' + str(clip_idx) + ") = "
                       + str(toc) + " s")
@@ -234,7 +234,7 @@ class RLDataset(data.Dataset):
             videos_infos,_=get_ILSVRC_videos_infos()
             print("num all videos: %d " % len(videos_infos))
             # cpu_num = 27
-            cpu_num = 10
+            cpu_num = 4
             all_vid_num = len(videos_infos)
             if all_vid_num < cpu_num:
                 cpu_num = all_vid_num
@@ -246,6 +246,8 @@ class RLDataset(data.Dataset):
 
             lock = multiprocessing.Manager().Lock()
             record = []
+            print('before process', end=' : ')
+            print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
             for i in range(cpu_num):
                 process = multiprocessing.Process(target=self.gen_data,
                                                   args=(vid_paths_as[i], transform, net,t_action_list,t_log_probs_list,t_reward_list,t_action_prob_list,t_patch_list,t_action_dynamic_list,t_result_box_list,t_vid_idx_list, lock))
@@ -253,7 +255,8 @@ class RLDataset(data.Dataset):
                 record.append(process)
             for process in record:
                 process.join()
-
+            print('after process', end=' : ')
+            print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
             self.action_list = list(t_action_list)
             self.action_prob_list = list(t_action_prob_list)
             self.log_probs_list = list(t_log_probs_list)
