@@ -13,6 +13,7 @@ import _init_paths
 from options.general2 import opts
 from models.ADNet import adnet
 from utils.get_train_videos import get_train_videos
+from utils.ADNet_evalTools import gen_pred_file
 from trainers.adnet_test import adnet_test
 import torch
 torch.multiprocessing.set_start_method('spawn', force=True)
@@ -25,7 +26,6 @@ from detectron2.engine import DefaultPredictor
 from detectron2.config import get_cfg
 # from detectron2.utils.visualizer import Visualizer
 from detectron2.data import MetadataCatalog
-from ADNet_eval import gen_pred_file
 
 def str2bool(v):
     return v.lower() in ("yes", "true", "t", "1")
