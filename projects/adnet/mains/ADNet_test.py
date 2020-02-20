@@ -120,7 +120,7 @@ if __name__ == "__main__":
     save_root = args.save_result_images
     save_root_npy = args.save_result_npy
 
-    for vid_folder in vid_folders:
+    for vidx,vid_folder in enumerate(vid_folders):
         print('Loading {}...'.format(args.weight_file))
         opts['num_videos'] = 1
         # net, domain_nets = adnet(opts, trained_file=args.weight_file, random_initialize_domain_specific=True)
@@ -152,7 +152,7 @@ if __name__ == "__main__":
             net.load_domain_specific(domain_nets[0])
         '''
 
-        bboxes, t_sum = adnet_test(net,predictor, vid_path, opts, args)
+        bboxes, t_sum = adnet_test(net,predictor, vidx,vid_path, opts, args)
     #     all_precisions.append(precisions)
     #
     # print(all_precisions)
