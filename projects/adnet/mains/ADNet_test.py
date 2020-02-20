@@ -24,7 +24,7 @@ import glob
 from detectron2.engine import DefaultPredictor
 from detectron2.config import get_cfg
 # from detectron2.utils.visualizer import Visualizer
-# from detectron2.data import MetadataCatalog
+from detectron2.data import MetadataCatalog
 
 def str2bool(v):
     return v.lower() in ("yes", "true", "t", "1")
@@ -63,6 +63,7 @@ if __name__ == "__main__":
     # Find a model from detectron2's model zoo. You can either use the https://dl.fbaipublicfiles.... url, or use the following shorthand
     cfg.MODEL.WEIGHTS = "../../../demo/faster_rcnn_R_101_FPN_3x.pkl"
     predictor = DefaultPredictor(cfg)
+    class_names = MetadataCatalog.get(cfg.DATASETS.TRAIN[0]).get("thing_classes", None)
 
     args = parser.parse_args()
     assert 0 < args.pos_samples_ratio <= 1, "the pos_samples_ratio valid range is (0, 1]"
@@ -152,7 +153,7 @@ if __name__ == "__main__":
             net.load_domain_specific(domain_nets[0])
         '''
 
-        bboxes, t_sum = adnet_test(net,predictor, vidx,vid_path, opts, args)
+        bboxes, t_sum = adnet_test(net,predictor,class_names, vidx,vid_path, opts, args)
     #     all_precisions.append(precisions)
     #
     # print(all_precisions)

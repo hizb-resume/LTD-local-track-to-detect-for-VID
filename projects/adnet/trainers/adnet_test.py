@@ -17,20 +17,20 @@ from datasets.online_adaptation_dataset import OnlineAdaptationDataset, OnlineAd
 from utils.augmentations import ADNet_Augmentation
 from utils.do_action import do_action
 import time
-from utils.display import display_result, draw_box
+from utils.display import display_result, draw_boxes
 from utils.gen_samples import gen_samples
 from utils.precision_plot import distance_precision_plot, iou_precision_plot
 from random import shuffle
 from tensorboardX import SummaryWriter
 from detectron2.structures import Boxes,RotatedBoxes
 
-def pred(predictor,frame):
+def pred(predictor,class_names,frame):
     outputs = predictor(frame)
     predictions = outputs["instances"].to("cpu")
     boxes = predictions.pred_boxes if predictions.has("pred_boxes") else None
     scores = predictions.scores if predictions.has("scores") else None
     classes = predictions.pred_classes if predictions.has("pred_classes") else None
-
+    labels = [class_names[i] for i in classes]
     if isinstance(boxes, Boxes) or isinstance(boxes, RotatedBoxes):
         boxes = boxes.tensor.numpy()
     else:
@@ -46,10 +46,10 @@ def pred(predictor,frame):
     classes = classes.numpy()
     assert len(classes) == num_instances
 
-    return boxes,classes,scores
+    return boxes,labels,scores
 
 # @torchsnooper.snoop()
-def adnet_test(net, predictor,vidx,vid_path, opts, args):
+def adnet_test(net, predictor,class_names,vidx,vid_path, opts, args):
 
     if torch.cuda.is_available():
         if args.cuda:
@@ -206,7 +206,7 @@ def adnet_test(net, predictor,vidx,vid_path, opts, args):
         success, frame = cap.read()
 
         if frame_idx==0:
-            boxes,classes,scores = pred(predictor, frame)
+            boxes,classes,scores = pred(predictor,class_names, frame)
             frame_pred['frame_id'] = frame_idx
             n_bbox=len(boxes)
             for i_d in range(n_bbox):
@@ -217,8 +217,8 @@ def adnet_test(net, predictor,vidx,vid_path, opts, args):
             vid_pred['frame_id'].extend(np.full(n_bbox, frame_pred['frame_id']))
             vid_pred['track_id'].extend(frame_pred['track_id'])
             vid_pred['obj_name'].extend(frame_pred['obj_name'])
-            vid_pred['score_cls'].extend(frame_pred['bbox'])
-            vid_pred['bbox'].extend(frame_pred['score_cls'])
+            vid_pred['bbox'].extend(frame_pred['bbox'])
+            vid_pred['score_cls'].extend(frame_pred['score_cls'])
 
             # curr_bbox = boxes[2]
 
@@ -226,7 +226,7 @@ def adnet_test(net, predictor,vidx,vid_path, opts, args):
         if args.display_images:
             im_with_bb = display_result(frame, frame_pred['bbox'])  # draw box and display
         else:
-            im_with_bb = draw_box(frame, frame_pred['bbox'])
+            im_with_bb = draw_boxes(frame, frame_pred['bbox'])
 
         # if args.save_result_images:
         #     filename = os.path.join(args.save_result_images, str(frame_idx).rjust(4,'0')+'-00-00-patch_initial.jpg')
@@ -285,7 +285,7 @@ def adnet_test(net, predictor,vidx,vid_path, opts, args):
                     if args.display_images:
                         im_with_bb = display_result(frame, curr_bbox)  # draw box and display
                     else:
-                        im_with_bb = draw_box(frame, curr_bbox)
+                        im_with_bb = draw_boxes(frame, curr_bbox)
 
                     # if args.save_result_images:
                     #     filename = os.path.join(args.save_result_images, str(frame_idx).rjust(4,'0')+'-'+str(t_id).rjust(2,'0')+'-' + str(t).rjust(2,'0') + '.jpg')
@@ -304,7 +304,7 @@ def adnet_test(net, predictor,vidx,vid_path, opts, args):
                     print('redetection')
                     is_negative = True
 
-                    boxes, classes, scores = pred(predictor, frame)
+                    boxes, classes, scores = pred(predictor, class_names,frame)
                     # frame_pred['frame_id'] = frame_idx
                     frame_pred['track_id']=[]
                     frame_pred['obj_name']=[]
@@ -347,7 +347,7 @@ def adnet_test(net, predictor,vidx,vid_path, opts, args):
                     if args.display_images:
                         im_with_bb = display_result(frame, frame_pred['bbox'])  # draw box and display
                     else:
-                        im_with_bb = draw_box(frame, frame_pred['bbox'])
+                        im_with_bb = draw_boxes(frame, frame_pred['bbox'])
                     #
                     # if args.save_result_images:
                     #     filename = os.path.join(args.save_result_images, str(frame_idx).rjust(4,'0') + '-98-20-redet.jpg')
@@ -364,7 +364,7 @@ def adnet_test(net, predictor,vidx,vid_path, opts, args):
                 if args.display_images:
                     im_with_bb = display_result(frame, frame_pred['bbox'])  # draw box and display
                 else:
-                    im_with_bb = draw_box(frame, frame_pred['bbox'])
+                    im_with_bb = draw_boxes(frame, frame_pred['bbox'])
             vid_pred['frame_id'].extend(np.full(n_bbox, frame_pred['frame_id']))
             vid_pred['track_id'].extend(frame_pred['track_id'])
             vid_pred['obj_name'].extend(frame_pred['obj_name'])
