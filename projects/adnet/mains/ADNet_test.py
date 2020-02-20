@@ -25,6 +25,7 @@ from detectron2.engine import DefaultPredictor
 from detectron2.config import get_cfg
 # from detectron2.utils.visualizer import Visualizer
 from detectron2.data import MetadataCatalog
+from ADNet_eval import gen_pred_file
 
 def str2bool(v):
     return v.lower() in ("yes", "true", "t", "1")
@@ -154,7 +155,8 @@ if __name__ == "__main__":
             net.load_domain_specific(domain_nets[0])
         '''
 
-        bboxes, t_sum = adnet_test(net,predictor,metalog,class_names, vidx,vid_path, opts, args)
+        vid_pred = adnet_test(net,predictor,metalog,class_names, vidx,vid_path, opts, args)
+        gen_pred_file(args.save_result_npy,vid_pred)
     #     all_precisions.append(precisions)
     #
     # print(all_precisions)

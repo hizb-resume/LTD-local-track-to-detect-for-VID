@@ -211,20 +211,20 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
     all_iteration = 0
     t = 0
 
-    vidpath = "../../../demo/examples/jiaotong2.avi"
-    cap = cv2.VideoCapture(vidpath)
-    length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    for frame_idx in range(length):
+    # vidpath = "../../../demo/examples/jiaotong2.avi"
+    # cap = cv2.VideoCapture(vidpath)
+    # length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    # for frame_idx in range(length):
 
-    # for idx in range(vid_info['nframes']):
+    for frame_idx in range(vid_info['nframes']):
     ## for frame_idx, frame_path in enumerate(vid_info['img_files']):
         # frame_idx = idx
-    #     frame_path = vid_info['img_files'][idx]
+        frame_path = vid_info['img_files'][frame_idx]
         t0_wholetracking = time.time()
-        # frame = cv2.imread(frame_path)
+        frame = cv2.imread(frame_path)
 
-        cap.set(cv2.CAP_PROP_POS_FRAMES, float(frame_idx))
-        success, frame = cap.read()
+        # cap.set(cv2.CAP_PROP_POS_FRAMES, float(frame_idx))
+        # success, frame = cap.read()
 
         if frame_idx==0:
             boxes,classes,scores = pred(predictor,class_names, frame)
@@ -531,8 +531,8 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
         print('whole tracking time = %.4f sec.' % (t1_wholetracking - t0_wholetracking))
 
     # evaluate the precision
-    bboxes = np.array(bboxes)
-    vid_info['gt'] = np.array(vid_info['gt'])
+    # bboxes = np.array(bboxes)
+    # vid_info['gt'] = np.array(vid_info['gt'])
 
     # iou_precisions = iou_precision_plot(bboxes, vid_info['gt'], vid_path, show=args.display_images, save_plot=args.save_result_images)
     #
@@ -540,8 +540,8 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
     #
     # precisions = [distance_precisions, iou_precisions]
 
-    np.save(args.save_result_npy + '-bboxes.npy', bboxes)
-    np.save(args.save_result_npy + '-ground_truth.npy', vid_info['gt'])
+    # np.save(args.save_result_npy + '-bboxes.npy', bboxes)
+    # np.save(args.save_result_npy + '-ground_truth.npy', vid_info['gt'])
 
     # return bboxes, t_sum, precisions
-    return bboxes, t_sum
+    return vid_pred
