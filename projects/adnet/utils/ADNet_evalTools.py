@@ -1,7 +1,7 @@
-
+from utils.my_util import get_ILSVRC_eval_infos
 
 def gen_gt_file():
-    pass
+    videos_infos,train_videos=get_ILSVRC_eval_infos()
 
 def gen_pred_file(path,vid_pred):
     out_file = open('%s-bboxes.txt' % path, 'w')
