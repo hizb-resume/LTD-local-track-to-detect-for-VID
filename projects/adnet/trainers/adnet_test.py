@@ -84,7 +84,10 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
 
     transform = ADNet_Augmentation(opts)
 
-    print('Testing sequences in ' + str(vid_path) + '...')
+    if isinstance(vid_path,list):
+        print('Testing sequences in ' + str(vid_path[0][-43:-12]) + '...')
+    else:
+        print('Testing sequences in ' + str(vid_path) + '...')
     t_sum = 0
 
     if args.visualize:
@@ -127,61 +130,64 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
 
     #vid_info['img_files'] = glob.glob(os.path.join(vid_path, 'img', '*.jpg'))
     #vid_info['img_files'] = glob.glob(os.path.join(vid_path, '*.jpg'))
-    vid_info['img_files'] = glob.glob(os.path.join(vid_path, '*.JPEG'))
-    vid_info['img_files'].sort(key=str.lower)
+    if isinstance(vid_path,list):
+        vid_info['img_files'] =vid_path
+    else:
+        vid_info['img_files'] = glob.glob(os.path.join(vid_path, '*.JPEG'))
+        vid_info['img_files'].sort(key=str.lower)
 
     #gt_path = os.path.join(vid_path, 'groundtruth_rect.txt')
-    gt_path = os.path.join(vid_path, 'groundtruth.txt')
-
-    if not os.path.exists(gt_path):
-        bboxes = []
-        t = 0
-        return bboxes, t_sum
-
-    # parse gt
-    gtFile = open(gt_path, 'r')
-    gt = gtFile.read().split('\n')
-    for i in range(len(gt)):
-        if gt[i] == '' or gt[i] is None:
-            continue
-
-        if ',' in gt[i]:
-            separator = ','
-        elif '\t' in gt[i]:
-            separator = '\t'
-        elif ' ' in gt[i]:
-            separator = ' '
-        else:
-            separator = ','
-
-        gt[i] = gt[i].split(separator)
-        gt[i] = list(map(float, gt[i]))
-    gtFile.close()
-
-    if len(gt[0]) >= 6:
-        for gtidx in range(len(gt)):
-            if gt[gtidx] == "":
-                continue
-            x = gt[gtidx][0:len(gt[gtidx]):2]
-            y = gt[gtidx][1:len(gt[gtidx]):2]
-            gt[gtidx] = [min(x),
-                         min(y),
-                         max(x) - min(x),
-                         max(y) - min(y)]
-
-    vid_info['gt'] = gt
-    if vid_info['gt'][-1] == '':  # small hack
-        vid_info['gt'] = vid_info['gt'][:-1]
-    vid_info['nframes'] = min(len(vid_info['img_files']), len(vid_info['gt']))
-
+    # gt_path = os.path.join(vid_path, 'groundtruth.txt')
+    #
+    # if not os.path.exists(gt_path):
+    #     bboxes = []
+    #     t = 0
+    #     return bboxes, t_sum
+    #
+    # # parse gt
+    # gtFile = open(gt_path, 'r')
+    # gt = gtFile.read().split('\n')
+    # for i in range(len(gt)):
+    #     if gt[i] == '' or gt[i] is None:
+    #         continue
+    #
+    #     if ',' in gt[i]:
+    #         separator = ','
+    #     elif '\t' in gt[i]:
+    #         separator = '\t'
+    #     elif ' ' in gt[i]:
+    #         separator = ' '
+    #     else:
+    #         separator = ','
+    #
+    #     gt[i] = gt[i].split(separator)
+    #     gt[i] = list(map(float, gt[i]))
+    # gtFile.close()
+    #
+    # if len(gt[0]) >= 6:
+    #     for gtidx in range(len(gt)):
+    #         if gt[gtidx] == "":
+    #             continue
+    #         x = gt[gtidx][0:len(gt[gtidx]):2]
+    #         y = gt[gtidx][1:len(gt[gtidx]):2]
+    #         gt[gtidx] = [min(x),
+    #                      min(y),
+    #                      max(x) - min(x),
+    #                      max(y) - min(y)]
+    #
+    # vid_info['gt'] = gt
+    # if vid_info['gt'][-1] == '':  # small hack
+    #     vid_info['gt'] = vid_info['gt'][:-1]
+    # vid_info['nframes'] = min(len(vid_info['img_files']), len(vid_info['gt']))
+    vid_info['nframes'] =len(vid_info['img_files'])
     # catch the first box
-    curr_bbox = vid_info['gt'][0]
+    # curr_bbox = vid_info['gt'][0]
     # curr_bbox = [114,158,88,100]
 
     
 
     # init containers
-    bboxes = np.zeros(np.array(vid_info['gt']).shape)  # tracking result containers
+    # bboxes = np.zeros(np.array(vid_info['gt']).shape)  # tracking result containers
 
     ntraining = 0
 
@@ -528,7 +534,7 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
         '''
         t1_wholetracking = time.time()
         t_sum += t1_wholetracking - t0_wholetracking
-        print('whole tracking time = %.4f sec.' % (t1_wholetracking - t0_wholetracking))
+        # print('whole tracking time = %.4f sec.' % (t1_wholetracking - t0_wholetracking))
 
     # evaluate the precision
     # bboxes = np.array(bboxes)
@@ -544,4 +550,5 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
     # np.save(args.save_result_npy + '-ground_truth.npy', vid_info['gt'])
 
     # return bboxes, t_sum, precisions
+    print('vid %d : %d frames, whole tracking time : %.4f sec.' % (vidx,vid_info['nframes'],t_sum))
     return vid_pred

@@ -39,7 +39,7 @@ parser.add_argument('--cuda', default=True, type=str2bool, help='Use cuda to tra
 parser.add_argument('--visualize', default=True, type=str2bool, help='Use tensorboardx to for visualization')
 parser.add_argument('--send_images_to_visualization', type=str2bool, default=False, help='Sample a random image from each 10th batch, send it to visdom after augmentations step')
 parser.add_argument('--display_images', default=False, type=str2bool, help='Whether to display images or not')
-parser.add_argument('--save_result_images', default='save_result_images', type=str, help='save results folder')
+parser.add_argument('--save_result_images', default=None, type=str, help='save results folder')
 # parser.add_argument('--save_result_images', default=None, type=str, help='save results folder')
 parser.add_argument('--save_result_npy', default='results_on_test_images_part2', type=str, help='save results folder')
 
@@ -124,30 +124,30 @@ if __name__ == "__main__":
     save_root = args.save_result_images
     save_root_npy = args.save_result_npy
 
+    print('Loading {}...'.format(args.weight_file))
+    opts['num_videos'] = 1
+    net, domain_nets = adnet(opts, trained_file=args.weight_file, random_initialize_domain_specific=False)
+    net.eval()
+    if args.cuda:
+        net = nn.DataParallel(net)
+        cudnn.benchmark = True
+    if args.cuda:
+        net = net.cuda()
+
     videos_infos, train_videos = get_ILSVRC_eval_infos()
+    print("videos nums: %d ."%(len(videos_infos)))
 
     for vidx,vid_folder in enumerate(videos_infos):
-        print('Loading {}...'.format(args.weight_file))
-        opts['num_videos'] = 1
         # net, domain_nets = adnet(opts, trained_file=args.weight_file, random_initialize_domain_specific=True)
         # net.train()
-        net, domain_nets = adnet(opts, trained_file=args.weight_file, random_initialize_domain_specific=False)
-        net.eval()
-        if args.cuda:
-            net = nn.DataParallel(net)
-            cudnn.benchmark = True
-
-        if args.cuda:
-            net = net.cuda()
-
         if args.save_result_images is not None:
-            args.save_result_images = os.path.join(save_root, vid_folder)
+            args.save_result_images = os.path.join(save_root, train_videos['video_names'][vidx])
             if not os.path.exists(args.save_result_images):
                 os.makedirs(args.save_result_images)
 
-        args.save_result_npy = os.path.join(save_root_npy, vid_folder)
+        args.save_result_npy = os.path.join(save_root_npy, train_videos['video_names'][vidx])
 
-        vid_path = os.path.join(dataset_root, vid_folder)
+        vid_path = os.path.join(train_videos['video_paths'][vidx], train_videos['video_names'][vidx])
 
         # load ADNetDomainSpecific
         '''
@@ -158,7 +158,7 @@ if __name__ == "__main__":
             net.load_domain_specific(domain_nets[0])
         '''
 
-        vid_pred = adnet_test(net,predictor,metalog,class_names, vidx,vid_path, opts, args)
+        vid_pred = adnet_test(net,predictor,metalog,class_names, vidx,vid_folder['img_files'], opts, args)
         gen_pred_file(args.save_result_npy,vid_pred)
     #     all_precisions.append(precisions)
     #

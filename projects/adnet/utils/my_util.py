@@ -170,7 +170,7 @@ def get_ILSVRC_eval_infos():
                     video_infos['nframes']=int(img_paths[train_i-1][-6:])+1
                     videos_infos.append(video_infos)
                     train_videos['video_names'].append(img_paths[train_i-1][-32:-7])
-                    train_videos['video_paths'].append('../datasets/data/ILSVRC/Data/VID/train/' + img_paths[train_i-1][:-32])
+                    train_videos['video_paths'].append('../datasets/data/ILSVRC/Data/VID/val/' + img_paths[train_i-1][:-32])
                     #train_videos['bench_names'] =
 
                     video_infos = {
@@ -196,7 +196,7 @@ def get_ILSVRC_eval_infos():
                 videos_infos.append(video_infos)
                 train_videos['video_names'].append(img_paths[train_i - 1][-32:-7])
                 train_videos['video_paths'].append(
-                    '../datasets/data/ILSVRC/Data/VID/train/' + img_paths[train_i - 1][:-32])
+                    '../datasets/data/ILSVRC/Data/VID/val/' + img_paths[train_i - 1][:-32])
                 video_infos = {
                     # 'imgsize': [], #in supervised training, imgsize is used for generating boxes that near the gt box
                     'gt': [],
@@ -215,7 +215,7 @@ def get_ILSVRC_eval_infos():
     video_infos['nframes'] = int(img_paths[-1][-6:]) + 1
     videos_infos.append(video_infos)
     train_videos['video_names'].append(img_paths[-1][-32:-7])
-    train_videos['video_paths'].append('../datasets/data/ILSVRC/Data/VID/train/' + img_paths[-1][:-32])
+    train_videos['video_paths'].append('../datasets/data/ILSVRC/Data/VID/val/' + img_paths[-1][:-32])
     return videos_infos,train_videos
 
 def get_xml_img_info(xmlpath):
