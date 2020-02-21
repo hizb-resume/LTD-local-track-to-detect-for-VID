@@ -8,6 +8,7 @@ import cv2, glob, os, re
 import numpy as np
 #import scipy.io as sio
 #import tracker_util as tutil
+from utils import vid_classes
 
 def test():
     video_infos = {
@@ -178,7 +179,7 @@ def get_ILSVRC_eval_infos():
                     }
         elif last_video_full==False:
             continue
-        gt_file_path = '../datasets/data/ILSVRC/Annotations/VID/train/' + img_paths[train_i] + '.xml'
+        gt_file_path = '../datasets/data/ILSVRC/Annotations/VID/val/' + img_paths[train_i] + '.xml'
         # gt_bbox=get_xml_box_label(gt_file_path)
         # opts['imgSize'] = get_xml_img_size(gt_file_path)
         imginfo = get_xml_img_info(gt_file_path)
@@ -200,7 +201,7 @@ def get_ILSVRC_eval_infos():
                 }
             continue
         video_infos['gt'].append(imginfo['gts'][0])
-        img_path = '../datasets/data/ILSVRC/Data/VID/train/' + img_paths[train_i] + '.JPEG'
+        img_path = '../datasets/data/ILSVRC/Data/VID/val/' + img_paths[train_i] + '.JPEG'
         video_infos['img_files'].append(img_path)
     video_infos['nframes'] = int(img_paths[-1][-6:]) + 1
     videos_infos.append(video_infos)
@@ -210,6 +211,8 @@ def get_ILSVRC_eval_infos():
 
 def get_xml_img_info(xmlpath):
     img_info = {
+        'trackid':[],
+        'name':[],
         'imgsize': [],
         'gts': []
     }
@@ -222,6 +225,9 @@ def get_xml_img_info(xmlpath):
     imgsize[0] = int(siz.find('height').text)
     gts = []
     for obj in root.iter('object'):
+        tckid=obj.find('trackid').text
+        nm=obj.find('name')
+        nm=vid_classes.code_to_class_string(str(nm.text))
         bb = obj.find('bndbox')
         gt = [0, 0, 0, 0]
         gt[0] = int(bb.find('xmin').text)
@@ -231,6 +237,8 @@ def get_xml_img_info(xmlpath):
         gt[2] = gt[2] - gt[0]
         gt[3] = gt[3] - gt[1]
 
+        img_info['trackid'].append(tckid)
+        img_info['name'].append(nm)
         gts.append(gt)
 
         # track_id=int(obj.find('trackid').text)
