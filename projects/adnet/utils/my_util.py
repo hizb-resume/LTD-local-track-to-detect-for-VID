@@ -161,7 +161,7 @@ def get_ILSVRC_eval_infos():
     #img_paths = img_paths[::gt_skip + 1]
     img_paths = [line.split(' ')[0] for line in img_paths]
     train_img_info.close()
-    for train_i in range(len(img_paths)):
+    for train_i in range(len(img_paths)//100):
         if img_paths[train_i][-6:]=='000000':
             if train_i!=0:
                 if last_video_full==False:
@@ -206,6 +206,7 @@ def get_ILSVRC_eval_infos():
                     'nframes': 0
                 }
             continue
+        #bug: if the gt size of the last img is 0, the final video will be added twice.
         video_infos['gt'].append(imginfo['gts'])
         video_infos['trackid'].append(imginfo['trackid'])
         video_infos['name'].append(imginfo['name'])
