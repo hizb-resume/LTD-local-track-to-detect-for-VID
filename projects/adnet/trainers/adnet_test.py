@@ -269,7 +269,7 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
             else:
                 net.set_phase('test')
             frame_pred['frame_id'] = frame_idx
-            if len(frame_pred['bbox']==0):
+            if len(frame_pred['bbox'])==0:
                 print('the num of pred boxes is 0!')
             for t_id,curr_bbox in enumerate(frame_pred['bbox']):
                 t = 0
