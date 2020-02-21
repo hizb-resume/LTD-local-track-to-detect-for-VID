@@ -19,7 +19,8 @@ def gen_gt_file(path):
 
 
 def gen_pred_file(path,vid_pred):
-    out_file = open('%s-pred.txt' % path, 'w')
+    # out_file = open('%s-pred.txt' % path, 'w')
+    out_file = open('%s-pred.txt' % path, 'a')
     for ti in range(len(vid_pred['bbox'])):
         out_file.write(str(vid_pred['vid_id']) + ',' +
                        str(vid_pred['frame_id'][ti]) + ',' +
