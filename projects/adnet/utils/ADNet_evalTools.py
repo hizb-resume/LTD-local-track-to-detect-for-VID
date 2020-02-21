@@ -19,4 +19,4 @@ def gen_pred_file(path,vid_pred):
 
 
 if __name__ == "__main__":
-    pass
+    gen_gt_file()

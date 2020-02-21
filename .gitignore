@@ -49,4 +49,4 @@ tensorboardx_log/
 datasets/
 instant_test_output
 inference_test_output
-projects/adnet/data/
+datasets/data/
