@@ -8,7 +8,9 @@ def gen_gt_file(path):
     out_file = open('%s-gt.txt' % path, 'w')
     for tj in range(len(videos_infos)):
         for ti in range(len(videos_infos[tj]['gt'])):
-            for tk in range(len(videos_infos[tj]['gt'][0])):
+            for tk in range(len(videos_infos[tj]['gt'][ti])):
+                # if tj==31 and ti==66:
+                #     print("debug")
                 out_file.write(str(tj) + ',' +
                                str(ti) + ',' +
                                str(videos_infos[tj]['trackid'][ti][tk]) + ',' +
