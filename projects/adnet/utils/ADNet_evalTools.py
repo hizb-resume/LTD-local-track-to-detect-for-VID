@@ -35,9 +35,8 @@ def gen_pred_file(path,vid_pred):
                        str(vid_pred['bbox'][ti][3]) + '\n')
     out_file.close()
 
-
-def do_precison(path_pred,path_gt):
-    vids_pred=[]
+def read_results_info(path_pred):
+    vids_pred = []
     vid_pred = {
         'vid_id': 0,
         'frame_id': [],
@@ -46,35 +45,103 @@ def do_precison(path_pred,path_gt):
         'score_cls': [],
         'bbox': []
     }
-    vids_gt=[]
-    vid_gt = {
-        'vid_id': 0,
-        'frame_id': [],
+    img_pred = {
         'track_id': [],
         'obj_name': [],
         'score_cls': [],
         'bbox': []
     }
     pred_file = open(path_pred, 'r')
-    list1=pred_file.readlines()
+    list1 = pred_file.readlines()
     # img_paths = [line.split(',') for line in list1]
-    img_paths = []
+    id_vid = -1
+    id_frame = -1
+    id_track = -1
     for line in list1:
-        img_path=[]
-        tsp=line.split(',')
-        img_path.extend(tsp[: 4])
-        for ti in range(4,9):
-            img_path.append(float(tsp[ti]))
-        img_paths.append(img_path)
-
-    img_paths=np.asarray(img_paths)
+        box_inf = []
+        tsp = line.split(',')
+        for ti in range(3):
+            box_inf.append(int(tsp[ti]))
+        box_inf.append(tsp[3])
+        for ti in range(4, 9):
+            box_inf.append(float(tsp[ti]))
+        if id_vid == -1 and id_frame == -1 and id_track == -1:
+            id_vid = box_inf[0]
+            id_frame = box_inf[1]
+            # id_track = box_inf[2]
+            img_pred['track_id'].append(box_inf[2])
+            img_pred['obj_name'].append(box_inf[3])
+            img_pred['score_cls'].append(box_inf[4])
+            img_pred['bbox'].append(box_inf[5:])
+            vid_pred['vid_id'] = box_inf[0]
+        else:
+            if id_vid != box_inf[0]:
+                vid_pred['frame_id'].append(id_frame)
+                vid_pred['track_id'].append(img_pred['track_id'])
+                vid_pred['obj_name'].append(img_pred['obj_name'])
+                vid_pred['score_cls'].append(img_pred['score_cls'])
+                vid_pred['bbox'].append(img_pred['bbox'])
+                vids_pred.append(vid_pred)
+                vid_pred = {
+                    'vid_id': 0,
+                    'frame_id': [],
+                    'track_id': [],
+                    'obj_name': [],
+                    'score_cls': [],
+                    'bbox': []
+                }
+                vid_pred['vid_id'] = box_inf[0]
+                id_vid = box_inf[0]
+                id_frame = box_inf[1]
+                img_pred = {
+                    'track_id': [],
+                    'obj_name': [],
+                    'score_cls': [],
+                    'bbox': []
+                }
+                img_pred['track_id'].append(box_inf[2])
+                img_pred['obj_name'].append(box_inf[3])
+                img_pred['score_cls'].append(box_inf[4])
+                img_pred['bbox'].append(box_inf[5:])
+            else:
+                if id_frame != box_inf[1]:
+                    vid_pred['frame_id'].append(id_frame)
+                    vid_pred['track_id'].append(img_pred['track_id'])
+                    vid_pred['obj_name'].append(img_pred['obj_name'])
+                    vid_pred['score_cls'].append(img_pred['score_cls'])
+                    vid_pred['bbox'].append(img_pred['bbox'])
+                    id_frame = box_inf[1]
+                    img_pred = {
+                        'track_id': [],
+                        'obj_name': [],
+                        'score_cls': [],
+                        'bbox': []
+                    }
+                    img_pred['track_id'].append(box_inf[2])
+                    img_pred['obj_name'].append(box_inf[3])
+                    img_pred['score_cls'].append(box_inf[4])
+                    img_pred['bbox'].append(box_inf[5:])
+                else:
+                    img_pred['track_id'].append(box_inf[2])
+                    img_pred['obj_name'].append(box_inf[3])
+                    img_pred['score_cls'].append(box_inf[4])
+                    img_pred['bbox'].append(box_inf[5:])
+    vid_pred['frame_id'].append(id_frame)
+    vid_pred['track_id'].append(img_pred['track_id'])
+    vid_pred['obj_name'].append(img_pred['obj_name'])
+    vid_pred['score_cls'].append(img_pred['score_cls'])
+    vid_pred['bbox'].append(img_pred['bbox'])
+    vids_pred.append(vid_pred)
+    # img_paths.append(box_inf)
+    # img_paths=np.asarray(img_paths)
     # t1=img_paths[0]
     pred_file.close()
+    return vids_pred
 
-    gt_file = open(path_gt, 'r')
-
-    gt_file.close()
-
+def do_precison(path_pred,path_gt):
+    vids_pred =read_results_info(path_pred)
+    vids_gt =read_results_info(path_gt)
+    pass
 
 if __name__ == "__main__":
     # gen_gt_file('../datasets/data/ILSVRC-vid-eval')
