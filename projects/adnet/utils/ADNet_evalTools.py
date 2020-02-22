@@ -1,4 +1,5 @@
 from utils.my_util import get_ILSVRC_eval_infos
+from utils.overlap_ratio import overlap_ratio
 
 def gen_gt_file(path):
     videos_infos,train_videos=get_ILSVRC_eval_infos()
@@ -34,5 +35,34 @@ def gen_pred_file(path,vid_pred):
     out_file.close()
 
 
+def do_precison(path_pred,path_gt):
+    vids_pred=[]
+    vid_pred = {
+        'vid_id': 0,
+        'frame_id': [],
+        'track_id': [],
+        'obj_name': [],
+        'score_cls': [],
+        'bbox': []
+    }
+    vids_gt=[]
+    vid_gt = {
+        'vid_id': 0,
+        'frame_id': [],
+        'track_id': [],
+        'obj_name': [],
+        'score_cls': [],
+        'bbox': []
+    }
+    pred_file = open(path_pred, 'r')
+    list1=pred_file.readlines()
+    pred_file.close()
+
+    gt_file = open(path_gt, 'r')
+
+    gt_file.close()
+
+
 if __name__ == "__main__":
     gen_gt_file('../datasets/data/ILSVRC-vid-eval')
+    do_precison('../datasets/data/ILSVRC-vid-eval-pred.txt','../datasets/data/ILSVRC-vid-eval-gt.txt')
