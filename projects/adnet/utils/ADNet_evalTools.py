@@ -138,10 +138,29 @@ def read_results_info(path_pred):
     pred_file.close()
     return vids_pred
 
+def maxiou(box,bboxs_pred):
+    if len(bboxs_pred)==0:
+        return -1,0
+
+
 def do_precison(path_pred,path_gt):
     vids_pred =read_results_info(path_pred)
     vids_gt =read_results_info(path_gt)
-    pass
+    j = 0
+    for i in range(len(vids_pred)):
+        idv=vids_pred[i]['vid_id']
+        while idv!=vids_gt[j]['vid_id']:
+            j+=1
+        l=0
+        for k in range(len(vids_pred[i]['frame_id'])):
+            idf=vids_pred[i]['frame_id'][k]
+            while idf !=vids_gt[j]['frame_id'][l]:
+                l+=1
+            bboxs_gt=vids_gt[j]['bbox'][l]
+            bboxs_pred= vids_gt[i]['bbox'][k]
+            for box in bboxs_gt:
+                id_iou,iou=maxiou(box,bboxs_pred)
+
 
 if __name__ == "__main__":
     # gen_gt_file('../datasets/data/ILSVRC-vid-eval')
