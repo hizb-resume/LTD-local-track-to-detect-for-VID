@@ -7,6 +7,7 @@ import torch.nn as nn
 import math
 import torch
 from utils.augmentations import CropRegion
+from utils.my_util import get_ILSVRC_videos_infos
 
 class TrackingPolicyLoss(nn.Module):
     def __init__(self):
@@ -32,7 +33,8 @@ class TrackingPolicyLoss(nn.Module):
 # TrackingEnvironment for all of the videos in one epoch
 # Number of steps can be set in opts['train']['RL_steps'] before initialize this environment
 class TrackingEnvironment(object):
-    def __init__(self, train_videos, opts, transform, args):
+    # def __init__(self, train_videos, opts, transform, args):
+    def __init__(self, videos_infos, opts, transform, args):
         self.videos = []  # list of clips dict
 
         self.opts = opts
@@ -41,12 +43,16 @@ class TrackingEnvironment(object):
 
         self.RL_steps = self.opts['train']['RL_steps']  # clip length
 
-        video_names = train_videos['video_names']
-        video_paths = train_videos['video_paths']
-        bench_names = train_videos['bench_names']
-
-        vid_idxs = np.random.permutation(len(video_names))
-
+        # if train_videos==None:
+        #     videos_infos,_=get_ILSVRC_videos_infos()
+        #     vid_idxs = np.random.permutation(len(videos_infos))
+        # else:
+        #     video_names = train_videos['video_names']
+        #     video_paths = train_videos['video_paths']
+        #     bench_names = train_videos['bench_names']
+        #     vid_idxs = np.random.permutation(len(video_names))
+        vid_idxs = np.random.permutation(len(videos_infos))
+        # print("num videos: %d "%len(vid_idxs))
         for vid_idx in vid_idxs:
             # dict consist of set of clips in ONE video
             clips = {
@@ -57,13 +63,16 @@ class TrackingEnvironment(object):
                 'end_bbox': [],
                 'vid_idx': [],
             }
-            # Load current training video info
-            video_name = video_names[vid_idx]
-            video_path = video_paths[vid_idx]
-            bench_name = bench_names[vid_idx]
-
-            vid_info = get_video_infos(bench_name, video_path, video_name)
-
+            # if train_videos==None:
+            #     vid_info=videos_infos[vid_idx]
+            # else:
+            #     # Load current training video info
+            #     video_name = video_names[vid_idx]
+            #     video_path = video_paths[vid_idx]
+            #     bench_name = bench_names[vid_idx]
+            #
+            #     vid_info = get_video_infos(bench_name, video_path, video_name)
+            vid_info = videos_infos[vid_idx]
             if self.RL_steps is None:
                 self.RL_steps = len(vid_info['gt'])-1
                 vid_clip_starts = [0]
@@ -76,7 +85,7 @@ class TrackingEnvironment(object):
             # number of clips in one video
             num_train_clips = min(opts['train']['rl_num_batches'], len(vid_clip_starts))
 
-            print("num_train_clips of vid " + str(vid_idx) + ": ", str(num_train_clips))
+            # print("num_train_clips of vid " + str(vid_idx) + ": ", str(num_train_clips))
 
             for clipIdx in range(num_train_clips):
                 frameStart = vid_clip_starts[clipIdx]
@@ -92,6 +101,7 @@ class TrackingEnvironment(object):
             if num_train_clips > 0:  # small hack
                 self.videos.append(clips)
 
+        # print('num used videos: %d'%len(self.videos))
         self.clip_idx = -1  # hack for reset function
         self.vid_idx = 0
 
@@ -114,8 +124,8 @@ class TrackingEnvironment(object):
         }
 
         # do action
-        self.state = do_action(self.state, self.opts, action, self.current_img.shape)
-        self.current_patch, _, _, _ = self.transform(self.current_img, self.state)
+        #self.state = do_action(self.state, self.opts, action, self.current_img.shape)
+        #self.current_patch, _, _, _ = self.transform(self.current_img, self.state)
 
         if action == self.opts['stop_action']:
             reward, done, finish_epoch = self.go_to_next_frame()
@@ -125,7 +135,8 @@ class TrackingEnvironment(object):
         else:   # just go to the next patch (still same frame/current_img)
             reward = 0
             done = False
-            #todo: is the next line of code redundant?
+            # do action
+            self.state = do_action(self.state, self.opts, action, self.current_img.shape)
             self.current_patch, _, _, _ = self.transform(self.current_img, self.state)
 
         return self.state, reward, done, info
@@ -148,10 +159,12 @@ class TrackingEnvironment(object):
             # initialize state, gt, current_img_idx, current_img, and current_patch with new clip
             self.state = self.videos[self.vid_idx]['init_bbox'][self.clip_idx]
             self.gt = self.videos[self.vid_idx]['end_bbox'][self.clip_idx]
+            if self.state==[0,0,0,0]:
+                print("debug")
 
             frameStart = self.videos[self.vid_idx]['frame_start'][self.clip_idx]
             #self.current_img_idx = 1  # self.current_img_idx = frameStart + 1
-            self.current_img_idx = 1    #Modified by zb --- 2019-11-16 21:48:28
+            self.current_img_idx = 1   #the frameStart(the 0th img,idx:0) is for initial, the current_img(idx:1) is for training.
             self.current_img = cv2.imread(self.videos[self.vid_idx]['img_path'][self.clip_idx][self.current_img_idx])
             self.current_patch, _, _, _ = self.transform(self.current_img, np.array(self.state))
             #Modified by zb --- 2019-11-16 22:11:16 --- to check : at this step ,the data of patch seems have some problem\
@@ -191,7 +204,7 @@ class TrackingEnvironment(object):
             # calculate reward before reset
             reward = reward_original(np.array(self.gt), np.array(self.state))
 
-            print("reward=" + str(reward))
+            # print("reward=" + str(reward))
 
             # reset (reset state, gt, current_img_idx, current_img and current_img_patch)
             finish_epoch = self.reset()  # go to the next clip (or video)

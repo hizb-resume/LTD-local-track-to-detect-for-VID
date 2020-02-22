@@ -11,23 +11,26 @@ GT_anno_interval = 1
 # ============================
 opts = {
     'imgSize' : [112, 112, 3],
-   # 'train_dbs' : ['vot15', 'vot14', 'vot13'],
-    'train_dbs' : ['vot13'],
-    'test_db' : 'otb',
-    #'test_db' : 'test/vid',
+    #'train_dbs' : ['vot15', 'vot14', 'vot13'],
+    #'train_dbs' : ['vot13'],
+    'train_dbs' : ['ILSVRC-VID'],
+    #'test_db' : 'otb',
+    #'test_db' : 'ILSVRC/Data/VID/',
+    'test_db' : 'test/vid',
     'train': {
         'weightDecay' : 0.0005,
         'momentum' : 0.9,
         'learningRate' : 10e-5,
         'conserveMemory' : True,
-        'gt_skip' : 1,
+        #'gt_skip' : 1,
+        'gt_skip' : 5,
         'rl_num_batches' : 5,
         'RL_steps' : 10
     },
     #in ADNet.py (train), the minibatch_size is not the num below, instead, it's fixed in the code.
     'minibatch_size' : 32,
     #'numEpoch' : 30,
-    'numEpoch' : 2,
+    'numEpoch' : 30,
     'numInnerEpoch' : 3,
     'continueTrain' : False,
     'samplePerFrame_large' : 40,
@@ -65,8 +68,8 @@ opts = {
 
     #'nPos_train' : 150,
     #'nNeg_train' : 50,
-    'nPos_train': 9,
-    'nNeg_train': 3,
+    'nPos_train': 15,
+    'nNeg_train': 5,
     'posThre_train' : 0.5,
     'negThre_train' : 0.3,
 

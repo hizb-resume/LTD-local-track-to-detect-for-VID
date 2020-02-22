@@ -67,11 +67,15 @@ def adnet_train_rl(net, domain_specific_nets, train_videos, opts, args):
     clip_idx_epoch = 0
     prev_net = copy.deepcopy(net)
     dataset = RLDataset(prev_net, domain_specific_nets, train_videos, opts, args)
-
+    print('after dataset = RLDataset', end=' : ')
+    print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
     for epoch in range(args.start_epoch, opts['numEpoch']):
         if epoch != args.start_epoch:
             prev_net = copy.deepcopy(net)  # save the not updated net for generating data
             dataset.reset(prev_net, domain_specific_nets, train_videos, opts, args)
+        else:
+            t0=time.time()
+            t1 = time.time()
 
         data_loader = data.DataLoader(dataset, opts['minibatch_size'], num_workers=args.num_workers, shuffle=True,
                                       pin_memory=True)
@@ -90,7 +94,7 @@ def adnet_train_rl(net, domain_specific_nets, train_videos, opts, args):
             log_probs, reward, vid_idx = next(batch_iterator)
 
             # train
-            tic = time.time()
+            #tic = time.time()
 
             # find out the unique value in vid_idx
             vid_idx_unique = vid_idx.unique().to('cpu')
@@ -118,14 +122,27 @@ def adnet_train_rl(net, domain_specific_nets, train_videos, opts, args):
 
             reward_sum = reward_sum/len(vid_idx_unique)
 
-            toc = time.time() - tic
-            print('epoch ' + str(epoch) + ' - iteration ' + str(iteration) + ' - train time: ' + str(toc) + " s")
+            if iteration % 2000 == 0 and iteration != 0:
+                t2 = time.time()
+                t3 = t2 - t1
+                t3_m = t3 // 60
+                t3_s = t3 % 60
+
+                all_time = t2 - t0
+                all_d = all_time // 86400
+                all_h = all_time % 86400 // 3600
+                all_m = all_time % 3600 // 60
+                all_s = all_time % 60
+
+                print('epoch ' + str(epoch) + ' - iteration ' + str(iteration) + ' || Timer-iter: %d m %d s || Timer-all: %d d %d h %d m %d s || Timer-now: ' % (t3_m,t3_s,all_d,all_h,all_m,all_s),end='')
+                print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+                t1 = time.time()
 
             if args.visualize:
                 writer.add_scalar('data/iter_reward_sum', reward_sum, iteration)
                 writer.add_scalar('data/iter_loss', loss, iteration)
 
-            if iteration % 1000 == 0:
+            if iteration % 10000 == 0 and iteration != 0:
                 torch.save({
                     'epoch': epoch,
                     'adnet_state_dict': net.state_dict(),

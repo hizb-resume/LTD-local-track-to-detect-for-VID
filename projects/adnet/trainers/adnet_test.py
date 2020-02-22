@@ -6,6 +6,7 @@ import cv2
 import os
 import numpy as np
 import torch
+import torchsnooper
 import torch.optim as optim
 from models.ADNet import adnet
 from options.general import opts
@@ -16,13 +17,60 @@ from datasets.online_adaptation_dataset import OnlineAdaptationDataset, OnlineAd
 from utils.augmentations import ADNet_Augmentation
 from utils.do_action import do_action
 import time
-from utils.display import display_result, draw_box
+from utils.display import display_result, draw_boxes
 from utils.gen_samples import gen_samples
 from utils.precision_plot import distance_precision_plot, iou_precision_plot
 from random import shuffle
 from tensorboardX import SummaryWriter
+from detectron2.structures import Boxes,RotatedBoxes
+from detectron2.utils.visualizer import Visualizer
 
-def adnet_test(net, vid_path, opts, args):
+def pred(predictor,class_names,frame):
+    outputs = predictor(frame)
+    predictions = outputs["instances"].to("cpu")
+    boxes = predictions.pred_boxes if predictions.has("pred_boxes") else None
+    scores = predictions.scores if predictions.has("scores") else None
+    classes = predictions.pred_classes if predictions.has("pred_classes") else None
+    labels = [class_names[i] for i in classes]
+    if isinstance(boxes, Boxes) or isinstance(boxes, RotatedBoxes):
+        boxes = boxes.tensor.numpy()
+    else:
+        boxes = np.asarray(boxes)
+    num_instances = len(boxes)
+    if num_instances != 0:
+        boxes[:, 2] = boxes[:, 2] - boxes[:, 0]
+        boxes[:, 3] = boxes[:, 3] - boxes[:, 1]
+
+    scores = scores.numpy()
+    assert len(scores) == num_instances
+
+    classes = classes.numpy()
+    assert len(classes) == num_instances
+
+    return boxes,labels,scores
+
+# def _create_text_labels(classes, scores, class_names):
+#     """
+#     Args:
+#         classes (list[int] or None):
+#         scores (list[float] or None):
+#         class_names (list[str] or None):
+#
+#     Returns:
+#         list[str] or None
+#     """
+#     labels = None
+#     if classes is not None and class_names is not None and len(class_names) > 1:
+#         labels = [class_names[i] for i in classes]
+#     if scores is not None:
+#         if labels is None:
+#             labels = ["{:.0f}%".format(s * 100) for s in scores]
+#         else:
+#             labels = ["{} {:.0f}%".format(l, s * 100) for l, s in zip(labels, scores)]
+#     return labels
+
+# @torchsnooper.snoop()
+def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
 
     if torch.cuda.is_available():
         if args.cuda:
@@ -36,7 +84,10 @@ def adnet_test(net, vid_path, opts, args):
 
     transform = ADNet_Augmentation(opts)
 
-    print('Testing sequences in ' + str(vid_path) + '...')
+    if isinstance(vid_path,list):
+        print('Testing sequences in ' + str(vid_path[0][-43:-12]) + '...')
+    else:
+        print('Testing sequences in ' + str(vid_path) + '...')
     t_sum = 0
 
     if args.visualize:
@@ -52,60 +103,91 @@ def adnet_test(net, vid_path, opts, args):
         'nframes' : 0
     }
 
+    vid_gt={
+        'vid_id':vidx,
+        'frame_id':[],
+        'track_id':[],
+        'obj_name':[],
+        'score_cls':[],
+        'bbox':[]
+    }
+    vid_pred={
+        'vid_id':vidx,
+        'frame_id':[],
+        'track_id':[],
+        'obj_name':[],
+        'score_cls':[],
+        'bbox':[]
+    }
+
+    frame_pred = {
+        'frame_id': 0,
+        'track_id': [],
+        'obj_name': [],
+        'score_cls': [],
+        'bbox': []
+    }
+
     #vid_info['img_files'] = glob.glob(os.path.join(vid_path, 'img', '*.jpg'))
     #vid_info['img_files'] = glob.glob(os.path.join(vid_path, '*.jpg'))
-    vid_info['img_files'] = glob.glob(os.path.join(vid_path, '*.JPEG'))
-    vid_info['img_files'].sort(key=str.lower)
+    if isinstance(vid_path,list):
+        vid_info['img_files'] =vid_path
+    else:
+        vid_info['img_files'] = glob.glob(os.path.join(vid_path, '*.JPEG'))
+        vid_info['img_files'].sort(key=str.lower)
 
     #gt_path = os.path.join(vid_path, 'groundtruth_rect.txt')
-    gt_path = os.path.join(vid_path, 'groundtruth.txt')
-
-    if not os.path.exists(gt_path):
-        bboxes = []
-        t = 0
-        return bboxes, t_sum
-
-    # parse gt
-    gtFile = open(gt_path, 'r')
-    gt = gtFile.read().split('\n')
-    for i in range(len(gt)):
-        if gt[i] == '' or gt[i] is None:
-            continue
-
-        if ',' in gt[i]:
-            separator = ','
-        elif '\t' in gt[i]:
-            separator = '\t'
-        elif ' ' in gt[i]:
-            separator = ' '
-        else:
-            separator = ','
-
-        gt[i] = gt[i].split(separator)
-        gt[i] = list(map(float, gt[i]))
-    gtFile.close()
-
-    if len(gt[0]) >= 6:
-        for gtidx in range(len(gt)):
-            if gt[gtidx] == "":
-                continue
-            x = gt[gtidx][0:len(gt[gtidx]):2]
-            y = gt[gtidx][1:len(gt[gtidx]):2]
-            gt[gtidx] = [min(x),
-                         min(y),
-                         max(x) - min(x),
-                         max(y) - min(y)]
-
-    vid_info['gt'] = gt
-    if vid_info['gt'][-1] == '':  # small hack
-        vid_info['gt'] = vid_info['gt'][:-1]
-    vid_info['nframes'] = min(len(vid_info['img_files']), len(vid_info['gt']))
-
+    # gt_path = os.path.join(vid_path, 'groundtruth.txt')
+    #
+    # if not os.path.exists(gt_path):
+    #     bboxes = []
+    #     t = 0
+    #     return bboxes, t_sum
+    #
+    # # parse gt
+    # gtFile = open(gt_path, 'r')
+    # gt = gtFile.read().split('\n')
+    # for i in range(len(gt)):
+    #     if gt[i] == '' or gt[i] is None:
+    #         continue
+    #
+    #     if ',' in gt[i]:
+    #         separator = ','
+    #     elif '\t' in gt[i]:
+    #         separator = '\t'
+    #     elif ' ' in gt[i]:
+    #         separator = ' '
+    #     else:
+    #         separator = ','
+    #
+    #     gt[i] = gt[i].split(separator)
+    #     gt[i] = list(map(float, gt[i]))
+    # gtFile.close()
+    #
+    # if len(gt[0]) >= 6:
+    #     for gtidx in range(len(gt)):
+    #         if gt[gtidx] == "":
+    #             continue
+    #         x = gt[gtidx][0:len(gt[gtidx]):2]
+    #         y = gt[gtidx][1:len(gt[gtidx]):2]
+    #         gt[gtidx] = [min(x),
+    #                      min(y),
+    #                      max(x) - min(x),
+    #                      max(y) - min(y)]
+    #
+    # vid_info['gt'] = gt
+    # if vid_info['gt'][-1] == '':  # small hack
+    #     vid_info['gt'] = vid_info['gt'][:-1]
+    # vid_info['nframes'] = min(len(vid_info['img_files']), len(vid_info['gt']))
+    vid_info['nframes'] =len(vid_info['img_files'])
     # catch the first box
-    curr_bbox = vid_info['gt'][0]
+    # curr_bbox = vid_info['gt'][0]
+    # curr_bbox = [114,158,88,100]
+
+    
 
     # init containers
-    bboxes = np.zeros(np.array(vid_info['gt']).shape)  # tracking result containers
+    # bboxes = np.zeros(np.array(vid_info['gt']).shape)  # tracking result containers
 
     ntraining = 0
 
@@ -135,25 +217,49 @@ def adnet_test(net, vid_path, opts, args):
     all_iteration = 0
     t = 0
 
-    for idx in range(vid_info['nframes']):
-    # for frame_idx, frame_path in enumerate(vid_info['img_files']):
-        frame_idx = idx
-        frame_path = vid_info['img_files'][idx]
+    # vidpath = "../../../demo/examples/jiaotong2.avi"
+    # cap = cv2.VideoCapture(vidpath)
+    # length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    # for frame_idx in range(length):
+
+    for frame_idx in range(vid_info['nframes']):
+    ## for frame_idx, frame_path in enumerate(vid_info['img_files']):
+        # frame_idx = idx
+        frame_path = vid_info['img_files'][frame_idx]
         t0_wholetracking = time.time()
         frame = cv2.imread(frame_path)
 
+        # cap.set(cv2.CAP_PROP_POS_FRAMES, float(frame_idx))
+        # success, frame = cap.read()
+
+        if frame_idx==0:
+            boxes,classes,scores = pred(predictor,class_names, frame)
+            frame_pred['frame_id'] = frame_idx
+            n_bbox=len(boxes)
+            for i_d in range(n_bbox):
+                frame_pred['track_id'].append(i_d)
+                frame_pred['obj_name'].append(classes[i_d])
+                frame_pred['bbox'].append(boxes[i_d])
+                frame_pred['score_cls'].append(scores[i_d])
+            vid_pred['frame_id'].extend(np.full(n_bbox, frame_pred['frame_id']))
+            vid_pred['track_id'].extend(frame_pred['track_id'])
+            vid_pred['obj_name'].extend(frame_pred['obj_name'])
+            vid_pred['bbox'].extend(frame_pred['bbox'])
+            vid_pred['score_cls'].extend(frame_pred['score_cls'])
+
+            # curr_bbox = boxes[2]
+
         # draw box or with display, then save
         if args.display_images:
-            im_with_bb = display_result(frame, curr_bbox)  # draw box and display
+            im_with_bb = display_result(frame, frame_pred['bbox'])  # draw box and display
         else:
-            im_with_bb = draw_box(frame, curr_bbox)
+            im_with_bb = draw_boxes(frame, frame_pred['bbox'])
 
-        if args.save_result_images:
-            filename = os.path.join(args.save_result_images, str(frame_idx) + '-' + str(t) + '.jpg')
-            cv2.imwrite(filename, im_with_bb)
-            pass
+        # if args.save_result_images:
+        #     filename = os.path.join(args.save_result_images, str(frame_idx).rjust(4,'0')+'-00-00-patch_initial.jpg')
+        #     cv2.imwrite(filename, im_with_bb)
 
-        curr_bbox_old = curr_bbox
+        # curr_bbox_old = curr_bbox
         cont_negatives = 0
 
         if frame_idx > 0:
@@ -162,106 +268,157 @@ def adnet_test(net, vid_path, opts, args):
                 net.module.set_phase('test')
             else:
                 net.set_phase('test')
-            t = 0
-            while True:
-                curr_patch, curr_bbox, _, _ = transform(frame, curr_bbox, None, None)
-                if args.cuda:
-                    curr_patch = curr_patch.cuda()
+            frame_pred['frame_id'] = frame_idx
+            if len(frame_pred['bbox'])==0:
+                print('the num of pred boxes is 0!')
+            for t_id,curr_bbox in enumerate(frame_pred['bbox']):
+                t = 0
+                while True:
+                    curr_patch, curr_bbox, _, _ = transform(frame, curr_bbox, None, None)
+                    if args.cuda:
+                        curr_patch = curr_patch.cuda()
 
-                curr_patch = curr_patch.unsqueeze(0)  # 1 batch input [1, curr_patch.shape]
+                    curr_patch = curr_patch.unsqueeze(0)  # 1 batch input [1, curr_patch.shape]
 
-                fc6_out, fc7_out = net.forward(curr_patch)
+                    fc6_out, fc7_out = net.forward(curr_patch)
 
-                curr_score = fc7_out.detach().cpu().numpy()[0][1]
+                    curr_score = fc7_out.detach().cpu().numpy()[0][1]
 
-                if ntraining > args.believe_score_result:
-                    if curr_score < opts['failedThre']:
-                        cont_negatives += 1
+                    # print(curr_score)
 
-                if args.cuda:
-                    action = np.argmax(fc6_out.detach().cpu().numpy())  # TODO: really okay to detach?
-                    action_prob = fc6_out.detach().cpu().numpy()[0][action]
-                else:
-                    action = np.argmax(fc6_out.detach().numpy())  # TODO: really okay to detach?
-                    action_prob = fc6_out.detach().numpy()[0][action]
+                    if ntraining > args.believe_score_result:
+                        if curr_score < opts['failedThre']:
+                            cont_negatives += 1
 
-                # do action
-                curr_bbox = do_action(curr_bbox, opts, action, frame.shape)
+                    if args.cuda:
+                        action = np.argmax(fc6_out.detach().cpu().numpy())  # TODO: really okay to detach?
+                        action_prob = fc6_out.detach().cpu().numpy()[0][action]
+                    else:
+                        action = np.argmax(fc6_out.detach().numpy())  # TODO: really okay to detach?
+                        action_prob = fc6_out.detach().numpy()[0][action]
 
-                # bound the curr_bbox size
-                if curr_bbox[2] < 10:
-                    curr_bbox[0] = min(0, curr_bbox[0] + curr_bbox[2] / 2 - 10 / 2)
-                    curr_bbox[2] = 10
-                if curr_bbox[3] < 10:
-                    curr_bbox[1] = min(0, curr_bbox[1] + curr_bbox[3] / 2 - 10 / 2)
-                    curr_bbox[3] = 10
+                    # do action
+                    curr_bbox = do_action(curr_bbox, opts, action, frame.shape)
 
-                t += 1
+                    # bound the curr_bbox size
+                    if curr_bbox[2] < 10:
+                        curr_bbox[0] = min(0, curr_bbox[0] + curr_bbox[2] / 2 - 10 / 2)
+                        curr_bbox[2] = 10
+                    if curr_bbox[3] < 10:
+                        curr_bbox[1] = min(0, curr_bbox[1] + curr_bbox[3] / 2 - 10 / 2)
+                        curr_bbox[3] = 10
 
-                # draw box or with display, then save
-                if args.display_images:
-                    im_with_bb = display_result(frame, curr_bbox)  # draw box and display
-                else:
-                    im_with_bb = draw_box(frame, curr_bbox)
+                    t += 1
 
-                if args.save_result_images:
-                    #filename = os.path.join(args.save_result_images, str(frame_idx) + '-' + str(t) + '.jpg')
-                    #cv2.imwrite(filename, im_with_bb)
-                    pass
+                    # draw box or with display, then save
+                    if args.display_images:
+                        im_with_bb = display_result(frame, curr_bbox)  # draw box and display
+                    else:
+                        im_with_bb = draw_boxes(frame, curr_bbox)
 
-                if action == opts['stop_action'] or t >= opts['num_action_step_max']:
-                    break
+                    # if args.save_result_images:
+                    #     filename = os.path.join(args.save_result_images, str(frame_idx).rjust(4,'0')+'-'+str(t_id).rjust(2,'0')+'-' + str(t).rjust(2,'0') + '.jpg')
+                    #     cv2.imwrite(filename, im_with_bb)
+                    #     pass
 
-            print('final curr_score: %.4f' % curr_score)
+                    if action == opts['stop_action'] or t >= opts['num_action_step_max']:
+                        break
 
-            # redetection when confidence < threshold 0.5. But when fc7 is already reliable. Else, just trust the ADNet
-            if ntraining > args.believe_score_result:
+                # print('final curr_score: %.4f' % curr_score)
+
+                # redetection when confidence < threshold 0.5. But when fc7 is already reliable. Else, just trust the ADNet
+                # if ntraining > args.believe_score_result:
+
                 if curr_score < 0.5:
                     print('redetection')
                     is_negative = True
 
+                    boxes, classes, scores = pred(predictor, class_names,frame)
+                    # frame_pred['frame_id'] = frame_idx
+                    frame_pred['track_id']=[]
+                    frame_pred['obj_name']=[]
+                    frame_pred['bbox']=[]
+                    frame_pred['score_cls']=[]
+                    n_bbox = len(boxes)
+                    for i_d in range(n_bbox):
+                        frame_pred['track_id'].append(i_d)
+                        frame_pred['obj_name'].append(classes[i_d])
+                        frame_pred['bbox'].append(boxes[i_d])
+                        frame_pred['score_cls'].append(scores[i_d])
+                    # vid_pred['frame_id'].extend(np.full(n_bbox, frame_pred['frame_id']))
+                    # vid_pred['track_id'].extend(frame_pred['track_id'])
+                    # vid_pred['obj_name'].extend(frame_pred['obj_name'])
+                    # vid_pred['bbox'].extend(frame_pred['bbox'])
+                    # vid_pred['score_cls'].extend(frame_pred['score_cls'])
+
                     # redetection process
-                    redet_samples = gen_samples('gaussian', curr_bbox_old, opts['redet_samples'], opts, min(1.5, 0.6 * 1.15 ** cont_negatives), opts['redet_scale_factor'])
-                    score_samples = []
-
-                    for redet_sample in redet_samples:
-                        temp_patch, temp_bbox, _, _ = transform(frame, redet_sample, None, None)
-                        if args.cuda:
-                            temp_patch = temp_patch.cuda()
-
-                        temp_patch = temp_patch.unsqueeze(0)  # 1 batch input [1, curr_patch.shape]
-
-                        fc6_out_temp, fc7_out_temp = net.forward(temp_patch)
-
-                        score_samples.append(fc7_out_temp.detach().cpu().numpy()[0][1])
-
-                    score_samples = np.array(score_samples)
-                    max_score_samples_idx = np.argmax(score_samples)
-
-                    # replace the curr_box with the samples with maximum score
-                    curr_bbox = redet_samples[max_score_samples_idx]
-
+                    # redet_samples = gen_samples('gaussian', curr_bbox_old, opts['redet_samples'], opts, min(1.5, 0.6 * 1.15 ** cont_negatives), opts['redet_scale_factor'])
+                    # score_samples = []
+                    #
+                    # for redet_sample in redet_samples:
+                    #     temp_patch, temp_bbox, _, _ = transform(frame, redet_sample, None, None)
+                    #     if args.cuda:
+                    #         temp_patch = temp_patch.cuda()
+                    #
+                    #     temp_patch = temp_patch.unsqueeze(0)  # 1 batch input [1, curr_patch.shape]
+                    #
+                    #     fc6_out_temp, fc7_out_temp = net.forward(temp_patch)
+                    #
+                    #     score_samples.append(fc7_out_temp.detach().cpu().numpy()[0][1])
+                    #
+                    # score_samples = np.array(score_samples)
+                    # max_score_samples_idx = np.argmax(score_samples)
+                    #
+                    # # replace the curr_box with the samples with maximum score
+                    # curr_bbox = redet_samples[max_score_samples_idx]
+                    #
                     # update the final result image
                     if args.display_images:
-                        im_with_bb = display_result(frame, curr_bbox)  # draw box and display
+                        im_with_bb = display_result(frame, frame_pred['bbox'])  # draw box and display
                     else:
-                        im_with_bb = draw_box(frame, curr_bbox)
-
-                    if args.save_result_images:
-                        filename = os.path.join(args.save_result_images, str(frame_idx) + '-redet.jpg')
-                        cv2.imwrite(filename, im_with_bb)
+                        im_with_bb = draw_boxes(frame, frame_pred['bbox'])
+                    #
+                    # if args.save_result_images:
+                    #     filename = os.path.join(args.save_result_images, str(frame_idx).rjust(4,'0') + '-98-20-redet.jpg')
+                    #     cv2.imwrite(filename, im_with_bb)
+                    break
                 else:
                     is_negative = False
-            else:
-                is_negative = False
+                    # frame_pred['frame_id'] = frame_idx
+                    # frame_pred['track_id'] = []
+                    # frame_pred['obj_name'] = []
+                    frame_pred['bbox'][t_id] = curr_bbox
+                    frame_pred['score_cls'][t_id] = curr_score
+            if is_negative==False:
+                if args.display_images:
+                    im_with_bb = display_result(frame, frame_pred['bbox'])  # draw box and display
+                else:
+                    im_with_bb = draw_boxes(frame, frame_pred['bbox'])
+            vid_pred['frame_id'].extend(np.full(n_bbox, frame_pred['frame_id']))
+            vid_pred['track_id'].extend(frame_pred['track_id'])
+            vid_pred['obj_name'].extend(frame_pred['obj_name'])
+            vid_pred['bbox'].extend(frame_pred['bbox'])
+            vid_pred['score_cls'].extend(frame_pred['score_cls'])
 
         if args.save_result_images:
-            filename = os.path.join(args.save_result_images, 'final-' + str(frame_idx) + '.jpg')
-            cv2.imwrite(filename, im_with_bb)
+            filename = os.path.join(args.save_result_images, str(frame_idx).rjust(4,'0')+'-99-21-final' + '.jpg')
+            # cv2.imwrite(filename, im_with_bb)
+            boxes=np.asarray(frame_pred['bbox'])
+            boxes[:, 2] = boxes[:, 2] + boxes[:, 0]
+            boxes[:, 3] = boxes[:, 3] + boxes[:, 1]
+            outputs={
+                "pred_boxes":boxes,
+                "scores":frame_pred['score_cls'],
+                "pred_classes":frame_pred['obj_name']
+            }
+            v = Visualizer(frame[:, :, ::-1], metalog, scale=1.2)
+            v = v.draw_instance_predictions2(outputs)
+            cv2.imwrite(filename, v.get_image(), [int(cv2.IMWRITE_JPEG_QUALITY), 70])
 
         # record the curr_bbox result
-        bboxes[frame_idx] = curr_bbox
+        # bboxes[frame_idx] = curr_bbox
 
+        '''
         # create or update storage + set iteration_range for training
         if frame_idx == 0:
             dataset_storage_pos = OnlineAdaptationDatasetStorage(initial_frame=frame, first_box=curr_bbox, opts=opts, args=args, positive=True)
@@ -291,13 +448,13 @@ def adnet_test(net, vid_path, opts, args):
             # generate dataset just before training
             dataset_pos = OnlineAdaptationDataset(dataset_storage_pos)
             data_loader_pos = data.DataLoader(dataset_pos, opts['minibatch_size'], num_workers=args.num_workers,
-                                              shuffle=True, pin_memory=False)
+                                              shuffle=True, pin_memory=True)
             batch_iterator_pos = None
 
             if opts['nNeg_init'] != 0:  # (thanks to small hack in adnet_test) the nNeg_online is also 0
                 dataset_neg = OnlineAdaptationDataset(dataset_storage_neg)
                 data_loader_neg = data.DataLoader(dataset_neg, opts['minibatch_size'], num_workers=args.num_workers,
-                                                  shuffle=True, pin_memory=False)
+                                                  shuffle=True, pin_memory=True)
                 batch_iterator_neg = None
             else:
                 dataset_neg = []
@@ -376,14 +533,14 @@ def adnet_test(net, vid_path, opts, args):
                                                           'score_loss': score_l.item(),
                                                           'total': (action_l.item() + score_l.item())},
                                        global_step=all_iteration)
-
+        '''
         t1_wholetracking = time.time()
         t_sum += t1_wholetracking - t0_wholetracking
-        print('whole tracking time = %.4f sec.' % (t1_wholetracking - t0_wholetracking))
+        # print('whole tracking time = %.4f sec.' % (t1_wholetracking - t0_wholetracking))
 
     # evaluate the precision
-    bboxes = np.array(bboxes)
-    vid_info['gt'] = np.array(vid_info['gt'])
+    # bboxes = np.array(bboxes)
+    # vid_info['gt'] = np.array(vid_info['gt'])
 
     # iou_precisions = iou_precision_plot(bboxes, vid_info['gt'], vid_path, show=args.display_images, save_plot=args.save_result_images)
     #
@@ -391,8 +548,9 @@ def adnet_test(net, vid_path, opts, args):
     #
     # precisions = [distance_precisions, iou_precisions]
 
-    np.save(args.save_result_npy + '-bboxes.npy', bboxes)
-    np.save(args.save_result_npy + '-ground_truth.npy', vid_info['gt'])
+    # np.save(args.save_result_npy + '-bboxes.npy', bboxes)
+    # np.save(args.save_result_npy + '-ground_truth.npy', vid_info['gt'])
 
     # return bboxes, t_sum, precisions
-    return bboxes, t_sum
+    print('vid %d : %d frames, whole tracking time : %.4f sec.' % (vidx,vid_info['nframes'],t_sum))
+    return vid_pred

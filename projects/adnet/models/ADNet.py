@@ -114,7 +114,7 @@ class ADNet(nn.Module):
         self.fc6 = nn.Linear(512 + self.action_dynamic_size, self.num_classes)
         self.fc7 = nn.Linear(512 + self.action_dynamic_size, 2)
 
-        self.softmax = nn.Softmax()
+        self.softmax = nn.Softmax(dim=1)
 
     # update_action_dynamic: history of action. We don't update the action_dynamic in SL learning.
     def forward(self, x, action_dynamic=None, update_action_dynamic=False):
