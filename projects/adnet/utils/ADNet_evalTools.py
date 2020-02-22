@@ -1,3 +1,4 @@
+import __init__
 import numpy as np
 from utils.my_util import get_ILSVRC_eval_infos,cal_iou,cal_success
 from utils.overlap_ratio import overlap_ratio
@@ -182,5 +183,5 @@ def do_precison(path_pred,path_gt):
     print('cls precision(iou>%.2f): %.2f'%(cls_success_all[14][0],cls_success_all[14][1]))
 
 if __name__ == "__main__":
-    # gen_gt_file('../datasets/data/ILSVRC-vid-eval')
-    do_precison('../datasets/data/ILSVRC-vid-eval-pred.txt','../datasets/data/ILSVRC-vid-eval-gt.txt')
+    gen_gt_file('../datasets/data/ILSVRC-vid-eval')
+    # do_precison('../datasets/data/ILSVRC-vid-eval-pred.txt','../datasets/data/ILSVRC-vid-eval-gt.txt')

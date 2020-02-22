@@ -1,3 +1,4 @@
+import __init__
 import glob, os
 import xml.etree.ElementTree as ET
 import tensorflow as tf
@@ -165,7 +166,7 @@ def get_ILSVRC_eval_infos():
     #img_paths = img_paths[::gt_skip + 1]
     img_paths = [line.split(' ')[0] for line in img_paths]
     train_img_info.close()
-    for train_i in range(len(img_paths)//100):
+    for train_i in range(len(img_paths)):
         if img_paths[train_i][-6:]=='000000':
             if train_i!=0:
                 if last_video_full==False:
