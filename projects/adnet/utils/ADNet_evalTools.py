@@ -1,5 +1,5 @@
 import numpy as np
-from utils.my_util import get_ILSVRC_eval_infos
+from utils.my_util import get_ILSVRC_eval_infos,cal_iou,cal_success
 from utils.overlap_ratio import overlap_ratio
 
 def gen_gt_file(path):
@@ -140,10 +140,19 @@ def read_results_info(path_pred):
 
 def maxiou(box,bboxs_pred):
     if len(bboxs_pred)==0:
-        return -1,0
-
+        return 0,0
+    max_id=0
+    max_iou=0
+    for t_id,bbox_pred in enumerate(bboxs_pred):
+        iou=cal_iou(box,bbox_pred)
+        if iou>max_iou:
+            max_iou=iou
+            max_id=t_id
+    return max_id,max_iou
 
 def do_precison(path_pred,path_gt):
+    ious=[]
+    ious_cls=[]
     vids_pred =read_results_info(path_pred)
     vids_gt =read_results_info(path_gt)
     j = 0
@@ -157,10 +166,20 @@ def do_precison(path_pred,path_gt):
             while idf !=vids_gt[j]['frame_id'][l]:
                 l+=1
             bboxs_gt=vids_gt[j]['bbox'][l]
-            bboxs_pred= vids_gt[i]['bbox'][k]
-            for box in bboxs_gt:
+            bboxs_pred= vids_pred[i]['bbox'][k]
+            for id_bgt,box in enumerate(bboxs_gt):
                 id_iou,iou=maxiou(box,bboxs_pred)
-
+                ious.append(iou)
+                if vids_pred[i]['obj_name'][k][id_iou]==vids_gt[j]['bbox'][l][id_bgt]:
+                    ious_cls.append(iou)
+                else:
+                    ious_cls.append(0)
+            l += 1
+        j+=1
+    iou_success_all=cal_success(ious)
+    cls_success_all = cal_success(ious_cls)
+    print('iou precision(iou>%.2f): %.2f'%(iou_success_all[14][0],iou_success_all[14][1]))
+    print('cls precision(iou>%.2f): %.2f'%(cls_success_all[14][0],cls_success_all[14][1]))
 
 if __name__ == "__main__":
     # gen_gt_file('../datasets/data/ILSVRC-vid-eval')

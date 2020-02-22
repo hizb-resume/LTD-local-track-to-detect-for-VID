@@ -55,9 +55,13 @@ def cal_success(iou):
     success_all = []
     overlap_thresholds = np.arange(0, 1.05, 0.05)
     for overlap_threshold in overlap_thresholds:
+        t=[]
         success = sum(np.array(iou) > overlap_threshold) / len(iou)
-        success_all.append(success)
-    return np.array(success_all)
+        t.append(overlap_threshold)
+        t.append(success)
+        success_all.append(t)
+    # return np.array(success_all)
+    return success_all
 
 def get_ILSVRC_videos_infos():
     '''
