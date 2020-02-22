@@ -1,4 +1,4 @@
-import __init__
+import _init_paths
 import glob, os
 import xml.etree.ElementTree as ET
 import tensorflow as tf
