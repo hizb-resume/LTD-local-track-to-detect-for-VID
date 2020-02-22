@@ -1,3 +1,4 @@
+import numpy as np
 from utils.my_util import get_ILSVRC_eval_infos
 from utils.overlap_ratio import overlap_ratio
 
@@ -56,6 +57,18 @@ def do_precison(path_pred,path_gt):
     }
     pred_file = open(path_pred, 'r')
     list1=pred_file.readlines()
+    # img_paths = [line.split(',') for line in list1]
+    img_paths = []
+    for line in list1:
+        img_path=[]
+        tsp=line.split(',')
+        img_path.extend(tsp[: 4])
+        for ti in range(4,9):
+            img_path.append(float(tsp[ti]))
+        img_paths.append(img_path)
+
+    img_paths=np.asarray(img_paths)
+    # t1=img_paths[0]
     pred_file.close()
 
     gt_file = open(path_gt, 'r')
@@ -64,5 +77,5 @@ def do_precison(path_pred,path_gt):
 
 
 if __name__ == "__main__":
-    gen_gt_file('../datasets/data/ILSVRC-vid-eval')
+    # gen_gt_file('../datasets/data/ILSVRC-vid-eval')
     do_precison('../datasets/data/ILSVRC-vid-eval-pred.txt','../datasets/data/ILSVRC-vid-eval-gt.txt')
