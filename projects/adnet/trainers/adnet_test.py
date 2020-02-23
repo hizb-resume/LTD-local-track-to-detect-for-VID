@@ -189,7 +189,7 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
         vid_info['nframes'] =int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         # vid_info['nframes'] = 15
     else:
-        # vid_info['nframes'] =15
+        # vid_info['nframes'] =48
         vid_info['nframes'] = len(vid_info['img_files'])
     # catch the first box
     # curr_bbox = vid_info['gt'][0]
@@ -254,6 +254,10 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
             print('redetection: frame %d'%frame_idx)
             boxes,classes,scores = pred(predictor,class_names, frame)
             frame_pred['frame_id'] = frame_idx
+            frame_pred['track_id'] = []
+            frame_pred['obj_name'] = []
+            frame_pred['bbox'] = []
+            frame_pred['score_cls'] = []
             n_bbox=len(boxes)
             for i_d in range(n_bbox):
                 frame_pred['track_id'].append(i_d)
