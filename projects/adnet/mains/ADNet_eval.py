@@ -163,7 +163,7 @@ if __name__ == "__main__":
         '''
 
         vid_pred = adnet_test(net,predictor,metalog,class_names, vidx,vid_folder['img_files'], opts, args)
-        gen_pred_file('../datasets/data/ILSVRC-vid-eval',vid_pred)
+        gen_pred_file('../datasets/data/ILSVRC-vid-eval_tem',vid_pred)
     #     all_precisions.append(precisions)
     #
     # print(all_precisions)

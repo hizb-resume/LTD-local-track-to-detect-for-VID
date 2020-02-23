@@ -130,11 +130,15 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
 
     #vid_info['img_files'] = glob.glob(os.path.join(vid_path, 'img', '*.jpg'))
     #vid_info['img_files'] = glob.glob(os.path.join(vid_path, '*.jpg'))
+    isVidFile=False
     if isinstance(vid_path,list):
         vid_info['img_files'] =vid_path
     else:
-        vid_info['img_files'] = glob.glob(os.path.join(vid_path, '*.JPEG'))
-        vid_info['img_files'].sort(key=str.lower)
+        if '.' in vid_path[-5:]:
+            isVidFile = True
+        else:
+            vid_info['img_files'] = glob.glob(os.path.join(vid_path, '*.JPEG'))
+            vid_info['img_files'].sort(key=str.lower)
 
     #gt_path = os.path.join(vid_path, 'groundtruth_rect.txt')
     # gt_path = os.path.join(vid_path, 'groundtruth.txt')
@@ -179,7 +183,12 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
     # if vid_info['gt'][-1] == '':  # small hack
     #     vid_info['gt'] = vid_info['gt'][:-1]
     # vid_info['nframes'] = min(len(vid_info['img_files']), len(vid_info['gt']))
-    vid_info['nframes'] =len(vid_info['img_files'])
+    cap=None
+    if isVidFile == True:
+        cap = cv2.VideoCapture(vidpath)
+        vid_info['nframes'] =int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    else:
+        vid_info['nframes'] =len(vid_info['img_files'])
     # catch the first box
     # curr_bbox = vid_info['gt'][0]
     # curr_bbox = [114,158,88,100]
@@ -226,9 +235,13 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
     for frame_idx in range(vid_info['nframes']):
     ## for frame_idx, frame_path in enumerate(vid_info['img_files']):
         # frame_idx = idx
-        frame_path = vid_info['img_files'][frame_idx]
+        if isVidFile == True:
+            cap.set(cv2.CAP_PROP_POS_FRAMES, float(frame_idx))
+            success, frame = cap.read()
+        else:
+            frame_path = vid_info['img_files'][frame_idx]
+            frame = cv2.imread(frame_path)
         t0_wholetracking = time.time()
-        frame = cv2.imread(frame_path)
 
         # cap.set(cv2.CAP_PROP_POS_FRAMES, float(frame_idx))
         # success, frame = cap.read()

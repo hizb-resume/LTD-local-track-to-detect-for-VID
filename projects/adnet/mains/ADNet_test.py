@@ -142,14 +142,18 @@ if __name__ == "__main__":
         else:
             net.set_phase('test')
 
+        # vid_path = os.path.join(dataset_root, vid_folder)
+        vid_path ='../datasets/data/ILSVRC/Data/VID/train/ILSVRC2015_VID_train_0000/'
+        vid_folder=vid_path.split('/')[-2]
+
+        # vid_path = "../../../demo/examples/jiaotong2.avi"
+        # vid_folder=vid_path.split('/')[-1]
+
         if args.save_result_images is not None:
             args.save_result_images = os.path.join(save_root, vid_folder)
             if not os.path.exists(args.save_result_images):
                 os.makedirs(args.save_result_images)
-
         args.save_result_npy = os.path.join(save_root_npy, vid_folder)
-
-        vid_path = os.path.join(dataset_root, vid_folder)
 
         # load ADNetDomainSpecific
         '''
