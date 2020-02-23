@@ -427,17 +427,20 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
         if args.save_result_images:
             filename = os.path.join(args.save_result_images, str(frame_idx).rjust(4,'0')+'-99-21-final' + '.jpg')
             # cv2.imwrite(filename, im_with_bb)
-            boxes=np.asarray(frame_pred['bbox'])
-            boxes[:, 2] = boxes[:, 2] + boxes[:, 0]
-            boxes[:, 3] = boxes[:, 3] + boxes[:, 1]
-            outputs={
-                "pred_boxes":boxes,
-                "scores":frame_pred['score_cls'],
-                "pred_classes":frame_pred['obj_name']
-            }
-            v = Visualizer(frame[:, :, ::-1], metalog, scale=1.2)
-            v = v.draw_instance_predictions2(outputs)
-            cv2.imwrite(filename, v.get_image(), [int(cv2.IMWRITE_JPEG_QUALITY), 70])
+            if len(frame_pred['bbox']) == 0:
+                cv2.imwrite(filename, frame, [int(cv2.IMWRITE_JPEG_QUALITY), 70])
+            else:
+                boxes=np.asarray(frame_pred['bbox'])
+                boxes[:, 2] = boxes[:, 2] + boxes[:, 0]
+                boxes[:, 3] = boxes[:, 3] + boxes[:, 1]
+                outputs={
+                    "pred_boxes":boxes,
+                    "scores":frame_pred['score_cls'],
+                    "pred_classes":frame_pred['obj_name']
+                }
+                v = Visualizer(frame[:, :, ::-1], metalog, scale=1.2)
+                v = v.draw_instance_predictions2(outputs)
+                cv2.imwrite(filename, v.get_image(), [int(cv2.IMWRITE_JPEG_QUALITY), 70])
 
         # record the curr_bbox result
         # bboxes[frame_idx] = curr_bbox
