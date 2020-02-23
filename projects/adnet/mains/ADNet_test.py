@@ -143,9 +143,9 @@ if __name__ == "__main__":
             net.set_phase('test')
 
         # vid_path = os.path.join(dataset_root, vid_folder)
-        vid_path ='../datasets/data/ILSVRC/Data/VID/train/ILSVRC2015_VID_train_0000/'
-        vid_folder=vid_path.split('/')[-2]
 
+        vid_path ='../datasets/data/ILSVRC/Data/VID/train/ILSVRC2015_VID_train_0001/ILSVRC2015_train_00165005/'
+        vid_folder=vid_path.split('/')[-2]
         # vid_path = "../../../demo/examples/jiaotong2.avi"
         # vid_folder=vid_path.split('/')[-1]
 

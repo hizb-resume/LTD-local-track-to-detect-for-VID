@@ -185,10 +185,12 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
     # vid_info['nframes'] = min(len(vid_info['img_files']), len(vid_info['gt']))
     cap=None
     if isVidFile == True:
-        cap = cv2.VideoCapture(vidpath)
+        cap = cv2.VideoCapture(vid_path)
         vid_info['nframes'] =int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        # vid_info['nframes'] = 15
     else:
-        vid_info['nframes'] =len(vid_info['img_files'])
+        # vid_info['nframes'] =15
+        vid_info['nframes'] = len(vid_info['img_files'])
     # catch the first box
     # curr_bbox = vid_info['gt'][0]
     # curr_bbox = [114,158,88,100]
