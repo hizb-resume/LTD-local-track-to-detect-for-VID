@@ -221,7 +221,8 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
     # cap = cv2.VideoCapture(vidpath)
     # length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     # for frame_idx in range(length):
-
+    sign_redet=False
+    dis_redet=0
     for frame_idx in range(vid_info['nframes']):
     ## for frame_idx, frame_path in enumerate(vid_info['img_files']):
         # frame_idx = idx
@@ -231,8 +232,11 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
 
         # cap.set(cv2.CAP_PROP_POS_FRAMES, float(frame_idx))
         # success, frame = cap.read()
-
-        if frame_idx==0:
+        if len(frame_pred['bbox']) == 0:
+            sign_redet = True
+            print('the num of pred boxes is 0! pre frame: %d, now frame: %d .'%(frame_idx-1,frame_idx))
+        if frame_idx==0 or sign_redet==True or dis_redet==20:
+            print('redetection: frame %d'%frame_idx)
             boxes,classes,scores = pred(predictor,class_names, frame)
             frame_pred['frame_id'] = frame_idx
             n_bbox=len(boxes)
@@ -246,31 +250,37 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
             vid_pred['obj_name'].extend(frame_pred['obj_name'])
             vid_pred['bbox'].extend(frame_pred['bbox'])
             vid_pred['score_cls'].extend(frame_pred['score_cls'])
+            sign_redet = False
+            dis_redet = 0
 
             # curr_bbox = boxes[2]
 
         # draw box or with display, then save
-        if args.display_images:
-            im_with_bb = display_result(frame, frame_pred['bbox'])  # draw box and display
-        else:
-            im_with_bb = draw_boxes(frame, frame_pred['bbox'])
+        # if args.display_images:
+        #     im_with_bb = display_result(frame, frame_pred['bbox'])  # draw box and display
+        # else:
+        #     im_with_bb = draw_boxes(frame, frame_pred['bbox'])
 
         # if args.save_result_images:
         #     filename = os.path.join(args.save_result_images, str(frame_idx).rjust(4,'0')+'-00-00-patch_initial.jpg')
         #     cv2.imwrite(filename, im_with_bb)
 
         # curr_bbox_old = curr_bbox
-        cont_negatives = 0
+        # cont_negatives = 0
 
-        if frame_idx > 0:
+        # if frame_idx > 0:
+        else:
+            dis_redet += 1
             # tracking
-            if args.cuda:
-                net.module.set_phase('test')
-            else:
-                net.set_phase('test')
+            # if args.cuda:
+            #     net.module.set_phase('test')
+            # else:
+            #     net.set_phase('test')
             frame_pred['frame_id'] = frame_idx
-            if len(frame_pred['bbox'])==0:
-                print('the num of pred boxes is 0!')
+            # if len(frame_pred['bbox'])==0:
+            #     sign_redet=True
+            #     continue
+            #     print('the num of pred boxes is 0!')
             for t_id,curr_bbox in enumerate(frame_pred['bbox']):
                 t = 0
                 while True:
@@ -286,9 +296,9 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
 
                     # print(curr_score)
 
-                    if ntraining > args.believe_score_result:
-                        if curr_score < opts['failedThre']:
-                            cont_negatives += 1
+                    # if ntraining > args.believe_score_result:
+                    #     if curr_score < opts['failedThre']:
+                    #         cont_negatives += 1
 
                     if args.cuda:
                         action = np.argmax(fc6_out.detach().cpu().numpy())  # TODO: really okay to detach?
@@ -330,8 +340,9 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
                 # if ntraining > args.believe_score_result:
 
                 if curr_score < 0.5:
-                    print('redetection')
+                    print('redetection: frame %d' % frame_idx)
                     is_negative = True
+                    dis_redet = 0
 
                     boxes, classes, scores = pred(predictor, class_names,frame)
                     # frame_pred['frame_id'] = frame_idx

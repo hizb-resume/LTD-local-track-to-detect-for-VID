@@ -133,6 +133,10 @@ if __name__ == "__main__":
         cudnn.benchmark = True
     if args.cuda:
         net = net.cuda()
+    if args.cuda:
+        net.module.set_phase('test')
+    else:
+        net.set_phase('test')
 
     videos_infos, train_videos = get_ILSVRC_eval_infos()
     print("videos nums: %d ."%(len(videos_infos)))

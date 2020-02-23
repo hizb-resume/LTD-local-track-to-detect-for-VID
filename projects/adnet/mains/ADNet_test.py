@@ -137,6 +137,11 @@ if __name__ == "__main__":
         if args.cuda:
             net = net.cuda()
 
+        if args.cuda:
+            net.module.set_phase('test')
+        else:
+            net.set_phase('test')
+
         if args.save_result_images is not None:
             args.save_result_images = os.path.join(save_root, vid_folder)
             if not os.path.exists(args.save_result_images):
