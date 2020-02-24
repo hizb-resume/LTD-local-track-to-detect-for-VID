@@ -172,8 +172,8 @@ def get_ILSVRC_dicts(path_root,img_dir,det_or_vid,train_or_val):
     for idx, v in enumerate(path_info):
         record = {}
 
-        filename = os.path.join(path_root,"Data",det_or_vid,train_or_val, v,".JPEG")
-        gtfilepath= os.path.join(path_root,"Annotations",det_or_vid,train_or_val, v,".xml")
+        filename = path_root+"Data/"+det_or_vid+"/"+train_or_val+"/"+v+".JPEG"
+        gtfilepath= path_root+"Annotations/"+det_or_vid+"/"+train_or_val+"/"+v+".xml"
         img_info=get_xml_img_info(gtfilepath)
 
         height = img_info['imgsize'][0]
@@ -213,7 +213,7 @@ def register_ILSVRC():
     for c in ["DET","VID"]:
         for d in ["train", "val"]:
             DatasetCatalog.register("ILSVRC_" +c+"_"+ d, lambda d=d: get_ILSVRC_dicts(
-                "../datasets/data/ILSVRC/",("ImageSets/VID/" + d+".txt"),c,d))
+                "../../../projects/adnet/datasets/data/ILSVRC/",("ImageSets/" +c+"/"+ d+".txt"),c,d))
             MetadataCatalog.get("ILSVRC_" +c+"_"+ d).set(thing_classes=CLASS_NAMES)
 
 if __name__ == "__main__":
@@ -221,7 +221,7 @@ if __name__ == "__main__":
     for c in ["DET","VID"]:
         for d in ["train", "val"]:
             dataset_dicts = get_ILSVRC_dicts(
-                "../datasets/data/ILSVRC/", ("ImageSets/VID/" + d + ".txt"), c, d)
+                "../../../projects/adnet/datasets/data/ILSVRC/", ("ImageSets/" +c+"/"+ d+".txt"), c, d)
             ILSVRC_metadata = MetadataCatalog.get("ILSVRC_" +c+"_"+ d)
             for d in random.sample(dataset_dicts, 3):
                 img = cv2.imread(d["file_name"])
