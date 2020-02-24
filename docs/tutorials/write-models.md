@@ -28,9 +28,12 @@ Then, you can use `cfg.MODEL.BACKBONE.NAME = 'ToyBackBone'` in your config objec
 As another example, to add new abilities to the ROI heads in the Generalized R-CNN meta-architecture,
 you can implement a new
 [ROIHeads](../modules/modeling.html#detectron2.modeling.ROIHeads) subclass and put it in the `ROI_HEADS_REGISTRY`.
-See [densepose in detectron2](https://github.com/facebookresearch/detectron2/tree/master/projects/DensePose)
-for an example that implements new ROIHeads.
+See [densepose in detectron2](../../projects/DensePose)
+and [meshrcnn](https://github.com/facebookresearch/meshrcnn)
+for examples that implement new ROIHeads to perform new tasks.
+And [projects/](../../projects/)
+contains more examples that implement different architectures.
 
-Other registries can be found in [API documentation](../modules/modeling.html#model-registries).
+A complete list of registries can be found in [API documentation](../modules/modeling.html#model-registries).
 You can register components in these registries to customize different parts of a model, or the
 entire model.

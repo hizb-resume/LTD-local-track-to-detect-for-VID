@@ -12,6 +12,8 @@ from detectron2.utils.registry import Registry
 ANCHOR_GENERATOR_REGISTRY = Registry("ANCHOR_GENERATOR")
 """
 Registry for modules that creates object detection anchors for feature maps.
+
+The registered object will be called with `obj(cfg, input_shape)`.
 """
 
 
@@ -142,9 +144,9 @@ class DefaultAnchorGenerator(nn.Module):
         for the entire feature map by tiling these tensors; see `meth:grid_anchors`.
 
         Args:
-            sizes (tuple[float]): Absolute size of the anchors in the units of the input
-                image (the input received by the network, after undergoing necessary scaling).
-                The absolute size is given as the side length of a box.
+            sizes (tuple[float]): Absolute size (i.e. sqrt of area) of the anchors in the units
+                of pixels on the input image (the input received by the network, after
+                undergoing necessary scaling).
             aspect_ratios (tuple[float]]): Aspect ratios of the boxes computed as box
                 height / width.
 

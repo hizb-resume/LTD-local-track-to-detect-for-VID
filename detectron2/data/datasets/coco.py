@@ -44,7 +44,7 @@ def load_coco_json(json_file, image_root, dataset_name=None, extra_annotation_ke
             For example, the densepose annotations are loaded in this way.
 
     Returns:
-        list[dict]: a list of dicts in Detectron2 standard format. (See
+        list[dict]: a list of dicts in Detectron2 standard dataset dicts format. (See
         `Using Custom Datasets </tutorials/datasets.html>`_ )
 
     Notes:
@@ -88,7 +88,7 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
         meta.thing_dataset_id_to_contiguous_id = id_map
 
     # sort indices for reproducible results
-    img_ids = sorted(list(coco_api.imgs.keys()))
+    img_ids = sorted(coco_api.imgs.keys())
     # imgs is a list of dicts, each looks something like:
     # {'license': 4,
     #  'url': 'http://farm6.staticflickr.com/5454/9413846304_881d5e5c3b_z.jpg',
@@ -185,7 +185,7 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
         dataset_dicts.append(record)
 
     if num_instances_without_valid_segmentation > 0:
-        logger.warn(
+        logger.warning(
             "Filtered out {} instances without valid segmentation. "
             "There might be issues in your dataset generation process.".format(
                 num_instances_without_valid_segmentation
@@ -289,9 +289,18 @@ def convert_to_coco_dict(dataset_name):
     """
 
     dataset_dicts = DatasetCatalog.get(dataset_name)
+    metadata = MetadataCatalog.get(dataset_name)
+
+    # unmap the category mapping ids for COCO
+    if hasattr(metadata, "thing_dataset_id_to_contiguous_id"):
+        reverse_id_mapping = {v: k for k, v in metadata.thing_dataset_id_to_contiguous_id.items()}
+        reverse_id_mapper = lambda contiguous_id: reverse_id_mapping[contiguous_id]  # noqa
+    else:
+        reverse_id_mapper = lambda contiguous_id: contiguous_id  # noqa
+
     categories = [
-        {"id": id, "name": name}
-        for id, name in enumerate(MetadataCatalog.get(dataset_name).thing_classes)
+        {"id": reverse_id_mapper(id), "name": name}
+        for id, name in enumerate(metadata.thing_classes)
     ]
 
     logger.info("Converting dataset dicts into COCO format")
@@ -350,8 +359,8 @@ def convert_to_coco_dict(dataset_name):
             coco_annotation["image_id"] = coco_image["id"]
             coco_annotation["bbox"] = [round(float(x), 3) for x in bbox]
             coco_annotation["area"] = area
-            coco_annotation["category_id"] = annotation["category_id"]
             coco_annotation["iscrowd"] = annotation.get("iscrowd", 0)
+            coco_annotation["category_id"] = reverse_id_mapper(annotation["category_id"])
 
             # Add optional fields
             if "keypoints" in annotation:
@@ -400,7 +409,7 @@ def convert_to_coco_json(dataset_name, output_file, allow_cached=True):
 
     PathManager.mkdirs(os.path.dirname(output_file))
     with file_lock(output_file):
-        if os.path.exists(output_file) and allow_cached:
+        if PathManager.exists(output_file) and allow_cached:
             logger.info(f"Cached annotations in COCO format already exist: {output_file}")
         else:
             logger.info(f"Converting dataset annotations in '{dataset_name}' to COCO format ...)")

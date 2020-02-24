@@ -18,7 +18,7 @@ from detectron2.structures import BoxMode
 from detectron2.utils.comm import all_gather, is_main_process, synchronize
 from detectron2.utils.logger import create_small_table
 
-from .densepose_coco_evaluation import DensePoseCocoEval
+from .densepose_coco_evaluation import DensePoseCocoEval, DensePoseEvalMode
 
 
 class DensePoseCOCOEvaluator(DatasetEvaluator):
@@ -59,16 +59,18 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
     def evaluate(self):
         if self._distributed:
             synchronize()
-            self._predictions = all_gather(self._predictions)
-            self._predictions = list(itertools.chain(*self._predictions))
+            predictions = all_gather(self._predictions)
+            predictions = list(itertools.chain(*predictions))
             if not is_main_process():
                 return
+        else:
+            predictions = self._predictions
 
-        return copy.deepcopy(self._eval_predictions())
+        return copy.deepcopy(self._eval_predictions(predictions))
 
-    def _eval_predictions(self):
+    def _eval_predictions(self, predictions):
         """
-        Evaluate self._predictions on densepose.
+        Evaluate predictions on densepose.
         Return results with the metrics of the tasks.
         """
         self._logger.info("Preparing results for COCO format ...")
@@ -76,13 +78,15 @@ class DensePoseCOCOEvaluator(DatasetEvaluator):
         if self._output_dir:
             file_path = os.path.join(self._output_dir, "coco_densepose_results.json")
             with open(file_path, "w") as f:
-                json.dump(self._predictions, f)
+                json.dump(predictions, f)
                 f.flush()
                 os.fsync(f.fileno())
 
         self._logger.info("Evaluating predictions ...")
         res = OrderedDict()
-        res["densepose"] = _evaluate_predictions_on_coco(self._coco_api, self._predictions)
+        results_gps, results_gpsm = _evaluate_predictions_on_coco(self._coco_api, predictions)
+        res["densepose_gps"] = results_gps
+        res["densepose_gpsm"] = results_gpsm
         return res
 
 
@@ -121,12 +125,30 @@ def _evaluate_predictions_on_coco(coco_gt, coco_results):
         return {metric: -1 for metric in metrics}
 
     coco_dt = coco_gt.loadRes(coco_results)
-    coco_eval = DensePoseCocoEval(coco_gt, coco_dt, "densepose")
+    results_gps = _evaluate_predictions_on_coco_gps(coco_gt, coco_dt, metrics)
+    logger.info(
+        "Evaluation results for densepose, GPS metric: \n" + create_small_table(results_gps)
+    )
+    results_gpsm = _evaluate_predictions_on_coco_gpsm(coco_gt, coco_dt, metrics)
+    logger.info(
+        "Evaluation results for densepose, GPSm metric: \n" + create_small_table(results_gpsm)
+    )
+    return results_gps, results_gpsm
+
+
+def _evaluate_predictions_on_coco_gps(coco_gt, coco_dt, metrics):
+    coco_eval = DensePoseCocoEval(coco_gt, coco_dt, "densepose", dpEvalMode=DensePoseEvalMode.GPS)
     coco_eval.evaluate()
     coco_eval.accumulate()
     coco_eval.summarize()
-
-    # the standard metrics
     results = {metric: float(coco_eval.stats[idx] * 100) for idx, metric in enumerate(metrics)}
-    logger.info("Evaluation results for densepose: \n" + create_small_table(results))
+    return results
+
+
+def _evaluate_predictions_on_coco_gpsm(coco_gt, coco_dt, metrics):
+    coco_eval = DensePoseCocoEval(coco_gt, coco_dt, "densepose", dpEvalMode=DensePoseEvalMode.GPSM)
+    coco_eval.evaluate()
+    coco_eval.accumulate()
+    coco_eval.summarize()
+    results = {metric: float(coco_eval.stats[idx] * 100) for idx, metric in enumerate(metrics)}
     return results

@@ -43,7 +43,7 @@ def read_image(file_name, format=None):
         format (str): one of the supported image modes in PIL, or "BGR"
 
     Returns:
-        image (np.ndarray): an HWC image
+        image (np.ndarray): an HWC image in the given format.
     """
     with PathManager.open(file_name, "rb") as f:
         image = Image.open(f)
@@ -177,9 +177,9 @@ def transform_instance_annotations(
             ]
         elif isinstance(segm, dict):
             # RLE
-            assert tuple(segm["size"]) == image_size
             mask = mask_util.decode(segm)
             mask = transforms.apply_segmentation(mask)
+            assert tuple(mask.shape[:2]) == image_size
             annotation["segmentation"] = mask
         else:
             raise ValueError(
@@ -283,7 +283,10 @@ def annotations_to_instances(annos, image_size, mask_format="polygon"):
                         " COCO-style RLE as a dict, or a full-image segmentation mask "
                         "as a 2D ndarray.".format(type(segm))
                     )
-            masks = BitMasks(torch.stack([torch.from_numpy(x) for x in masks]))
+            # torch.from_numpy does not support array with negative stride.
+            masks = BitMasks(
+                torch.stack([torch.from_numpy(np.ascontiguousarray(x)) for x in masks])
+            )
         target.gt_masks = masks
 
     if len(annos) and "keypoints" in annos[0]:
@@ -387,6 +390,12 @@ def gen_crop_transform_with_instance(crop_size, image_size, instance):
     crop_size = np.asarray(crop_size, dtype=np.int32)
     bbox = BoxMode.convert(instance["bbox"], instance["bbox_mode"], BoxMode.XYXY_ABS)
     center_yx = (bbox[1] + bbox[3]) * 0.5, (bbox[0] + bbox[2]) * 0.5
+    assert (
+        image_size[0] >= center_yx[0] and image_size[1] >= center_yx[1]
+    ), "The annotation bounding box is outside of the image!"
+    assert (
+        image_size[0] >= crop_size[0] and image_size[1] >= crop_size[1]
+    ), "Crop size is larger than image size!"
 
     min_yx = np.maximum(np.floor(center_yx).astype(np.int32) - crop_size, 0)
     max_yx = np.maximum(np.asarray(image_size, dtype=np.int32) - crop_size, 0)
