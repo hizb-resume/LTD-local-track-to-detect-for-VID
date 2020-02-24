@@ -146,8 +146,12 @@ def get_xml_img_info(xmlpath):
 
 def get_ILSVRC_dicts(path_root,img_dir,det_or_vid,train_or_val):
     json_file = os.path.join(path_root, img_dir)
-    with open(json_file) as f:
-        path_info = json.load(f)
+    # with open(json_file) as f:
+    #     path_info = json.load(f)
+    pathf = open(json_file, "r")
+    path_info = pathf.readlines()
+    pathf.close()
+
     path_info = [line.split(' ')[0] for line in path_info]
     dataset_dicts = []
     for idx, v in enumerate(path_info):
