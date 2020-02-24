@@ -87,36 +87,36 @@ def get_balloon_dicts(img_dir):
 
 def code_to_code_chall(argument):
     switcher = {
-        'n02691156': 1,
-        'n02419796': 2,
-        'n02131653': 3,
-        'n02834778': 4,
-        'n01503061': 5,
-        'n02924116': 6,
-        'n02958343': 7,
-        'n02402425': 8,
-        'n02084071': 9,
-        'n02121808': 10,
-        'n02503517': 11,
-        'n02118333': 12,
-        'n02510455': 13,
-        'n02342885': 14,
-        'n02374451': 15,
-        'n02129165': 16,
-        'n01674464': 17,
-        'n02484322': 18,
-        'n03790512': 19,
-        'n02324045': 20,
-        'n02509815': 21,
-        'n02411705': 22,
-        'n01726692': 23,
-        'n02355227': 24,
-        'n02129604': 25,
-        'n04468005': 26,
-        'n01662784': 27,
-        'n04530566': 28,
-        'n02062744': 29,
-        'n02391049': 30}
+        'n02691156': 0,
+        'n02419796': 1,
+        'n02131653': 2,
+        'n02834778': 3,
+        'n01503061': 4,
+        'n02924116': 5,
+        'n02958343': 6,
+        'n02402425': 7,
+        'n02084071': 8,
+        'n02121808': 9,
+        'n02503517': 10,
+        'n02118333': 11,
+        'n02510455': 12,
+        'n02342885': 13,
+        'n02374451': 14,
+        'n02129165': 15,
+        'n01674464': 16,
+        'n02484322': 17,
+        'n03790512': 18,
+        'n02324045': 19,
+        'n02509815': 20,
+        'n02411705': 21,
+        'n01726692': 22,
+        'n02355227': 23,
+        'n02129604': 24,
+        'n04468005': 25,
+        'n01662784': 26,
+        'n04530566': 27,
+        'n02062744': 28,
+        'n02391049': 29}
     return switcher.get(argument, "nothing")
 
 def get_xml_img_info(xmlpath):
@@ -204,13 +204,17 @@ def get_ILSVRC_dicts(path_root,img_dir,det_or_vid,train_or_val):
                 "category_id": code_to_code_chall(str(img_info['name'][i])),
                 # "iscrowd": 0
             }
+            if obj["category_id"]=="nothing":
+                # print(gtfilepath)
+                continue
             objs.append(obj)
         record["annotations"] = objs
         dataset_dicts.append(record)
     return dataset_dicts
 
 def register_ILSVRC():
-    for c in ["DET","VID"]:
+    # for c in ["DET","VID"]:
+    for c in ["VID"]:
         for d in ["train", "val"]:
             DatasetCatalog.register("ILSVRC_" +c+"_"+ d, lambda d=d: get_ILSVRC_dicts(
                 "../../../projects/adnet/datasets/data/ILSVRC/",("ImageSets/" +c+"/"+ d+".txt"),c,d))
@@ -219,12 +223,17 @@ def register_ILSVRC():
 if __name__ == "__main__":
     register_ILSVRC()
     for c in ["DET","VID"]:
+    # for c in ["VID"]:
         for d in ["train", "val"]:
             dataset_dicts = get_ILSVRC_dicts(
                 "../../../projects/adnet/datasets/data/ILSVRC/", ("ImageSets/" +c+"/"+ d+".txt"), c, d)
             ILSVRC_metadata = MetadataCatalog.get("ILSVRC_" +c+"_"+ d)
-            for d in random.sample(dataset_dicts, 3):
-                img = cv2.imread(d["file_name"])
+            for f,e in enumerate(random.sample(dataset_dicts, 3)):
+                print(c,d,f)
+                img = cv2.imread(e["file_name"])
                 visualizer = Visualizer(img[:, :, ::-1], metadata=ILSVRC_metadata, scale=0.5)
-                vis = visualizer.draw_dataset_dict(d)
+                vis = visualizer.draw_dataset_dict(e)
                 cv2_imshow(vis.get_image()[:, :, ::-1])
+                filename=os.path.join("tem",c,d,e["file_name"][-10:])
+                cv2.imwrite(filename, vis.get_image(), [int(cv2.IMWRITE_JPEG_QUALITY), 70])
+    print("over")
