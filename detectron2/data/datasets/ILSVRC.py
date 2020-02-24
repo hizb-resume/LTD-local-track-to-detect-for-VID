@@ -136,7 +136,7 @@ def get_xml_img_info(xmlpath):
     gts = []
     for obj in root.iter('object'):
         # tckid=obj.find('trackid').text
-        nm=obj.find('name')
+        nm=obj.find('name').text
         # nm=vid_classes.code_to_class_string(str(nm.text))
         bb = obj.find('bndbox')
         gt = [0, 0, 0, 0]
@@ -144,8 +144,8 @@ def get_xml_img_info(xmlpath):
         gt[1] = int(bb.find('ymin').text)
         gt[2] = int(bb.find('xmax').text)
         gt[3] = int(bb.find('ymax').text)
-        # gt[2] = gt[2] - gt[0]
-        # gt[3] = gt[3] - gt[1]
+        gt[2] = gt[2] - gt[0]
+        gt[3] = gt[3] - gt[1]
 
         # img_info['trackid'].append(tckid)
         img_info['name'].append(nm)
@@ -199,7 +199,7 @@ def get_ILSVRC_dicts(path_root,img_dir,det_or_vid,train_or_val):
 
             obj = {
                 "bbox": img_info['gts'][i],
-                "bbox_mode": BoxMode.XYXY_REL,
+                "bbox_mode": BoxMode.XYWH_ABS,
                 # "segmentation": [poly],
                 "category_id": code_to_code_chall(str(img_info['name'][i])),
                 # "iscrowd": 0
