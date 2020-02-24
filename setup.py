@@ -20,14 +20,15 @@ def get_version():
     version_line = [l.strip() for l in init_py if l.startswith("__version__")][0]
     version = version_line.split("=")[-1].strip().strip("'\"")
 
-    # Used by CI to build nightly packages. Users should never use it.
-    # To build a nightly wheel, run:
-    # FORCE_CUDA=1 BUILD_NIGHTLY=1 TORCH_CUDA_ARCH_LIST=All python setup.py bdist_wheel
+    # The following is used to build release packages.
+    # Users should never use it.
+    suffix = os.getenv("D2_VERSION_SUFFIX", "")
+    version = version + suffix
     if os.getenv("BUILD_NIGHTLY", "0") == "1":
         from datetime import datetime
 
         date_str = datetime.today().strftime("%y%m%d")
-        version = version + ".post" + date_str
+        version = version + ".dev" + date_str
 
         new_init_py = [l for l in init_py if not l.startswith("__version__")]
         new_init_py.append('__version__ = "{}"\n'.format(version))
@@ -52,7 +53,9 @@ def get_extensions():
     extra_compile_args = {"cxx": []}
     define_macros = []
 
-    if (torch.cuda.is_available() and CUDA_HOME is not None) or os.getenv("FORCE_CUDA", "0") == "1":
+    if (
+        torch.cuda.is_available() and CUDA_HOME is not None and os.path.isdir(CUDA_HOME)
+    ) or os.getenv("FORCE_CUDA", "0") == "1":
         extension = CUDAExtension
         sources += source_cuda
         define_macros += [("WITH_CUDA", None)]
@@ -95,18 +98,20 @@ def get_model_zoo_configs() -> List[str]:
         path.dirname(path.realpath(__file__)), "detectron2", "model_zoo", "configs"
     )
     # Symlink the config directory inside package to have a cleaner pip install.
-    if path.exists(destination):
-        # Remove stale symlink/directory from a previous build.
+
+    # Remove stale symlink/directory from a previous build.
+    if path.exists(source_configs_dir):
         if path.islink(destination):
             os.unlink(destination)
-        else:
+        elif path.isdir(destination):
             shutil.rmtree(destination)
 
-    try:
-        os.symlink(source_configs_dir, destination)
-    except OSError:
-        # Fall back to copying if symlink fails: ex. on Windows.
-        shutil.copytree(source_configs_dir, destination)
+    if not path.exists(destination):
+        try:
+            os.symlink(source_configs_dir, destination)
+        except OSError:
+            # Fall back to copying if symlink fails: ex. on Windows.
+            shutil.copytree(source_configs_dir, destination)
 
     config_paths = glob.glob("configs/**/*.yaml", recursive=True)
     return config_paths
@@ -124,15 +129,21 @@ setup(
     python_requires=">=3.6",
     install_requires=[
         "termcolor>=1.1",
-        "Pillow>=6.0",
+        "Pillow",  # you can also use pillow-simd for better performance
         "yacs>=0.1.6",
         "tabulate",
         "cloudpickle",
         "matplotlib",
         "tqdm>4.29.0",
         "tensorboard",
+        "fvcore",
+        "future",  # used by caffe2
+        "pydot",  # used to save caffe2 SVGs
     ],
-    extras_require={"all": ["shapely", "psutil"], "dev": ["flake8", "isort", "black==19.3b0"]},
+    extras_require={
+        "all": ["shapely", "psutil"],
+        "dev": ["flake8", "isort", "black==19.3b0", "flake8-bugbear", "flake8-comprehensions"],
+    },
     ext_modules=get_extensions(),
     cmdclass={"build_ext": torch.utils.cpp_extension.BuildExtension},
 )

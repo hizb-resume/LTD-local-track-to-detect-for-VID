@@ -7,6 +7,9 @@
 
 !*.py
 !*.sh
+*.txt
+*.json
+*.diff
 
 # compilation and distribution
 __pycache__
@@ -16,6 +19,7 @@ _ext
 detectron2.egg-info/
 build/
 dist/
+wheels/
 
 # pytorch/python/numpy formats
 *.pth
@@ -32,8 +36,9 @@ dist/
 *.swp
 *~
 
-# Pycharm editor settings
+# editor settings
 .idea
+.vscode
 
 #other files
 *.tag
@@ -46,7 +51,10 @@ dist/
 output/
 tensorboardx_log/
 /detectron2/model_zoo/configs
-datasets/
+#datasets/
 instant_test_output
 inference_test_output
-datasets/data/
+#datasets/data/
+/datasets
+/projects/*/datasets/data
+/models

@@ -131,11 +131,16 @@ def default_setup(cfg, args):
 
 class DefaultPredictor:
     """
-    Create a simple end-to-end predictor with the given config.
-    The predictor takes an BGR image, resizes it to the specified resolution,
-    runs the model and produces a dict of predictions.
+    Create a simple end-to-end predictor with the given config that runs on
+    single device for a single input image.
 
-    This predictor takes care of model loading and input preprocessing for you.
+    Compared to using the model directly, this class does the following additions:
+
+    1. Load checkpoint from `cfg.MODEL.WEIGHTS`.
+    2. Always take BGR image as the input and apply conversion defined by `cfg.INPUT.FORMAT`.
+    3. Apply resizing defined by `cfg.INPUT.{MIN,MAX}_SIZE_TEST`.
+    4. Take one input image and produce a single output, instead of a batch.
+
     If you'd like to do anything more fancy, please refer to its source code
     as examples to build and use the model manually.
 
@@ -174,7 +179,9 @@ class DefaultPredictor:
             original_image (np.ndarray): an image of shape (H, W, C) (in BGR order).
 
         Returns:
-            predictions (dict): the output of the model
+            predictions (dict):
+                the output of the model for one image only.
+                See :doc:`/tutorials/models` for details about the format.
         """
         with torch.no_grad():  # https://github.com/sphinx-doc/sphinx/issues/4258
             # Apply pre-processing to image.
@@ -237,6 +244,9 @@ class DefaultTrainer(SimpleTrainer):
         Args:
             cfg (CfgNode):
         """
+        logger = logging.getLogger("detectron2")
+        if not logger.isEnabledFor(logging.INFO):  # setup_logger is not called for d2
+            setup_logger()
         # Assume these objects must be constructed in this order.
         model = self.build_model(cfg)
         optimizer = self.build_optimizer(cfg, model)
@@ -327,7 +337,7 @@ class DefaultTrainer(SimpleTrainer):
 
         if comm.is_main_process():
             # run writers in the end, so that evaluation metrics are written
-            ret.append(hooks.PeriodicWriter(self.build_writers()))
+            ret.append(hooks.PeriodicWriter(self.build_writers(), period=20))
         return ret
 
     def build_writers(self):
@@ -352,7 +362,7 @@ class DefaultTrainer(SimpleTrainer):
             ]
 
         """
-        # Assume the default print/log frequency.
+        # Here the default print/log frequency of each writer is used.
         return [
             # It may not always print what you want to see, since it prints "common" metrics only.
             CommonMetricPrinter(self.max_iter),
@@ -368,7 +378,10 @@ class DefaultTrainer(SimpleTrainer):
             OrderedDict of results, if evaluation is enabled. Otherwise None.
         """
         super().train(self.start_iter, self.max_iter)
-        if hasattr(self, "_last_eval_results") and comm.is_main_process():
+        if len(self.cfg.TEST.EXPECTED_RESULTS) and comm.is_main_process():
+            assert hasattr(
+                self, "_last_eval_results"
+            ), "No evaluation results obtained during training!"
             verify_results(self.cfg, self._last_eval_results)
             return self._last_eval_results
 
@@ -431,7 +444,7 @@ class DefaultTrainer(SimpleTrainer):
     def build_evaluator(cls, cfg, dataset_name):
         """
         Returns:
-            DatasetEvaluator
+            DatasetEvaluator or None
 
         It is not implemented by default.
         """
