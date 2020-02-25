@@ -12,6 +12,8 @@ import xml.etree.ElementTree as ET
 from detectron2.structures import BoxMode
 from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.utils.visualizer import Visualizer
+from detectron2.engine import DefaultTrainer
+from detectron2.config import get_cfg
 from google.colab.patches import cv2_imshow
 
 __all__ = ["get_ILSVRC_dicts","register_ILSVRC"]
@@ -221,8 +223,7 @@ def register_ILSVRC():
                 "../../../projects/adnet/datasets/data/ILSVRC/",("ImageSets/" +c+"/"+ d+".txt"),c,d))
             MetadataCatalog.get("ILSVRC_" +c+"_"+ d).set(thing_classes=CLASS_NAMES)
 
-if __name__ == "__main__":
-    register_ILSVRC()
+def testDataloader():
     for c in ["DET","VID"]:
     # for c in ["VID"]:
         for d in ["train", "val"]:
@@ -240,4 +241,27 @@ if __name__ == "__main__":
                 cv2_imshow(vis.get_image()[:, :, ::-1])
                 filename=os.path.join(pat,e["file_name"][-10:])
                 cv2.imwrite(filename, vis.get_image(), [int(cv2.IMWRITE_JPEG_QUALITY), 100])
+
+def trainILSVRC():
+    cfg = get_cfg()
+    cfg.merge_from_file("../../../configs/COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml")
+    cfg.DATASETS.TRAIN = ("ILSVRC_DET_train",)
+    cfg.DATASETS.TEST = ()
+    cfg.DATALOADER.NUM_WORKERS = 2
+    cfg.MODEL.WEIGHTS = "../../../demo/faster_rcnn_R_101_FPN_3x.pkl"  # Let training initialize from model zoo
+    cfg.SOLVER.IMS_PER_BATCH = 5
+    cfg.SOLVER.BASE_LR = 0.00025  # pick a good LR
+    cfg.SOLVER.MAX_ITER = 300    # 300 iterations seems good enough for this toy dataset; you may need to train longer for a practical dataset
+    cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 128   # faster, and good enough for this toy dataset (default: 512)
+    cfg.MODEL.ROI_HEADS.NUM_CLASSES = 30  # only has one class (ballon)
+    cfg.OUTPUT_DIR='tem/train_output/'
+    os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
+    trainer = DefaultTrainer(cfg)
+    trainer.resume_or_load(resume=False)
+    trainer.train()
+
+if __name__ == "__main__":
+    register_ILSVRC()
+    # testDataloader()
+    trainILSVRC()
     print("over")
