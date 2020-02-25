@@ -166,7 +166,8 @@ def get_ILSVRC_dicts(path_root,img_dir,det_or_vid,train_or_val):
     pathf = open(json_file, "r")
     path_info = pathf.readlines()
     pathf.close()
-
+    if det_or_vid == "VID":
+        path_info = path_info[::5]
     path_info = [line.split(' ')[0] for line in path_info]
     dataset_dicts = []
     for idx, v in enumerate(path_info):
