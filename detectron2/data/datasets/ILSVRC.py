@@ -213,8 +213,8 @@ def get_ILSVRC_dicts(path_root,img_dir,det_or_vid,train_or_val):
     return dataset_dicts
 
 def register_ILSVRC():
-    # for c in ["DET","VID"]:
-    for c in ["VID"]:
+    for c in ["DET","VID"]:
+    # for c in ["VID"]:
         for d in ["train", "val"]:
             DatasetCatalog.register("ILSVRC_" +c+"_"+ d, lambda d=d: get_ILSVRC_dicts(
                 "../../../projects/adnet/datasets/data/ILSVRC/",("ImageSets/" +c+"/"+ d+".txt"),c,d))
@@ -225,6 +225,9 @@ if __name__ == "__main__":
     for c in ["DET","VID"]:
     # for c in ["VID"]:
         for d in ["train", "val"]:
+            pat = "tem/" + c + "/" + d + "/"
+            if not os.path.exists(pat):
+                os.makedirs(pat)
             dataset_dicts = get_ILSVRC_dicts(
                 "../../../projects/adnet/datasets/data/ILSVRC/", ("ImageSets/" +c+"/"+ d+".txt"), c, d)
             ILSVRC_metadata = MetadataCatalog.get("ILSVRC_" +c+"_"+ d)
@@ -234,6 +237,6 @@ if __name__ == "__main__":
                 visualizer = Visualizer(img[:, :, ::-1], metadata=ILSVRC_metadata, scale=0.5)
                 vis = visualizer.draw_dataset_dict(e)
                 cv2_imshow(vis.get_image()[:, :, ::-1])
-                filename=os.path.join("tem",c,d,e["file_name"][-10:])
-                cv2.imwrite(filename, vis.get_image(), [int(cv2.IMWRITE_JPEG_QUALITY), 70])
+                filename=os.path.join(pat,e["file_name"][-10:])
+                cv2.imwrite(filename, vis.get_image(), [int(cv2.IMWRITE_JPEG_QUALITY), 100])
     print("over")
