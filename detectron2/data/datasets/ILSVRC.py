@@ -11,10 +11,14 @@ import json
 import xml.etree.ElementTree as ET
 from detectron2.structures import BoxMode
 from detectron2.data import DatasetCatalog, MetadataCatalog
-from detectron2.utils.visualizer import Visualizer
+from detectron2.data import build_detection_test_loader
+from detectron2.evaluation import COCOEvaluator, inference_on_dataset
+from detectron2.utils.visualizer import Visualizer,ColorMode
 from detectron2.engine import DefaultTrainer
+from detectron2.engine import DefaultPredictor
 from detectron2.config import get_cfg
 from google.colab.patches import cv2_imshow
+
 
 __all__ = ["get_ILSVRC_dicts","register_ILSVRC"]
 
@@ -236,7 +240,7 @@ def testDataloader():
             for f,e in enumerate(random.sample(dataset_dicts, 3)):
                 print(c,d,f)
                 img = cv2.imread(e["file_name"])
-                visualizer = Visualizer(img[:, :, ::-1], metadata=ILSVRC_metadata, scale=0.5)
+                visualizer = Visualizer(img[:, :, ::-1], metadata=ILSVRC_metadata, scale=1)
                 vis = visualizer.draw_dataset_dict(e)
                 cv2_imshow(vis.get_image()[:, :, ::-1])
                 filename=os.path.join(pat,e["file_name"][-10:])
@@ -245,23 +249,90 @@ def testDataloader():
 def trainILSVRC():
     cfg = get_cfg()
     cfg.merge_from_file("../../../configs/COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml")
-    cfg.DATASETS.TRAIN = ("ILSVRC_DET_train",)
-    cfg.DATASETS.TEST = ()
     cfg.DATALOADER.NUM_WORKERS = 2
-    cfg.MODEL.WEIGHTS = "../../../demo/faster_rcnn_R_101_FPN_3x.pkl"  # Let training initialize from model zoo
-    cfg.SOLVER.IMS_PER_BATCH = 5
-    cfg.SOLVER.BASE_LR = 0.00025  # pick a good LR
-    cfg.SOLVER.MAX_ITER = 300    # 300 iterations seems good enough for this toy dataset; you may need to train longer for a practical dataset
-    cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 128   # faster, and good enough for this toy dataset (default: 512)
     cfg.MODEL.ROI_HEADS.NUM_CLASSES = 30  # only has one class (ballon)
-    cfg.OUTPUT_DIR='tem/train_output/'
+    cfg.OUTPUT_DIR = 'tem/train_output/'
+
+    cfg.SOLVER.IMS_PER_BATCH = 1
+    cfg.SOLVER.BASE_LR = 0.00025  # pick a good LR
+    cfg.SOLVER.MAX_ITER = 3000  # 300 iterations seems good enough for this toy dataset; you may need to train longer for a practical dataset
+    cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 128  # faster, and good enough for this toy dataset (default: 512)
+    cfg.DATASETS.TRAIN = ("ILSVRC_DET_train",)
+
+    cfg.MODEL.WEIGHTS = "../../../demo/faster_rcnn_R_101_FPN_3x.pkl"  # Let training initialize from model zoo
+    # cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, "model_final.pth")
+    cfg.DATASETS.TEST = ("ILSVRC_DET_val", )
+    cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.7   # set the testing threshold for this model
+
     os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
     trainer = DefaultTrainer(cfg)
     trainer.resume_or_load(resume=False)
     trainer.train()
 
+def inferenceILSVRC():
+    cfg = get_cfg()
+    cfg.merge_from_file("../../../configs/COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml")
+    cfg.DATALOADER.NUM_WORKERS = 2
+    cfg.MODEL.ROI_HEADS.NUM_CLASSES = 30  # only has one class (ballon)
+    cfg.OUTPUT_DIR = 'tem/train_output/'
+
+    cfg.SOLVER.IMS_PER_BATCH = 5
+    cfg.SOLVER.BASE_LR = 0.00025  # pick a good LR
+    cfg.SOLVER.MAX_ITER = 300  # 300 iterations seems good enough for this toy dataset; you may need to train longer for a practical dataset
+    cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 128  # faster, and good enough for this toy dataset (default: 512)
+    cfg.DATASETS.TRAIN = ("ILSVRC_DET_train",)
+
+    # cfg.MODEL.WEIGHTS = "../../../demo/faster_rcnn_R_101_FPN_3x.pkl"  # Let training initialize from model zoo
+    cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, "model_final.pth")
+    cfg.DATASETS.TEST = ("ILSVRC_DET_val",)
+    cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.7  # set the testing threshold for this model
+
+    predictor = DefaultPredictor(cfg)
+    dataset_dicts = get_ILSVRC_dicts(
+        "../../../projects/adnet/datasets/data/ILSVRC/", ("ImageSets/" + "DET" + "/" + "val" + ".txt"), "DET", "val")
+    ILSVRC_metadata = MetadataCatalog.get("ILSVRC_" +"DET"+"_"+ "val")
+    pat = "tem/inferenceILSVRC/"
+    if not os.path.exists(pat):
+        os.makedirs(pat)
+    for d in random.sample(dataset_dicts, 3):
+        im = cv2.imread(d["file_name"])
+        outputs = predictor(im)
+        v = Visualizer(im[:, :, ::-1],
+                       metadata=ILSVRC_metadata,
+                       scale=1
+        )
+        v = v.draw_instance_predictions(outputs["instances"].to("cpu"))
+        # cv2_imshow(v.get_image()[:, :, ::-1])
+        filename = os.path.join(pat, d["file_name"][-10:])
+        cv2.imwrite(filename, v.get_image(), [int(cv2.IMWRITE_JPEG_QUALITY), 100])
+
+def evalILSVRC():
+    cfg = get_cfg()
+    cfg.merge_from_file("../../../configs/COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml")
+    cfg.DATALOADER.NUM_WORKERS = 2
+    cfg.MODEL.ROI_HEADS.NUM_CLASSES = 30  # only has one class (ballon)
+    cfg.OUTPUT_DIR = 'tem/train_output/'
+
+    cfg.SOLVER.IMS_PER_BATCH = 5
+    cfg.SOLVER.BASE_LR = 0.00025  # pick a good LR
+    cfg.SOLVER.MAX_ITER = 300  # 300 iterations seems good enough for this toy dataset; you may need to train longer for a practical dataset
+    cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 128  # faster, and good enough for this toy dataset (default: 512)
+    cfg.DATASETS.TRAIN = ("ILSVRC_DET_train",)
+
+    # cfg.MODEL.WEIGHTS = "../../../demo/faster_rcnn_R_101_FPN_3x.pkl"  # Let training initialize from model zoo
+    cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, "model_final.pth")
+    cfg.DATASETS.TEST = ("ILSVRC_DET_val",)
+    cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.7  # set the testing threshold for this model
+
+    evaluator = COCOEvaluator("ILSVRC_DET_val", cfg, False, output_dir="tem/evalILSVRCoutput/")
+    val_loader = build_detection_test_loader(cfg, "ILSVRC_DET_val")
+    trainer = DefaultTrainer(cfg)
+    trainer.resume_or_load(resume=False)
+    inference_on_dataset(trainer.model, val_loader, evaluator)
+
 if __name__ == "__main__":
     register_ILSVRC()
     # testDataloader()
     trainILSVRC()
+    # inferenceILSVRC()
     print("over")
