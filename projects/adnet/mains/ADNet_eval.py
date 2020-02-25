@@ -142,6 +142,9 @@ if __name__ == "__main__":
     print("videos nums: %d ."%(len(videos_infos)))
 
     for vidx,vid_folder in enumerate(videos_infos):
+    # for vidx  in range(999,len(videos_infos)):
+    #     vid_folder=videos_infos[vidx]
+
         # net, domain_nets = adnet(opts, trained_file=args.weight_file, random_initialize_domain_specific=True)
         # net.train()
         if args.save_result_images is not None:
@@ -163,7 +166,7 @@ if __name__ == "__main__":
         '''
 
         vid_pred = adnet_test(net,predictor,metalog,class_names, vidx,vid_folder['img_files'], opts, args)
-        gen_pred_file('../datasets/data/ILSVRC-vid-eval_tem',vid_pred)
+        gen_pred_file('../datasets/data/ILSVRC-vid-eval',vid_pred)
     #     all_precisions.append(precisions)
     #
     # print(all_precisions)
