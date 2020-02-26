@@ -273,13 +273,14 @@ def inferenceILSVRC(cfg):
         cv2.imwrite(filename, v.get_image(), [int(cv2.IMWRITE_JPEG_QUALITY), 100])
 
 def evalILSVRC(cfg):
-    evaluator = COCOEvaluator("ILSVRC_DET_val", cfg, False, output_dir="tem/evalILSVRCoutput/")
-    val_loader = build_detection_test_loader(cfg, "ILSVRC_DET_val")
-    trainer = DefaultTrainer(cfg)
-    trainer.resume_or_load(resume=False)
-    inference_on_dataset(trainer.model, val_loader, evaluator)
+    # evaluator = COCOEvaluator("ILSVRC_DET_val", cfg, False, output_dir="tem/evalILSVRCoutput/")
+    # val_loader = build_detection_test_loader(cfg, "ILSVRC_DET_val")
+    # trainer = DefaultTrainer(cfg)
+    # trainer.resume_or_load(resume=False)
+    # inference_on_dataset(trainer.model, val_loader, evaluator)
+    pass
 
-if __name__ == "__main__":
+def setup():
     cfg = get_cfg()
     cfg.merge_from_file("../../../configs/COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml")
     cfg.DATALOADER.NUM_WORKERS = 2
@@ -290,16 +291,19 @@ if __name__ == "__main__":
     cfg.SOLVER.BASE_LR = 0.00025  # pick a good LR
     cfg.SOLVER.MAX_ITER = 180000  # 300 iterations seems good enough for this toy dataset; you may need to train longer for a practical dataset
     cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 128  # faster, and good enough for this toy dataset (default: 512)
-    cfg.DATASETS.TRAIN = ("ILSVRC_DET_train","ILSVRC_DET_val")
+    cfg.DATASETS.TRAIN = ("ILSVRC_DET_train", "ILSVRC_DET_val")
 
-    cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, "model_0049999.pth")  # Let training initialize from model zoo
+    cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, "model_0054999.pth")  # Let training initialize from model zoo
     # cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, "model_final.pth")
     cfg.DATASETS.TEST = ("ILSVRC_DET_val",)
     cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.7  # set the testing threshold for this model
+    return cfg
 
+if __name__ == "__main__":
+    cfg=setup()
     register_ILSVRC()
     # testDataloader()
-    # trainILSVRC(cfg)
+    trainILSVRC(cfg)
     # inferenceILSVRC(cfg)
-    evalILSVRC(cfg)
-    print("over")
+    # evalILSVRC(cfg)
+    print("finished.")
