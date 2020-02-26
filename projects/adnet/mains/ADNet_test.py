@@ -15,6 +15,7 @@ from models.ADNet import adnet
 from utils.get_train_videos import get_train_videos
 from utils.ADNet_evalTools import gen_pred_file
 from trainers.adnet_test import adnet_test
+from datasets.ILSVRC import register_ILSVRC
 import torch
 torch.multiprocessing.set_start_method('spawn', force=True)
 import torch.backends.cudnn as cudnn
@@ -58,13 +59,23 @@ parser.add_argument('--pos_samples_ratio', default='0.5', type=float,
 
 if __name__ == "__main__":
 
+    # cfg = get_cfg()
+    # cfg.merge_from_file("../../../configs/COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml")
+    # cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # set threshold for this model
+    # Find a model from detectron2's model zoo. You can either use the https://dl.fbaipublicfiles.... url, or use the following shorthand
+    # cfg.MODEL.WEIGHTS = "../../../demo/faster_rcnn_R_101_FPN_3x.pkl"
+    # metalog=MetadataCatalog.get(cfg.DATASETS.TRAIN[0])
+
+    register_ILSVRC()
     cfg = get_cfg()
     cfg.merge_from_file("../../../configs/COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml")
     cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # set threshold for this model
     # Find a model from detectron2's model zoo. You can either use the https://dl.fbaipublicfiles.... url, or use the following shorthand
-    cfg.MODEL.WEIGHTS = "../../../demo/faster_rcnn_R_101_FPN_3x.pkl"
+    cfg.MODEL.WEIGHTS = "../datasets/tem/train_output/model_0054999.pth"
+    cfg.MODEL.ROI_HEADS.NUM_CLASSES = 30
+    metalog = MetadataCatalog.get("ILSVRC_VID_val")
+
     predictor = DefaultPredictor(cfg)
-    metalog=MetadataCatalog.get(cfg.DATASETS.TRAIN[0])
     class_names = metalog.get("thing_classes", None)
 
     args = parser.parse_args()
