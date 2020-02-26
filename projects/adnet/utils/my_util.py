@@ -163,7 +163,8 @@ def get_ILSVRC_eval_infos():
     train_img_info_file = os.path.join('../datasets/data/ILSVRC/ImageSets/VID/val.txt')
     train_img_info = open(train_img_info_file, "r")
     img_paths = train_img_info.readlines()
-    #img_paths = img_paths[::gt_skip + 1]
+    gt_skip=5
+    img_paths = img_paths[::gt_skip + 1]
     img_paths = [line.split(' ')[0] for line in img_paths]
     train_img_info.close()
     for train_i in range(len(img_paths)):

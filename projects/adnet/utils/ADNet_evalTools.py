@@ -27,15 +27,24 @@ def gen_pred_file(path,vid_pred):
     # out_file = open('%s-pred.txt' % path, 'w')
     out_file = open('%s-pred.txt' % path, 'a')
     for ti in range(len(vid_pred['bbox'])):
+        # out_file.write(str(vid_pred['vid_id']) + ',' +
+        #                str(vid_pred['frame_id'][ti]) + ',' +
+        #                str(vid_pred['track_id'][ti]) + ',' +
+        #                str(vid_pred['obj_name'][ti]) + ',' +
+        #                str(vid_pred['score_cls'][ti]) + ',' +
+        #                str(vid_pred['bbox'][ti][0]) + ',' +
+        #                str(vid_pred['bbox'][ti][1]) + ',' +
+        #                str(vid_pred['bbox'][ti][2]) + ',' +
+        #                str(vid_pred['bbox'][ti][3]) + '\n')
         out_file.write(str(vid_pred['vid_id']) + ',' +
                        str(vid_pred['frame_id'][ti]) + ',' +
                        str(vid_pred['track_id'][ti]) + ',' +
                        str(vid_pred['obj_name'][ti]) + ',' +
-                       str(vid_pred['score_cls'][ti]) + ',' +
-                       str(vid_pred['bbox'][ti][0]) + ',' +
-                       str(vid_pred['bbox'][ti][1]) + ',' +
-                       str(vid_pred['bbox'][ti][2]) + ',' +
-                       str(vid_pred['bbox'][ti][3]) + '\n')
+                       '%.2f'%(vid_pred['score_cls'][ti]) + ',' +
+                       '%.1f'%(vid_pred['bbox'][ti][0]) + ',' +
+                       '%.1f'%(vid_pred['bbox'][ti][1]) + ',' +
+                       '%.1f'%(vid_pred['bbox'][ti][2]) + ',' +
+                       '%.1f'%(vid_pred['bbox'][ti][3]) + '\n')
     out_file.close()
 
 def read_results_info(path_pred):
@@ -186,5 +195,5 @@ def do_precison(path_pred,path_gt):
     print('cls precision(iou>%.2f): %.2f'%(cls_success_all[14][0],cls_success_all[14][1]))
 
 if __name__ == "__main__":
-    # gen_gt_file('../datasets/data/ILSVRC-vid-eval')
-    do_precison('../datasets/data/ILSVRC-vid-eval-pred.txt','../datasets/data/ILSVRC-vid-eval-gt.txt')
+    gen_gt_file('../datasets/data/ILSVRC-vid-eval')
+    # do_precison('../datasets/data/ILSVRC-vid-eval-pred.txt','../datasets/data/ILSVRC-vid-eval-gt.txt')
