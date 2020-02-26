@@ -164,7 +164,7 @@ def get_ILSVRC_eval_infos():
     train_img_info = open(train_img_info_file, "r")
     img_paths = train_img_info.readlines()
     gt_skip=5
-    img_paths = img_paths[::gt_skip + 1]
+    # img_paths = img_paths[::gt_skip + 1]
     img_paths = [line.split(' ')[0] for line in img_paths]
     train_img_info.close()
     for train_i in range(len(img_paths)):
@@ -222,6 +222,13 @@ def get_ILSVRC_eval_infos():
     videos_infos.append(video_infos)
     train_videos['video_names'].append(img_paths[-1][-32:-7])
     train_videos['video_paths'].append('../datasets/data/ILSVRC/Data/VID/val/' + img_paths[-1][:-32])
+    for jk in range(len(videos_infos)):
+        # tem_vid_info=videos_infos[jk]
+        videos_infos[jk]['gt']=videos_infos[jk]['gt'][::gt_skip]
+        videos_infos[jk]['name'] = videos_infos[jk]['name'][::gt_skip]
+        videos_infos[jk]['trackid'] = videos_infos[jk]['trackid'][::gt_skip]
+        videos_infos[jk]['img_files'] = videos_infos[jk]['img_files'][::gt_skip]
+        videos_infos[jk]['nframes'] = len(videos_infos[jk]['gt'])
     return videos_infos,train_videos
 
 def get_xml_img_info(xmlpath):
