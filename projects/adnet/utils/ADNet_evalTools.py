@@ -162,6 +162,7 @@ def do_precison(path_pred,path_gt):
     for i in range(len(vids_pred)):
         idv=vids_pred[i]['vid_id']
         while idv!=vids_gt[j]['vid_id']:
+            # print("i_pred: %d, vid_id_pred: %d; j_gt: %d, vid_id_gt: %d."%(i,idv,j,vids_gt[j]['vid_id']))
             j+=1
         l=0
         for k in range(len(vids_pred[i]['frame_id'])):

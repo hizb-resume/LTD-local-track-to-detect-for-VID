@@ -246,47 +246,13 @@ def testDataloader():
                 filename=os.path.join(pat,e["file_name"][-10:])
                 cv2.imwrite(filename, vis.get_image(), [int(cv2.IMWRITE_JPEG_QUALITY), 100])
 
-def trainILSVRC():
-    cfg = get_cfg()
-    cfg.merge_from_file("../../../configs/COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml")
-    cfg.DATALOADER.NUM_WORKERS = 2
-    cfg.MODEL.ROI_HEADS.NUM_CLASSES = 30  # only has one class (ballon)
-    cfg.OUTPUT_DIR = 'tem/train_output/'
-
-    cfg.SOLVER.IMS_PER_BATCH = 5
-    cfg.SOLVER.BASE_LR = 0.00025  # pick a good LR
-    cfg.SOLVER.MAX_ITER = 180000  # 300 iterations seems good enough for this toy dataset; you may need to train longer for a practical dataset
-    cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 128  # faster, and good enough for this toy dataset (default: 512)
-    cfg.DATASETS.TRAIN = ("ILSVRC_DET_train",)
-
-    cfg.MODEL.WEIGHTS = "../../../demo/faster_rcnn_R_101_FPN_3x.pkl"  # Let training initialize from model zoo
-    # cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, "model_final.pth")
-    cfg.DATASETS.TEST = ("ILSVRC_DET_val", )
-    cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.7   # set the testing threshold for this model
-
+def trainILSVRC(cfg):
     os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
     trainer = DefaultTrainer(cfg)
-    trainer.resume_or_load(resume=False)
+    trainer.resume_or_load(resume=True)
     trainer.train()
 
-def inferenceILSVRC():
-    cfg = get_cfg()
-    cfg.merge_from_file("../../../configs/COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml")
-    cfg.DATALOADER.NUM_WORKERS = 2
-    cfg.MODEL.ROI_HEADS.NUM_CLASSES = 30  # only has one class (ballon)
-    cfg.OUTPUT_DIR = 'tem/train_output/'
-
-    cfg.SOLVER.IMS_PER_BATCH = 5
-    cfg.SOLVER.BASE_LR = 0.00025  # pick a good LR
-    cfg.SOLVER.MAX_ITER = 180000  # 300 iterations seems good enough for this toy dataset; you may need to train longer for a practical dataset
-    cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 128  # faster, and good enough for this toy dataset (default: 512)
-    cfg.DATASETS.TRAIN = ("ILSVRC_DET_train",)
-
-    # cfg.MODEL.WEIGHTS = "../../../demo/faster_rcnn_R_101_FPN_3x.pkl"  # Let training initialize from model zoo
-    cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, "model_0034999.pth")
-    cfg.DATASETS.TEST = ("ILSVRC_DET_val",)
-    cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.7  # set the testing threshold for this model
-
+def inferenceILSVRC(cfg):
     predictor = DefaultPredictor(cfg)
     dataset_dicts = get_ILSVRC_dicts(
         "../../../projects/adnet/datasets/data/ILSVRC/", ("ImageSets/" + "DET" + "/" + "val" + ".txt"), "DET", "val")
@@ -306,7 +272,14 @@ def inferenceILSVRC():
         filename = os.path.join(pat, d["file_name"][-10:])
         cv2.imwrite(filename, v.get_image(), [int(cv2.IMWRITE_JPEG_QUALITY), 100])
 
-def evalILSVRC():
+def evalILSVRC(cfg):
+    evaluator = COCOEvaluator("ILSVRC_DET_val", cfg, False, output_dir="tem/evalILSVRCoutput/")
+    val_loader = build_detection_test_loader(cfg, "ILSVRC_DET_val")
+    trainer = DefaultTrainer(cfg)
+    trainer.resume_or_load(resume=False)
+    inference_on_dataset(trainer.model, val_loader, evaluator)
+
+if __name__ == "__main__":
     cfg = get_cfg()
     cfg.merge_from_file("../../../configs/COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml")
     cfg.DATALOADER.NUM_WORKERS = 2
@@ -315,25 +288,18 @@ def evalILSVRC():
 
     cfg.SOLVER.IMS_PER_BATCH = 5
     cfg.SOLVER.BASE_LR = 0.00025  # pick a good LR
-    cfg.SOLVER.MAX_ITER = 300  # 300 iterations seems good enough for this toy dataset; you may need to train longer for a practical dataset
+    cfg.SOLVER.MAX_ITER = 180000  # 300 iterations seems good enough for this toy dataset; you may need to train longer for a practical dataset
     cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 128  # faster, and good enough for this toy dataset (default: 512)
-    cfg.DATASETS.TRAIN = ("ILSVRC_DET_train",)
+    cfg.DATASETS.TRAIN = ("ILSVRC_DET_train","ILSVRC_DET_val")
 
-    # cfg.MODEL.WEIGHTS = "../../../demo/faster_rcnn_R_101_FPN_3x.pkl"  # Let training initialize from model zoo
-    cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, "model_0034999.pth")
+    cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, "model_0049999.pth")  # Let training initialize from model zoo
+    # cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, "model_final.pth")
     cfg.DATASETS.TEST = ("ILSVRC_DET_val",)
     cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.7  # set the testing threshold for this model
 
-    evaluator = COCOEvaluator("ILSVRC_DET_val", cfg, False, output_dir="tem/evalILSVRCoutput/")
-    val_loader = build_detection_test_loader(cfg, "ILSVRC_DET_val")
-    trainer = DefaultTrainer(cfg)
-    trainer.resume_or_load(resume=False)
-    inference_on_dataset(trainer.model, val_loader, evaluator)
-
-if __name__ == "__main__":
     register_ILSVRC()
     # testDataloader()
-    # trainILSVRC()
-    # inferenceILSVRC()
-    evalILSVRC()
+    # trainILSVRC(cfg)
+    # inferenceILSVRC(cfg)
+    evalILSVRC(cfg)
     print("over")
