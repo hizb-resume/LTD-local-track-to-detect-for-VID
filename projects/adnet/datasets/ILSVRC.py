@@ -309,5 +309,5 @@ if __name__ == "__main__":
     # testDataloader()
     # trainILSVRC(cfg)
     inferenceILSVRC(cfg)
-    # evalILSVRC(cfg)
+    # evalILSVRC(cfg) #not implemented
     print("finished.")
