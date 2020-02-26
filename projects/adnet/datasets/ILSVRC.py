@@ -14,7 +14,7 @@ from detectron2.data import DatasetCatalog, MetadataCatalog
 from detectron2.data import build_detection_test_loader
 from detectron2.evaluation import COCOEvaluator, inference_on_dataset
 from detectron2.utils.visualizer import Visualizer,ColorMode
-from detectron2.engine import DefaultTrainer
+from detectron2.engine import DefaultTrainer, default_argument_parser, launch
 from detectron2.engine import DefaultPredictor
 from detectron2.config import get_cfg
 from google.colab.patches import cv2_imshow
@@ -247,11 +247,14 @@ def testDataloader():
                 filename=os.path.join(pat,e["file_name"][-10:])
                 cv2.imwrite(filename, vis.get_image(), [int(cv2.IMWRITE_JPEG_QUALITY), 100])
 
-def trainILSVRC(cfg):
+def trainILSVRC(args):
+    register_ILSVRC()
+    yaml_path,outdir,weights_name=get_cfg_info()
+    cfg=setup(yaml_path,outdir,weights_name)
     os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
     trainer = DefaultTrainer(cfg)
     trainer.resume_or_load(resume=True)
-    trainer.train()
+    return trainer.train()
 
 def inferenceILSVRC(cfg):
     predictor = DefaultPredictor(cfg)
@@ -288,7 +291,7 @@ def setup(yaml_path,outdir,weights_name):
     cfg.MODEL.ROI_HEADS.NUM_CLASSES = 30  # only has one class (ballon)
     cfg.OUTPUT_DIR = outdir
 
-    cfg.SOLVER.IMS_PER_BATCH = 5
+    cfg.SOLVER.IMS_PER_BATCH = 9
     cfg.SOLVER.BASE_LR = 0.00025  # pick a good LR
     cfg.SOLVER.MAX_ITER = 180000  # 300 iterations seems good enough for this toy dataset; you may need to train longer for a practical dataset
     cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 128  # faster, and good enough for this toy dataset (default: 512)
@@ -300,14 +303,32 @@ def setup(yaml_path,outdir,weights_name):
     cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.7  # set the testing threshold for this model
     return cfg
 
-if __name__ == "__main__":
+def train_main(args):
+    print("Command Line Args:", args)
+    num_gpus=3
+    launch(
+        trainILSVRC,
+        num_gpus,
+        num_machines=args.num_machines,
+        machine_rank=args.machine_rank,
+        dist_url=args.dist_url,
+        args=(args,),
+    )
+
+def get_cfg_info():
     yaml_path="/home/zb/project/detectron2/configs/COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml"
     outdir='/home/zb/project/detectron2/projects/adnet/datasets/tem/train_output/'
-    weights_name="model_0054999.pth"
-    cfg=setup(yaml_path,outdir,weights_name)
-    register_ILSVRC()
+    weights_name="model_0069999.pth"
+    return yaml_path,outdir,weights_name
+
+if __name__ == "__main__":
+    args = default_argument_parser().parse_args()
+    train_main(args)  # trainILSVRC(cfg)
+
+    # yaml_path,outdir,weights_name=get_cfg_info()
+    # cfg=setup(yaml_path,outdir,weights_name)
+    # register_ILSVRC()
     # testDataloader()
-    # trainILSVRC(cfg)
-    inferenceILSVRC(cfg)
-    # evalILSVRC(cfg) #not implemented
+    # inferenceILSVRC(cfg)
+    ## evalILSVRC(cfg) #not implemented
     print("finished.")
