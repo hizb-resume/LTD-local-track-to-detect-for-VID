@@ -253,9 +253,9 @@ def trainILSVRC():
     cfg.MODEL.ROI_HEADS.NUM_CLASSES = 30  # only has one class (ballon)
     cfg.OUTPUT_DIR = 'tem/train_output/'
 
-    cfg.SOLVER.IMS_PER_BATCH = 1
+    cfg.SOLVER.IMS_PER_BATCH = 5
     cfg.SOLVER.BASE_LR = 0.00025  # pick a good LR
-    cfg.SOLVER.MAX_ITER = 3000  # 300 iterations seems good enough for this toy dataset; you may need to train longer for a practical dataset
+    cfg.SOLVER.MAX_ITER = 180000  # 300 iterations seems good enough for this toy dataset; you may need to train longer for a practical dataset
     cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 128  # faster, and good enough for this toy dataset (default: 512)
     cfg.DATASETS.TRAIN = ("ILSVRC_DET_train",)
 
@@ -278,12 +278,12 @@ def inferenceILSVRC():
 
     cfg.SOLVER.IMS_PER_BATCH = 5
     cfg.SOLVER.BASE_LR = 0.00025  # pick a good LR
-    cfg.SOLVER.MAX_ITER = 300  # 300 iterations seems good enough for this toy dataset; you may need to train longer for a practical dataset
+    cfg.SOLVER.MAX_ITER = 180000  # 300 iterations seems good enough for this toy dataset; you may need to train longer for a practical dataset
     cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 128  # faster, and good enough for this toy dataset (default: 512)
     cfg.DATASETS.TRAIN = ("ILSVRC_DET_train",)
 
     # cfg.MODEL.WEIGHTS = "../../../demo/faster_rcnn_R_101_FPN_3x.pkl"  # Let training initialize from model zoo
-    cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, "model_final.pth")
+    cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, "model_0034999.pth")
     cfg.DATASETS.TEST = ("ILSVRC_DET_val",)
     cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.7  # set the testing threshold for this model
 
@@ -294,7 +294,7 @@ def inferenceILSVRC():
     pat = "tem/inferenceILSVRC/"
     if not os.path.exists(pat):
         os.makedirs(pat)
-    for d in random.sample(dataset_dicts, 3):
+    for d in random.sample(dataset_dicts, 30):
         im = cv2.imread(d["file_name"])
         outputs = predictor(im)
         v = Visualizer(im[:, :, ::-1],
@@ -320,7 +320,7 @@ def evalILSVRC():
     cfg.DATASETS.TRAIN = ("ILSVRC_DET_train",)
 
     # cfg.MODEL.WEIGHTS = "../../../demo/faster_rcnn_R_101_FPN_3x.pkl"  # Let training initialize from model zoo
-    cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, "model_final.pth")
+    cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, "model_0034999.pth")
     cfg.DATASETS.TEST = ("ILSVRC_DET_val",)
     cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.7  # set the testing threshold for this model
 
@@ -333,6 +333,7 @@ def evalILSVRC():
 if __name__ == "__main__":
     register_ILSVRC()
     # testDataloader()
-    trainILSVRC()
+    # trainILSVRC()
     # inferenceILSVRC()
+    evalILSVRC()
     print("over")
