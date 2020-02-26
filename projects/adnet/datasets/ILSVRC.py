@@ -224,18 +224,19 @@ def register_ILSVRC():
     # for c in ["VID"]:
         for d in ["train", "val"]:
             DatasetCatalog.register("ILSVRC_" +c+"_"+ d, lambda d=d: get_ILSVRC_dicts(
-                "../../../projects/adnet/datasets/data/ILSVRC/",("ImageSets/" +c+"/"+ d+".txt"),c,d))
+                "/home/zb/project/detectron2/projects/adnet/datasets/data/ILSVRC/",("ImageSets/" +c+"/"+ d+".txt"),c,d))
             MetadataCatalog.get("ILSVRC_" +c+"_"+ d).set(thing_classes=CLASS_NAMES)
+
 
 def testDataloader():
     for c in ["DET","VID"]:
     # for c in ["VID"]:
         for d in ["train", "val"]:
-            pat = "tem/" + c + "/" + d + "/"
+            pat = "/home/zb/project/detectron2/projects/adnet/datasets/tem/" + c + "/" + d + "/"
             if not os.path.exists(pat):
                 os.makedirs(pat)
             dataset_dicts = get_ILSVRC_dicts(
-                "../../../projects/adnet/datasets/data/ILSVRC/", ("ImageSets/" +c+"/"+ d+".txt"), c, d)
+                "/home/zb/project/detectron2/projects/adnet/datasets/data/ILSVRC/", ("ImageSets/" +c+"/"+ d+".txt"), c, d)
             ILSVRC_metadata = MetadataCatalog.get("ILSVRC_" +c+"_"+ d)
             for f,e in enumerate(random.sample(dataset_dicts, 3)):
                 print(c,d,f)
@@ -255,9 +256,9 @@ def trainILSVRC(cfg):
 def inferenceILSVRC(cfg):
     predictor = DefaultPredictor(cfg)
     dataset_dicts = get_ILSVRC_dicts(
-        "../../../projects/adnet/datasets/data/ILSVRC/", ("ImageSets/" + "DET" + "/" + "val" + ".txt"), "DET", "val")
+        "/home/zb/project/detectron2/projects/adnet/datasets/data/ILSVRC/", ("ImageSets/" + "DET" + "/" + "val" + ".txt"), "DET", "val")
     ILSVRC_metadata = MetadataCatalog.get("ILSVRC_" +"DET"+"_"+ "val")
-    pat = "tem/inferenceILSVRC/"
+    pat = "/home/zb/project/detectron2/projects/adnet/datasets/tem/inferenceILSVRC/"
     if not os.path.exists(pat):
         os.makedirs(pat)
     for d in random.sample(dataset_dicts, 30):
@@ -280,12 +281,12 @@ def evalILSVRC(cfg):
     # inference_on_dataset(trainer.model, val_loader, evaluator)
     pass
 
-def setup():
+def setup(yaml_path,outdir,weights_name):
     cfg = get_cfg()
-    cfg.merge_from_file("../../../configs/COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml")
+    cfg.merge_from_file(yaml_path)
     cfg.DATALOADER.NUM_WORKERS = 2
     cfg.MODEL.ROI_HEADS.NUM_CLASSES = 30  # only has one class (ballon)
-    cfg.OUTPUT_DIR = 'tem/train_output/'
+    cfg.OUTPUT_DIR = outdir
 
     cfg.SOLVER.IMS_PER_BATCH = 5
     cfg.SOLVER.BASE_LR = 0.00025  # pick a good LR
@@ -293,17 +294,20 @@ def setup():
     cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 128  # faster, and good enough for this toy dataset (default: 512)
     cfg.DATASETS.TRAIN = ("ILSVRC_DET_train", "ILSVRC_DET_val")
 
-    cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, "model_0054999.pth")  # Let training initialize from model zoo
+    cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, weights_name)  # Let training initialize from model zoo
     # cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, "model_final.pth")
     cfg.DATASETS.TEST = ("ILSVRC_DET_val",)
     cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.7  # set the testing threshold for this model
     return cfg
 
 if __name__ == "__main__":
-    cfg=setup()
+    yaml_path="/home/zb/project/detectron2/configs/COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml"
+    outdir='/home/zb/project/detectron2/projects/adnet/datasets/tem/train_output/'
+    weights_name="model_0054999.pth"
+    cfg=setup(yaml_path,outdir,weights_name)
     register_ILSVRC()
     # testDataloader()
-    trainILSVRC(cfg)
-    # inferenceILSVRC(cfg)
+    # trainILSVRC(cfg)
+    inferenceILSVRC(cfg)
     # evalILSVRC(cfg)
     print("finished.")
