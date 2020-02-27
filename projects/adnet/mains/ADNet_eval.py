@@ -39,7 +39,7 @@ parser.add_argument('--num_workers', default=16, type=int, help='Number of worke
 parser.add_argument('--cuda', default=True, type=str2bool, help='Use cuda to train model')
 parser.add_argument('--visualize', default=True, type=str2bool, help='Use tensorboardx to for visualization')
 parser.add_argument('--send_images_to_visualization', type=str2bool, default=False, help='Sample a random image from each 10th batch, send it to visdom after augmentations step')
-parser.add_argument('--display_images', default=False, type=str2bool, help='Whether to display images or not')
+parser.add_argument('--display_images', default=True, type=str2bool, help='Whether to display images or not')
 parser.add_argument('--save_result_images', default=None, type=str, help='save results folder')
 # parser.add_argument('--save_result_images', default=None, type=str, help='save results folder')
 parser.add_argument('--save_result_npy', default='results_on_test_images_part2', type=str, help='save results folder')
@@ -72,7 +72,7 @@ if __name__ == "__main__":
     cfg.merge_from_file("../../../configs/COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml")
     cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # set threshold for this model
     # Find a model from detectron2's model zoo. You can either use the https://dl.fbaipublicfiles.... url, or use the following shorthand
-    cfg.MODEL.WEIGHTS ="../datasets/tem/train_output/model_0054999.pth"
+    cfg.MODEL.WEIGHTS ="../datasets/tem/train_output/model_0114999.pth"
     cfg.MODEL.ROI_HEADS.NUM_CLASSES = 30
     metalog = MetadataCatalog.get("ILSVRC_VID_val")
 
@@ -153,7 +153,7 @@ if __name__ == "__main__":
     print("videos nums: %d ."%(len(videos_infos)))
 
     for vidx,vid_folder in enumerate(videos_infos):
-    # for vidx  in range(999,len(videos_infos)):
+    # for vidx  in range(998,len(videos_infos)):
     #     vid_folder=videos_infos[vidx]
 
         # net, domain_nets = adnet(opts, trained_file=args.weight_file, random_initialize_domain_specific=True)
@@ -177,7 +177,7 @@ if __name__ == "__main__":
         '''
 
         vid_pred = adnet_test(net,predictor,metalog,class_names, vidx,vid_folder['img_files'], opts, args)
-        gen_pred_file('../datasets/data/ILSVRC-vid-eval',vid_pred)
+        gen_pred_file('../datasets/data/ILSVRC-vid-eval-tem',vid_pred)
     #     all_precisions.append(precisions)
     #
     # print(all_precisions)

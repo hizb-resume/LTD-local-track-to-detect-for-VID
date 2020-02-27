@@ -243,6 +243,11 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
         else:
             frame_path = vid_info['img_files'][frame_idx]
             frame = cv2.imread(frame_path)
+            try:
+                frame.shape
+            except:
+                print(frame_path)
+
         t0_wholetracking = time.time()
 
         # cap.set(cv2.CAP_PROP_POS_FRAMES, float(frame_idx))
