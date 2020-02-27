@@ -345,10 +345,10 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
                     t += 1
 
                     # draw box or with display, then save
-                    if args.display_images:
-                        im_with_bb = display_result(frame, curr_bbox)  # draw box and display
-                    else:
-                        im_with_bb = draw_boxes(frame, curr_bbox)
+                    # if args.display_images:
+                    #     im_with_bb = display_result(frame, curr_bbox)  # draw box and display
+                    # else:
+                    #     im_with_bb = draw_boxes(frame, curr_bbox)
 
                     # if args.save_result_images:
                     #     filename = os.path.join(args.save_result_images, str(frame_idx).rjust(4,'0')+'-'+str(t_id).rjust(2,'0')+'-' + str(t).rjust(2,'0') + '.jpg')
@@ -408,10 +408,10 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
                     # curr_bbox = redet_samples[max_score_samples_idx]
                     #
                     # update the final result image
-                    if args.display_images:
-                        im_with_bb = display_result(frame, frame_pred['bbox'])  # draw box and display
-                    else:
-                        im_with_bb = draw_boxes(frame, frame_pred['bbox'])
+                    # if args.display_images:
+                    #     im_with_bb = display_result(frame, frame_pred['bbox'])  # draw box and display
+                    # else:
+                    #     im_with_bb = draw_boxes(frame, frame_pred['bbox'])
                     #
                     # if args.save_result_images:
                     #     filename = os.path.join(args.save_result_images, str(frame_idx).rjust(4,'0') + '-98-20-redet.jpg')
@@ -425,15 +425,34 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
                     frame_pred['bbox'][t_id] = curr_bbox
                     frame_pred['score_cls'][t_id] = curr_score
             if is_negative==False:
-                if args.display_images:
-                    im_with_bb = display_result(frame, frame_pred['bbox'])  # draw box and display
-                else:
-                    im_with_bb = draw_boxes(frame, frame_pred['bbox'])
+                pass
+                # if args.display_images:
+                #     im_with_bb = display_result(frame, frame_pred['bbox'])  # draw box and display
+                # else:
+                #     im_with_bb = draw_boxes(frame, frame_pred['bbox'])
             vid_pred['frame_id'].extend(np.full(n_bbox, frame_pred['frame_id']))
             vid_pred['track_id'].extend(frame_pred['track_id'])
             vid_pred['obj_name'].extend(frame_pred['obj_name'])
             vid_pred['bbox'].extend(frame_pred['bbox'])
             vid_pred['score_cls'].extend(frame_pred['score_cls'])
+
+        if args.display_images:
+            if len(frame_pred['bbox']) == 0:
+                cv2.imshow("result",frame)
+                cv2.waitKey(1)
+            else:
+                boxes=np.asarray(frame_pred['bbox'])
+                boxes[:, 2] = boxes[:, 2] + boxes[:, 0]
+                boxes[:, 3] = boxes[:, 3] + boxes[:, 1]
+                outputs={
+                    "pred_boxes":boxes,
+                    "scores":frame_pred['score_cls'],
+                    "pred_classes":frame_pred['obj_name']
+                }
+                v = Visualizer(frame[:, :, ::-1], metalog, scale=1.2)
+                v = v.draw_instance_predictions2(outputs)
+                cv2.imshow("result",v.get_image())
+                cv2.waitKey(1)
 
         if args.save_result_images:
             filename = os.path.join(args.save_result_images, str(frame_idx).rjust(4,'0')+'-99-21-final' + '.jpg')

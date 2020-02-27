@@ -291,7 +291,7 @@ def setup(yaml_path,outdir,weights_name):
     cfg.MODEL.ROI_HEADS.NUM_CLASSES = 30  # only has one class (ballon)
     cfg.OUTPUT_DIR = outdir
 
-    cfg.SOLVER.IMS_PER_BATCH = 15
+    cfg.SOLVER.IMS_PER_BATCH = 10
     cfg.SOLVER.BASE_LR = 0.00025  # pick a good LR
     cfg.SOLVER.MAX_ITER = 180000  # 300 iterations seems good enough for this toy dataset; you may need to train longer for a practical dataset
     cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 128  # faster, and good enough for this toy dataset (default: 512)
@@ -305,7 +305,7 @@ def setup(yaml_path,outdir,weights_name):
 
 def train_main(args):
     print("Command Line Args:", args)
-    num_gpus=3
+    num_gpus=2
     launch(
         trainILSVRC,
         num_gpus,
@@ -318,7 +318,7 @@ def train_main(args):
 def get_cfg_info():
     yaml_path="/home/zb/project/detectron2/configs/COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml"
     outdir='/home/zb/project/detectron2/projects/adnet/datasets/tem/train_output/'
-    weights_name="model_0129999.pth"
+    weights_name="model_0134999.pth"
     return yaml_path,outdir,weights_name
 
 if __name__ == "__main__":
