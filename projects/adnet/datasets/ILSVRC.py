@@ -293,7 +293,7 @@ def setup(yaml_path,outdir,weights_name):
 
     cfg.SOLVER.IMS_PER_BATCH = 10
     cfg.SOLVER.BASE_LR = 0.00025  # pick a good LR
-    cfg.SOLVER.MAX_ITER = 180000  # 300 iterations seems good enough for this toy dataset; you may need to train longer for a practical dataset
+    cfg.SOLVER.MAX_ITER = 300000  # 300 iterations seems good enough for this toy dataset; you may need to train longer for a practical dataset
     cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 128  # faster, and good enough for this toy dataset (default: 512)
     cfg.DATASETS.TRAIN = ("ILSVRC_DET_train", "ILSVRC_DET_val")
 
