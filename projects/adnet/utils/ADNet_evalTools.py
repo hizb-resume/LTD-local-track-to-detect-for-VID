@@ -183,7 +183,7 @@ def do_precison(path_pred,path_gt):
             for id_bgt,box in enumerate(bboxs_gt):
                 id_iou,iou=maxiou(box,bboxs_pred)
                 ious.append(iou)
-                if vids_pred[i]['obj_name'][k][id_iou]==vids_gt[j]['bbox'][l][id_bgt]:
+                if vids_pred[i]['obj_name'][k][id_iou]==vids_gt[j]['obj_name'][l][id_bgt]:
                     ious_cls.append(iou)
                 else:
                     ious_cls.append(0)
@@ -195,5 +195,5 @@ def do_precison(path_pred,path_gt):
     print('cls precision(iou>%.2f): %.2f'%(cls_success_all[14][0],cls_success_all[14][1]))
 
 if __name__ == "__main__":
-    gen_gt_file('../datasets/data/ILSVRC-vid-eval')
-    # do_precison('../datasets/data/ILSVRC-vid-eval-pred.txt','../datasets/data/ILSVRC-vid-eval-gt.txt')
+    # gen_gt_file('../datasets/data/ILSVRC-vid-eval')
+    do_precison('../datasets/data/ILSVRC-vid-eval-pred.txt','../datasets/data/ILSVRC-vid-eval-gt.txt')
