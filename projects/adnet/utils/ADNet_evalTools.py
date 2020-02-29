@@ -163,6 +163,7 @@ def maxiou(box,bboxs_pred):
     return max_id,max_iou
 
 def do_precison(path_pred,path_gt):
+    #wrong, don't use
     ious=[]
     ious_cls=[]
     vids_pred =read_results_info(path_pred)
@@ -203,19 +204,37 @@ def do_precison2(path_pred,path_gt):
     i = 0
     for j in range(len(vids_gt)):
         idg=vids_gt[j]['vid_id']
-        if idg!=vids_pred[i]['vid_id']:
+        if i>=len(vids_pred):
+            for l in range(len(vids_gt[j]['frame_id'])):
+                bboxs_gt = vids_gt[j]['bbox'][l]
+                for _ in range(len(bboxs_gt)):
+                    ious.append(0)
+                    ious_cls.append(0)
+        elif idg!=vids_pred[i]['vid_id']:
             # print("i_pred: %d, vid_id_pred: %d; j_gt: %d, vid_id_gt: %d."%(i,idv,j,vids_gt[j]['vid_id']))
             if idg<vids_pred[i]['vid_id']:
-                pass
+                for l in range(len(vids_gt[j]['frame_id'])):
+                    bboxs_gt = vids_gt[j]['bbox'][l]
+                    for _ in range(len(bboxs_gt)):
+                        ious.append(0)
+                        ious_cls.append(0)
             else:
                 print("test, this situation1 is not possible.")
         else:
             k=0
             for l in range(len(vids_gt[j]['frame_id'])):
                 idgf=vids_gt[j]['frame_id'][l]
-                if idgf !=vids_pred[i]['frame_id'][k]:
+                if k>=len(vids_pred[i]['frame_id']):
+                    bboxs_gt = vids_gt[j]['bbox'][l]
+                    for _ in range(len(bboxs_gt)):
+                        ious.append(0)
+                        ious_cls.append(0)
+                elif idgf !=vids_pred[i]['frame_id'][k]:
                     if idgf < vids_pred[i]['frame_id'][k]:
-                        pass
+                        bboxs_gt = vids_gt[j]['bbox'][l]
+                        for _ in range(len(bboxs_gt)):
+                            ious.append(0)
+                            ious_cls.append(0)
                     else:
                         print("test, this situation2 is not possible.")
                 else:
