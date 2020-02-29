@@ -270,6 +270,7 @@ def do_precison2(path_pred,path_gt):
                             ious_cls.append(iou)
                         else:
                             ious_cls.append(0)
+                            # print("gt: %s, pred: %s"%(vids_gt[j]['obj_name'][l][id_bgt],vids_pred[i]['obj_name'][k][id_iou]))
                         n_all_boxes += 1
                         # n_miss_boxes += 1
                     if len(bboxs_gt) > 0:
@@ -279,6 +280,10 @@ def do_precison2(path_pred,path_gt):
             i+=1
     iou_success_all=cal_success(ious)
     cls_success_all = cal_success(ious_cls)
+    print('iou precision(iou>%.2f): %.2f%%.' % (iou_success_all[10][0], (iou_success_all[10][1]) * 100))
+    print('cls precision(iou>%.2f): %.2f%%.' % (cls_success_all[10][0], (cls_success_all[10][1]) * 100))
+    print('iou precision(iou>%.2f): %.2f%%.' % (iou_success_all[12][0], (iou_success_all[12][1]) * 100))
+    print('cls precision(iou>%.2f): %.2f%%.' % (cls_success_all[12][0], (cls_success_all[12][1]) * 100))
     print('iou precision(iou>%.2f): %.2f%%.'%(iou_success_all[14][0],(iou_success_all[14][1])*100))
     print('cls precision(iou>%.2f): %.2f%%.'%(cls_success_all[14][0],(cls_success_all[14][1])*100))
     print('all gt imgs: %d, missed imgs: %d, missed img ratio: %.2f%%.'%(n_all_pics,n_miss_pics,(n_miss_pics/n_all_pics)*100))
