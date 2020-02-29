@@ -163,7 +163,7 @@ def maxiou(box,bboxs_pred):
     return max_id,max_iou
 
 def do_precison(path_pred,path_gt):
-    #wrong, don't use
+    #correct ratio in predicted result
     ious=[]
     ious_cls=[]
     vids_pred =read_results_info(path_pred)
@@ -195,12 +195,15 @@ def do_precison(path_pred,path_gt):
     print('iou precision(iou>%.2f): %.2f'%(iou_success_all[14][0],iou_success_all[14][1]))
     print('cls precision(iou>%.2f): %.2f'%(cls_success_all[14][0],cls_success_all[14][1]))
 
-
 def do_precison2(path_pred,path_gt):
     ious=[]
     ious_cls=[]
     vids_pred =read_results_info(path_pred)
     vids_gt =read_results_info(path_gt)
+    n_all_boxes=0
+    n_miss_boxes=0
+    n_all_pics=0
+    n_miss_pics=0
     i = 0
     for j in range(len(vids_gt)):
         idg=vids_gt[j]['vid_id']
@@ -210,6 +213,11 @@ def do_precison2(path_pred,path_gt):
                 for _ in range(len(bboxs_gt)):
                     ious.append(0)
                     ious_cls.append(0)
+                    n_all_boxes+=1
+                    n_miss_boxes+=1
+                if len(bboxs_gt)>0:
+                    n_all_pics+=1
+                    n_miss_pics+=1
         elif idg!=vids_pred[i]['vid_id']:
             # print("i_pred: %d, vid_id_pred: %d; j_gt: %d, vid_id_gt: %d."%(i,idv,j,vids_gt[j]['vid_id']))
             if idg<vids_pred[i]['vid_id']:
@@ -218,6 +226,11 @@ def do_precison2(path_pred,path_gt):
                     for _ in range(len(bboxs_gt)):
                         ious.append(0)
                         ious_cls.append(0)
+                        n_all_boxes += 1
+                        n_miss_boxes += 1
+                    if len(bboxs_gt) > 0:
+                        n_all_pics += 1
+                        n_miss_pics += 1
             else:
                 print("test, this situation1 is not possible.")
         else:
@@ -229,12 +242,22 @@ def do_precison2(path_pred,path_gt):
                     for _ in range(len(bboxs_gt)):
                         ious.append(0)
                         ious_cls.append(0)
+                        n_all_boxes += 1
+                        n_miss_boxes += 1
+                    if len(bboxs_gt) > 0:
+                        n_all_pics += 1
+                        n_miss_pics += 1
                 elif idgf !=vids_pred[i]['frame_id'][k]:
                     if idgf < vids_pred[i]['frame_id'][k]:
                         bboxs_gt = vids_gt[j]['bbox'][l]
                         for _ in range(len(bboxs_gt)):
                             ious.append(0)
                             ious_cls.append(0)
+                            n_all_boxes += 1
+                            n_miss_boxes += 1
+                        if len(bboxs_gt) > 0:
+                            n_all_pics += 1
+                            n_miss_pics += 1
                     else:
                         print("test, this situation2 is not possible.")
                 else:
@@ -247,12 +270,19 @@ def do_precison2(path_pred,path_gt):
                             ious_cls.append(iou)
                         else:
                             ious_cls.append(0)
+                        n_all_boxes += 1
+                        # n_miss_boxes += 1
+                    if len(bboxs_gt) > 0:
+                        n_all_pics += 1
+                        # n_miss_pics += 1
                     k += 1
             i+=1
     iou_success_all=cal_success(ious)
     cls_success_all = cal_success(ious_cls)
-    print('iou precision(iou>%.2f): %.2f'%(iou_success_all[14][0],iou_success_all[14][1]))
-    print('cls precision(iou>%.2f): %.2f'%(cls_success_all[14][0],cls_success_all[14][1]))
+    print('iou precision(iou>%.2f): %.2f%%.'%(iou_success_all[14][0],(iou_success_all[14][1])*100))
+    print('cls precision(iou>%.2f): %.2f%%.'%(cls_success_all[14][0],(cls_success_all[14][1])*100))
+    print('all gt imgs: %d, missed imgs: %d, missed img ratio: %.2f%%.'%(n_all_pics,n_miss_pics,(n_miss_pics/n_all_pics)*100))
+    print('all gt boxes: %d, missed boxess: %d, missed box ratio: %.2f%%.'%(n_all_boxes,n_miss_boxes,(n_miss_boxes/n_all_boxes)*100))
 
 if __name__ == "__main__":
     # gen_gt_file('../datasets/data/ILSVRC-vid-eval')
