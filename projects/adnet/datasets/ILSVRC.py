@@ -295,7 +295,8 @@ def setup(yaml_path,outdir,weights_name):
     cfg.SOLVER.BASE_LR = 0.00025  # pick a good LR
     cfg.SOLVER.MAX_ITER = 300000  # 300 iterations seems good enough for this toy dataset; you may need to train longer for a practical dataset
     cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 128  # faster, and good enough for this toy dataset (default: 512)
-    cfg.DATASETS.TRAIN = ("ILSVRC_DET_train", "ILSVRC_DET_val")
+    # cfg.DATASETS.TRAIN = ("ILSVRC_DET_train", "ILSVRC_DET_val")
+    cfg.DATASETS.TRAIN = ("ILSVRC_VID_train",)
 
     cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, weights_name)  # Let training initialize from model zoo
     # cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, "model_final.pth")
@@ -318,7 +319,8 @@ def train_main(args):
 def get_cfg_info():
     yaml_path="/home/zb/project/detectron2/configs/COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml"
     outdir='/home/zb/project/detectron2/projects/adnet/datasets/tem/train_output/'
-    weights_name="model_0134999.pth"
+    # weights_name="model_final.pth"
+    weights_name = "model_0259999.pth"
     return yaml_path,outdir,weights_name
 
 if __name__ == "__main__":

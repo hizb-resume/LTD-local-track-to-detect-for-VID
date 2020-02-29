@@ -72,7 +72,7 @@ if __name__ == "__main__":
     cfg.merge_from_file("../../../configs/COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml")
     cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # set threshold for this model
     # Find a model from detectron2's model zoo. You can either use the https://dl.fbaipublicfiles.... url, or use the following shorthand
-    cfg.MODEL.WEIGHTS ="../datasets/tem/train_output/model_0129999.pth"
+    cfg.MODEL.WEIGHTS ="../datasets/tem/train_output/model_0259999.pth"
     cfg.MODEL.ROI_HEADS.NUM_CLASSES = 30
     metalog = MetadataCatalog.get("ILSVRC_VID_val")
 
