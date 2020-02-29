@@ -263,7 +263,7 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
             sign_redet = True
             print('the num of pred boxes is 0! pre frame: %d, now frame: %d .'%(frame_idx-1,frame_idx))
         if frame_idx==0 or sign_redet==True or dis_redet==20:
-            print('redetection: frame %d'%frame_idx)
+            # print('redetection: frame %d'%frame_idx)
             ts1=time.time()
             boxes,classes,scores = pred(predictor,class_names, frame)
             ts2=time.time()
@@ -629,4 +629,10 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
 
     # return bboxes, t_sum, precisions
     print('vid %d : %d frames, whole tracking time : %.4f sec.' % (vidx,vid_info['nframes'],t_sum))
+    print("predict time: %.2fs, predict frames: %.2fs, average time: %.2fms."%(
+        spend_time['predict'],spend_time['n_predict_frames'],
+        (spend_time['predict']/spend_time['n_predict_frames'])*1000))
+    print("track time: %.2fs, track frames: %.2fs, average time: %.2fms.\n" % (
+        spend_time['track'], spend_time['n_track_frames'],
+        (spend_time['track'] / spend_time['n_track_frames']) * 1000))
     return vid_pred
