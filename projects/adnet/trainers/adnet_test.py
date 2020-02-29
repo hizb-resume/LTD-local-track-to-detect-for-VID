@@ -128,6 +128,13 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
         'bbox': []
     }
 
+    spend_time={
+        'predict':0,
+        'n_predict_frames':0,
+        'track':0,
+        'n_track_frames':0
+    }
+
     #vid_info['img_files'] = glob.glob(os.path.join(vid_path, 'img', '*.jpg'))
     #vid_info['img_files'] = glob.glob(os.path.join(vid_path, '*.jpg'))
     isVidFile=False
@@ -257,7 +264,11 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
             print('the num of pred boxes is 0! pre frame: %d, now frame: %d .'%(frame_idx-1,frame_idx))
         if frame_idx==0 or sign_redet==True or dis_redet==20:
             print('redetection: frame %d'%frame_idx)
+            ts1=time.time()
             boxes,classes,scores = pred(predictor,class_names, frame)
+            ts2=time.time()
+            spend_time['predict']+=ts2-ts1
+            spend_time['n_predict_frames']+=1
             frame_pred['frame_id'] = frame_idx
             frame_pred['track_id'] = []
             frame_pred['obj_name'] = []
@@ -305,6 +316,8 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
             #     sign_redet=True
             #     continue
             #     print('the num of pred boxes is 0!')
+
+            ts_all = 0
             for t_id,curr_bbox in enumerate(frame_pred['bbox']):
                 t = 0
                 while True:
@@ -313,8 +326,10 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
                         curr_patch = curr_patch.cuda()
 
                     curr_patch = curr_patch.unsqueeze(0)  # 1 batch input [1, curr_patch.shape]
-
+                    ts1 = time.time()
                     fc6_out, fc7_out = net.forward(curr_patch)
+                    ts2 = time.time()
+                    ts_all+=ts2-ts1
 
                     curr_score = fc7_out.detach().cpu().numpy()[0][1]
 
@@ -367,8 +382,11 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
                     print('redetection: frame %d' % frame_idx)
                     is_negative = True
                     dis_redet = 0
-
+                    ts1=time.time()
                     boxes, classes, scores = pred(predictor, class_names,frame)
+                    ts2=time.time()
+                    spend_time['predict'] += ts2 - ts1
+                    spend_time['n_predict_frames'] += 1
                     # frame_pred['frame_id'] = frame_idx
                     frame_pred['track_id']=[]
                     frame_pred['obj_name']=[]
@@ -425,7 +443,8 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
                     frame_pred['bbox'][t_id] = curr_bbox
                     frame_pred['score_cls'][t_id] = curr_score
             if is_negative==False:
-                pass
+                spend_time['track'] += ts_all
+                spend_time['n_track_frames'] += 1
                 # if args.display_images:
                 #     im_with_bb = display_result(frame, frame_pred['bbox'])  # draw box and display
                 # else:
