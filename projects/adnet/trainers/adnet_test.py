@@ -132,7 +132,17 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
         'predict':0,
         'n_predict_frames':0,
         'track':0,
-        'n_track_frames':0
+        'n_track_frames':0,
+        'readframe':0,
+        'n_readframe':0,
+        'append':0,
+        'n_append':0,
+        'transform':0,
+        'n_transform':0,
+        'argmax_after_forward':0,
+        'n_argmax_after_forward':0,
+        'do_action':0,
+        'n_do_action':0
     }
 
     #vid_info['img_files'] = glob.glob(os.path.join(vid_path, 'img', '*.jpg'))
@@ -244,6 +254,7 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
     for frame_idx in range(vid_info['nframes']):
     ## for frame_idx, frame_path in enumerate(vid_info['img_files']):
         # frame_idx = idx
+        ts1=time.time()
         if isVidFile == True:
             cap.set(cv2.CAP_PROP_POS_FRAMES, float(frame_idx))
             success, frame = cap.read()
@@ -254,6 +265,9 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
                 frame.shape
             except:
                 print(frame_path)
+        ts2=time.time()
+        spend_time['readframe'] += ts2 - ts1
+        spend_time['n_readframe'] += 1
 
         t0_wholetracking = time.time()
 
@@ -274,6 +288,7 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
             frame_pred['obj_name'] = []
             frame_pred['bbox'] = []
             frame_pred['score_cls'] = []
+            ts1=time.time()
             n_bbox=len(boxes)
             for i_d in range(n_bbox):
                 frame_pred['track_id'].append(i_d)
@@ -287,6 +302,9 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
             vid_pred['score_cls'].extend(frame_pred['score_cls'])
             sign_redet = False
             dis_redet = 0
+            ts2=time.time()
+            spend_time['append'] += ts2 - ts1
+            spend_time['n_append'] += 1
 
             # curr_bbox = boxes[2]
 
@@ -321,16 +339,20 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
             for t_id,curr_bbox in enumerate(frame_pred['bbox']):
                 t = 0
                 while True:
+                    ts1=time.time()
                     curr_patch, curr_bbox, _, _ = transform(frame, curr_bbox, None, None)
                     if args.cuda:
                         curr_patch = curr_patch.cuda()
 
                     curr_patch = curr_patch.unsqueeze(0)  # 1 batch input [1, curr_patch.shape]
+                    ts2=time.time()
+                    spend_time['transform'] += ts2 - ts1
+                    spend_time['n_transform'] += 1
                     ts1 = time.time()
                     fc6_out, fc7_out = net.forward(curr_patch)
                     ts2 = time.time()
                     ts_all+=ts2-ts1
-
+                    ts1=time.time()
                     curr_score = fc7_out.detach().cpu().numpy()[0][1]
 
                     # print(curr_score)
@@ -345,8 +367,11 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
                     else:
                         action = np.argmax(fc6_out.detach().numpy())  # TODO: really okay to detach?
                         action_prob = fc6_out.detach().numpy()[0][action]
-
+                    ts2=time.time()
+                    spend_time['argmax_after_forward'] += ts2 - ts1
+                    spend_time['n_argmax_after_forward'] += 1
                     # do action
+                    ts1 = time.time()
                     curr_bbox = do_action(curr_bbox, opts, action, frame.shape)
 
                     # bound the curr_bbox size
@@ -356,6 +381,9 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
                     if curr_bbox[3] < 10:
                         curr_bbox[1] = min(0, curr_bbox[1] + curr_bbox[3] / 2 - 10 / 2)
                         curr_bbox[3] = 10
+                    ts2 = time.time()
+                    spend_time['do_action'] += ts2 - ts1
+                    spend_time['n_do_action'] += 1
 
                     t += 1
 
@@ -392,12 +420,15 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
                     frame_pred['obj_name']=[]
                     frame_pred['bbox']=[]
                     frame_pred['score_cls']=[]
+                    ts1=time.time()
                     n_bbox = len(boxes)
                     for i_d in range(n_bbox):
                         frame_pred['track_id'].append(i_d)
                         frame_pred['obj_name'].append(classes[i_d])
                         frame_pred['bbox'].append(boxes[i_d])
                         frame_pred['score_cls'].append(scores[i_d])
+                    ts2=time.time()
+                    spend_time['append'] += ts2 - ts1
                     # vid_pred['frame_id'].extend(np.full(n_bbox, frame_pred['frame_id']))
                     # vid_pred['track_id'].extend(frame_pred['track_id'])
                     # vid_pred['obj_name'].extend(frame_pred['obj_name'])
@@ -449,11 +480,15 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
                 #     im_with_bb = display_result(frame, frame_pred['bbox'])  # draw box and display
                 # else:
                 #     im_with_bb = draw_boxes(frame, frame_pred['bbox'])
+            ts1=time.time()
             vid_pred['frame_id'].extend(np.full(n_bbox, frame_pred['frame_id']))
             vid_pred['track_id'].extend(frame_pred['track_id'])
             vid_pred['obj_name'].extend(frame_pred['obj_name'])
             vid_pred['bbox'].extend(frame_pred['bbox'])
             vid_pred['score_cls'].extend(frame_pred['score_cls'])
+            ts2=time.time()
+            spend_time['append'] += ts2 - ts1
+            spend_time['n_append'] += 1
 
         if args.display_images:
             if len(frame_pred['bbox']) == 0:
