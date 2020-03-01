@@ -261,7 +261,7 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
         # success, frame = cap.read()
         if len(frame_pred['bbox']) == 0:
             sign_redet = True
-            print('the num of pred boxes is 0! pre frame: %d, now frame: %d .'%(frame_idx-1,frame_idx))
+            # print('the num of pred boxes is 0! pre frame: %d, now frame: %d .'%(frame_idx-1,frame_idx))
         if frame_idx==0 or sign_redet==True or dis_redet==20:
             # print('redetection: frame %d'%frame_idx)
             ts1=time.time()

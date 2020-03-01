@@ -6,7 +6,8 @@ from utils.overlap_ratio import overlap_ratio
 def gen_gt_file(path):
     videos_infos,train_videos=get_ILSVRC_eval_infos()
     out_file = open('%s-gt.txt' % path, 'w')
-    for tj in range(len(videos_infos)):
+    # for tj in range(len(videos_infos)):
+    for tj in range(10):
         for ti in range(len(videos_infos[tj]['gt'])):
             for tk in range(len(videos_infos[tj]['gt'][ti])):
                 # if tj==31 and ti==66:
@@ -291,4 +292,4 @@ def do_precison2(path_pred,path_gt):
 
 if __name__ == "__main__":
     # gen_gt_file('../datasets/data/ILSVRC-vid-eval')
-    do_precison2('../datasets/data/ILSVRC-vid-eval-pred.txt','../datasets/data/ILSVRC-vid-eval-gt.txt')
+    do_precison2('../datasets/data/ILSVRC-vid-eval-tem-pred.txt','../datasets/data/ILSVRC-vid-eval-gt.txt')

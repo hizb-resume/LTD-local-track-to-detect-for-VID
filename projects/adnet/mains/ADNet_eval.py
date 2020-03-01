@@ -152,9 +152,10 @@ if __name__ == "__main__":
     videos_infos, train_videos = get_ILSVRC_eval_infos()
     print("videos nums: %d ."%(len(videos_infos)))
 
-    for vidx,vid_folder in enumerate(videos_infos):
+    # for vidx,vid_folder in enumerate(videos_infos):
     # for vidx  in range(998,len(videos_infos)):
-    #     vid_folder=videos_infos[vidx]
+    for vidx in range(20):
+        vid_folder=videos_infos[vidx]
 
         # net, domain_nets = adnet(opts, trained_file=args.weight_file, random_initialize_domain_specific=True)
         # net.train()
