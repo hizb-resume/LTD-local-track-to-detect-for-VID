@@ -14,7 +14,7 @@ from torch import nn
 import torch.utils.data as data
 import glob
 from datasets.online_adaptation_dataset import OnlineAdaptationDataset, OnlineAdaptationDatasetStorage
-from utils.augmentations import ADNet_Augmentation
+from utils.augmentations import ADNet_Augmentation2
 from utils.do_action import do_action
 import time
 from utils.display import display_result, draw_boxes
@@ -82,7 +82,8 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
     else:
         torch.set_default_tensor_type('torch.FloatTensor')
 
-    transform = ADNet_Augmentation(opts)
+    # transform = ADNet_Augmentation(opts)
+    transform = ADNet_Augmentation2(opts)
 
     if isinstance(vid_path,list):
         print('Testing sequences in ' + str(vid_path[0][-43:-12]) + '...')
@@ -139,6 +140,8 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
         'n_append':0,
         'transform':0,
         'n_transform':0,
+        'cuda':0,
+        'n_cuda':0,
         'argmax_after_forward':0,
         'n_argmax_after_forward':0,
         'do_action':0,
@@ -341,13 +344,16 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
                 while True:
                     ts1=time.time()
                     curr_patch, curr_bbox, _, _ = transform(frame, curr_bbox, None, None)
-                    if args.cuda:
-                        curr_patch = curr_patch.cuda()
-
-                    curr_patch = curr_patch.unsqueeze(0)  # 1 batch input [1, curr_patch.shape]
                     ts2=time.time()
                     spend_time['transform'] += ts2 - ts1
                     spend_time['n_transform'] += 1
+                    ts1 = time.time()
+                    if args.cuda:
+                        curr_patch = curr_patch.cuda()  #this step need most of the time
+                    ts2 = time.time()
+                    spend_time['cuda'] += ts2 - ts1
+                    spend_time['n_cuda'] += 1
+                    curr_patch = curr_patch.unsqueeze(0)  # 1 batch input [1, curr_patch.shape]
                     ts1 = time.time()
                     fc6_out, fc7_out = net.forward(curr_patch)
                     ts2 = time.time()
@@ -684,6 +690,11 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
         print("transform time: %.2fs, n_transform: %d, average time: %.2fms." % (
             spend_time['transform'], spend_time['n_transform'],
             (spend_time['transform'] / spend_time['n_transform']) * 1000))
+    if spend_time['n_cuda'] != 0:
+        print(".cuda time: %.2fs, n_transform call: %d, average time: %.2fms." % (
+            spend_time['cuda'], spend_time['n_cuda'],
+            (spend_time['cuda'] / spend_time['n_cuda']) * 1000))
+
     if spend_time['n_argmax_after_forward']!=0:
         print("argmax_after_forward time: %.2fs, n_argmax_after_forward: %d, average time: %.2fms." % (
             spend_time['argmax_after_forward'], spend_time['n_argmax_after_forward'],

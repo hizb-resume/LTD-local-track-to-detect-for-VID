@@ -10,7 +10,6 @@ import cv2
 import types
 from numpy import random
 
-
 class ToTensor(object):
     def __call__(self, cvimage, box=None, action_label=None, conf_label=None):
         return torch.from_numpy(cvimage.astype(np.float32)).permute(2, 0, 1), box, action_label, conf_label
@@ -120,3 +119,15 @@ class ADNet_Augmentation(object):
     def __call__(self, img, box, action_label=None, conf_label=None):
         return self.augment(img, box, action_label, conf_label)
 
+
+class ADNet_Augmentation2(object):
+    def __init__(self, opts):
+        self.augment = Compose([
+            CropRegion(),
+            SubtractMeans(opts['means']),
+            ResizeImage(opts['inputSize']),
+            ToTensor()
+        ])
+
+    def __call__(self, img, box, action_label=None, conf_label=None):
+        return self.augment(img, box, action_label, conf_label)
