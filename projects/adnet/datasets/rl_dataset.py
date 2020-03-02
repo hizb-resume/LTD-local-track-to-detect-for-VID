@@ -15,7 +15,7 @@ from utils.get_video_infos import get_video_infos
 
 import time
 from trainers.RL_tools import TrackingEnvironment
-from utils.augmentations import ADNet_Augmentation
+from utils.augmentations import ADNet_Augmentation,ADNet_Augmentation2
 from utils.display import display_result, draw_box
 from torch.distributions import Categorical
 from utils.my_util import get_ILSVRC_videos_infos
@@ -93,8 +93,8 @@ class RLDataset(data.Dataset):
                     cv2.imwrite('images/' + str(clip_idx) + '-' + str(t) + '.jpg', im_with_bb)
 
                 curr_patch = env.get_current_patch()
-                if self.args.cuda:
-                    curr_patch = curr_patch.cuda()
+                # if self.args.cuda:
+                #     curr_patch = curr_patch.cuda()
 
                 # patch_list_.append(curr_patch.cpu().data.numpy())  # TODO: saving patch takes cuda memory
 
@@ -104,7 +104,7 @@ class RLDataset(data.Dataset):
                 # else:
                 #     action_dynamic_list_.append(net.get_action_dynamic())
 
-                curr_patch = curr_patch.unsqueeze(0)  # 1 batch input [1, curr_patch.shape]
+                # curr_patch = curr_patch.unsqueeze(0)  # 1 batch input [1, curr_patch.shape]
 
                 # load ADNetDomainSpecific with video index
                 if self.args.multidomain:
@@ -220,7 +220,10 @@ class RLDataset(data.Dataset):
         self.vid_idx_list = []
 
         print('generating reinforcement learning dataset')
-        transform = ADNet_Augmentation(opts)
+        # transform = ADNet_Augmentation(opts)
+        mean = np.array(opts['means'], dtype=np.float32)
+        mean = torch.from_numpy(mean).cuda()
+        transform = ADNet_Augmentation2(opts,mean)
 
         if train_videos==None:
             t_action_list = multiprocessing.Manager().list()

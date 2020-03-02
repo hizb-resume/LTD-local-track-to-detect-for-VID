@@ -108,7 +108,9 @@ class TrackingEnvironment(object):
         self.state = None  # current bbox
         self.gt = None  # end bbox
         self.current_img = None  # current image frame
+        self.current_img_cuda = None
         self.current_patch = None  # current patch (transformed)
+        self.current_patch_cuda = None
         self.current_img_idx = 0
 
         self.reset()
@@ -166,6 +168,9 @@ class TrackingEnvironment(object):
             #self.current_img_idx = 1  # self.current_img_idx = frameStart + 1
             self.current_img_idx = 1   #the frameStart(the 0th img,idx:0) is for initial, the current_img(idx:1) is for training.
             self.current_img = cv2.imread(self.videos[self.vid_idx]['img_path'][self.clip_idx][self.current_img_idx])
+            # imgcuda = self.current_img.copy()
+            imgcuda = self.current_img.astype(np.float32)
+            self.current_img=torch.from_numpy(imgcuda).cuda()
             self.current_patch, _, _, _ = self.transform(self.current_img, np.array(self.state))
             #Modified by zb --- 2019-11-16 22:11:16 --- to check : at this step ,the data of patch seems have some problem\
             #because some data results are under zero
@@ -217,6 +222,8 @@ class TrackingEnvironment(object):
             done = False
             # note: reset already read the current_img and current_img_patch
             self.current_img = cv2.imread(self.videos[self.vid_idx]['img_path'][self.clip_idx][self.current_img_idx])
+            imgcuda = self.current_img.astype(np.float32)
+            self.current_img = torch.from_numpy(imgcuda).cuda()
             self.current_patch, _, _, _ = self.transform(self.current_img, self.state)
 
         return reward, done, finish_epoch
