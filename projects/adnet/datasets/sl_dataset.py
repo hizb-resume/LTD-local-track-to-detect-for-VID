@@ -133,6 +133,17 @@ def initialize_pos_neg_dataset(train_videos, opts, transform=None, multidomain=T
             train_db['score_labels'].append(train_db_pos_neg_[sample_idx]['score_labels'])
             # train_db['vid_idx'].extend(np.repeat(vid_idx, len(train_db_pos_[sample_idx]['img_path'])))
             train_db['vid_idx'].append(vid_idx)
+
+        #     if len(train_db_pos_neg_[sample_idx]['bboxes'])!=20:
+        #         print("len(train_db_pos_neg_[sample_idx]['bboxes']): %d, img path: %s"%(
+        #             len(train_db_pos_neg_[sample_idx]['bboxes']),train_db_pos_neg_[sample_idx]['img_path']))
+        #     if len(train_db_pos_neg_[sample_idx]['labels'])!=20:
+        #         print("len(train_db_pos_neg_[sample_idx]['labels']): %d, img path: %s"%(
+        #             len(train_db_pos_neg_[sample_idx]['labels']),train_db_pos_neg_[sample_idx]['img_path']))
+        #     if len(train_db_pos_neg_[sample_idx]['score_labels'])!=20:
+        #         print("len(train_db_pos_neg_[sample_idx]['score_labels']): %d, img path: %s"%(
+        #             len(train_db_pos_neg_[sample_idx]['score_labels']),train_db_pos_neg_[sample_idx]['img_path']))
+        # print('over debug.')
         # print("\nFinish generating positive dataset... (current total data: " + str(len(train_db_pos['labels'])) + ")")
 
         # for sample_idx in range(len(train_db_neg_)):

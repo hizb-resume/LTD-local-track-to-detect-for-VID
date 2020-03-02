@@ -259,7 +259,7 @@ def process_data_ILSVR(img_paths, opt, train_db_pos_neg_all, lock):
             # if len(train_db_pos_['bboxes']) != 0 and len(train_db_neg_['bboxes']) != 0:
             #     train_db_pos_gpu.append(train_db_pos_)
             #     train_db_neg_gpu.append(train_db_neg_)
-            if len(train_db_pos_neg['bboxes']) != 0 :
+            if len(train_db_pos_neg['bboxes']) == (opts['nPos_train']+ opts['nNeg_train']):
                 train_db_pos_neg_gpu.append(train_db_pos_neg)
                 # train_db_neg_gpu.append(train_db_neg_)
             # box_ii += 1
