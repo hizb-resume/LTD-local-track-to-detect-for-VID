@@ -162,13 +162,13 @@ def process_data_ILSVR(img_paths, opt,train_db_pos,train_db_neg,lock):
     train_db_neg_gpu = []
     for train_i in img_paths:
         train_db_pos_ = {
-            'img_path': [],
+            'img_path': '',
             'bboxes': [],
             'labels': [],
             'score_labels': []
         }
         train_db_neg_ = {
-            'img_path': [],
+            'img_path': '',
             'bboxes': [],
             'labels': [],
             'score_labels': []
@@ -222,22 +222,24 @@ def process_data_ILSVR(img_paths, opt,train_db_pos,train_db_neg,lock):
             # action_labels = action_labels_pos + action_labels_neg
             img_path='../datasets/data/ILSVRC/Data/VID/train/'+train_i+'.JPEG'
 
-            train_db_pos_['img_path'] = np.full(len(pos_examples), img_path)
-            train_db_pos_['bboxes'] = pos_examples
-            train_db_pos_['labels'] = action_labels_pos
+
+            train_db_pos_['bboxes'].extend(pos_examples)
+            train_db_pos_['labels'].extend(action_labels_pos)
             # score labels: 1 is positive. 0 is negative
-            train_db_pos_['score_labels'] = list(np.ones(len(pos_examples), dtype=int))
+            train_db_pos_['score_labels'].extend(list(np.ones(len(pos_examples), dtype=int)))
 
-            train_db_neg_['img_path'] = np.full(len(neg_examples), img_path)
-            train_db_neg_['bboxes'] = neg_examples
-            train_db_neg_['labels'] = action_labels_neg
+
+            train_db_neg_['bboxes'].extend(neg_examples)
+            train_db_neg_['labels'].extend(action_labels_neg)
             # score labels: 1 is positive. 0 is negative
-            train_db_neg_['score_labels'] = list(np.zeros(len(neg_examples), dtype=int))
+            train_db_neg_['score_labels'].extend(list(np.zeros(len(neg_examples), dtype=int)))
 
-            if len(train_db_pos_['img_path'])!=0 and len(train_db_neg_['img_path'])!=0:
-                train_db_pos_gpu.append(train_db_pos_)
-                train_db_neg_gpu.append(train_db_neg_)
+        train_db_pos_['img_path'] = img_path
+        train_db_neg_['img_path'] = img_path
 
+        if len(train_db_pos_['bboxes']) != 0 and len(train_db_neg_['bboxes']) != 0:
+            train_db_pos_gpu.append(train_db_pos_)
+            train_db_neg_gpu.append(train_db_neg_)
             # box_ii += 1
 
         # img_ii += 1
