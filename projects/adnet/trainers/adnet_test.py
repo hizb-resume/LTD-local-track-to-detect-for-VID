@@ -707,7 +707,8 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
             spend_time['argmax_after_forward'], spend_time['n_argmax_after_forward'],
             (spend_time['argmax_after_forward'] / spend_time['n_argmax_after_forward']) * 1000))
     if spend_time['n_do_action']!=0:
-        print("do_action time: %.2fs, n_do_action: %d, average time: %.2fms.\n" % (
+        print("do_action time: %.2fs, n_do_action: %d, average time: %.2fms." % (
             spend_time['do_action'], spend_time['n_do_action'],
             (spend_time['do_action'] / spend_time['n_do_action']) * 1000))
+    print('\n')
     return vid_pred
