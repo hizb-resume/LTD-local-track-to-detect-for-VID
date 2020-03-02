@@ -9,7 +9,7 @@ if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
 from models.ADNet import adnet
 from utils.get_train_videos import get_train_videos
 from datasets.sl_dataset import initialize_pos_neg_dataset
-from utils.augmentations import ADNet_Augmentation
+from utils.augmentations import ADNet_Augmentation,ADNet_Augmentation2
 
 import torch
 import torch.utils.data as data
@@ -51,8 +51,10 @@ def adnet_train_sl(args, opts):
     if train_videos==None:
         opts['num_videos'] =1
         number_domain = opts['num_videos']
+        mean = np.array(opts['means'], dtype=np.float32)
+        mean = torch.from_numpy(mean).cuda()
         # datasets_pos, datasets_neg = initialize_pos_neg_dataset(train_videos,opts, transform=ADNet_Augmentation(opts),multidomain=args.multidomain)
-        datasets_pos_neg = initialize_pos_neg_dataset(train_videos, opts, transform=ADNet_Augmentation(opts),multidomain=args.multidomain)
+        datasets_pos_neg = initialize_pos_neg_dataset(train_videos, opts, transform=ADNet_Augmentation2(opts,mean),multidomain=args.multidomain)
     else:
         opts['num_videos'] = len(train_videos['video_names'])
         number_domain = opts['num_videos']
@@ -276,6 +278,7 @@ def adnet_train_sl(args, opts):
                 curr_domain = 0
             try:
                 images, bbox, action_label, score_label, vid_idx = next(batch_iterators[curr_domain])
+                images=images.reshape(-1,3,112,112)
             except StopIteration:
                 batch_iterators[curr_domain] = iter(data_loader[curr_domain])
                 images, bbox, action_label, score_label, vid_idx = next(batch_iterators[curr_domain])

@@ -26,16 +26,26 @@ class SLDataset(data.Dataset):
         self.train_db = train_db
 
     def __getitem__(self, index):
-        im = cv2.imread(self.train_db['img_path'][index])
-        bbox = self.train_db['bboxes'][index]
-        action_label = np.array(self.train_db['labels'][index], dtype=np.float32)
-        score_label = self.train_db['score_labels'][index]
-        vid_idx = self.train_db['vid_idx'][index]
+        image = cv2.imread(self.train_db['img_path'][index])
+        frame2 = image.copy()
+        frame2 = frame2.astype(np.float32)
+        frame2 = torch.from_numpy(frame2).cuda()
+        bboxes = self.train_db['bboxes'][index]
+        action_labels = np.array(self.train_db['labels'][index], dtype=np.float32)
+        score_labels = self.train_db['score_labels'][index]
+        vid_idxs = self.train_db['vid_idx'][index]
 
         if self.transform is not None:
-            im, bbox, action_label, score_label = self.transform(im, bbox, action_label, score_label)
-
-        return im, bbox, action_label, score_label, vid_idx
+            for i,bbox in enumerate(bboxes):
+                ims=None
+                if i==0:
+                # im, bbox, action_label, score_label = self.transform(frame2, bbox, action_labels[i], score_labels[i])
+                    ims, _, _, _ = self.transform(frame2, bbox, action_labels[i], score_labels[i])
+                else:
+                    im, _, _, _ = self.transform(frame2, bbox, action_labels[i], score_labels[i])
+                    ims=torch.cat([ims,im],dim=0)
+        # return im, bbox, action_label, score_label, vid_idx
+        return ims, bboxes, action_labels, score_labels, vid_idxs
 
     def __len__(self):
         return len(self.train_db['img_path'])
