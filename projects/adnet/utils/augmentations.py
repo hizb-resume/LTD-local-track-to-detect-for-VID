@@ -9,11 +9,15 @@ from torchvision import transforms
 import cv2
 import types
 from numpy import random
+import torch.nn.functional as F
 
 class ToTensor(object):
     def __call__(self, cvimage, box=None, action_label=None, conf_label=None):
         return torch.from_numpy(cvimage.astype(np.float32)).permute(2, 0, 1), box, action_label, conf_label
 
+class ToTensor2(object):
+    def __call__(self, cvimage, box=None, action_label=None, conf_label=None):
+        return cvimage.permute(2, 0, 1), box, action_label, conf_label
 
 class SubtractMeans(object):
     def __init__(self, mean):
@@ -23,6 +27,15 @@ class SubtractMeans(object):
         image = image.astype(np.float32)
         image -= self.mean
         return image.astype(np.float32), box, action_label, conf_label
+
+class SubtractMeans2(object):
+    def __init__(self, mean):
+        self.mean = mean
+
+    def __call__(self, image, box=None, action_label=None, conf_label=None):
+        # image = image.astype(np.float32)
+        im =image- self.mean
+        return im, box, action_label, conf_label
 
 
 class CropRegion(object):
@@ -46,6 +59,28 @@ class CropRegion(object):
             im = image[:, :, :]
 
         return im.astype(np.float32), box, action_label, conf_label
+
+class CropRegion2(object):
+    def __call__(self, image, box, action_label=None, conf_label=None):
+        # image = np.array(image)
+        box = np.array(box)
+        if box is not None:
+            center = box[0:2] + 0.5 * box[2:4]
+            wh = box[2:4] * 1.4  # multiplication = 1.4
+            box_lefttop = center - 0.5 * wh
+            box_rightbottom = center + 0.5 * wh
+            box_ = [
+                max(0, box_lefttop[0]),
+                max(0, box_lefttop[1]),
+                min(box_rightbottom[0], image.shape[1]),
+                min(box_rightbottom[1], image.shape[0])
+            ]
+
+            im = image[int(box_[1]):int(box_[3]), int(box_[0]):int(box_[2]), :]
+        else:
+            im = image[:, :, :]
+
+        return im, box, action_label, conf_label
 
 
 # crop "multiplication" times of the box width and height
@@ -86,6 +121,16 @@ class ResizeImage(object):
         im = cv2.resize(image, dsize=tuple(self.inputSize[:2]))
         return im.astype(np.float32), box, action_label, conf_label
 
+class ResizeImage2(object):
+    def __init__(self, inputSize):
+        self.inputSize = inputSize  # network's input size (which is the output size of this function)
+
+    def __call__(self, image, box, action_label=None, conf_label=None):
+        # im = cv2.resize(image, dsize=tuple(self.inputSize[:2]))
+        im=image.unsqueeze(0)
+        im = F.interpolate(im,tuple(self.inputSize[:2]))
+        im = im.squeeze(0)
+        return im.permute(0,2, 1), box, action_label, conf_label
 
 class Compose(object):
     """Composes several augmentations together.
@@ -121,12 +166,12 @@ class ADNet_Augmentation(object):
 
 
 class ADNet_Augmentation2(object):
-    def __init__(self, opts):
+    def __init__(self, opts,mean):
         self.augment = Compose([
-            CropRegion(),
-            SubtractMeans(opts['means']),
-            ResizeImage(opts['inputSize']),
-            ToTensor()
+            CropRegion2(),
+            SubtractMeans2(mean),
+            ToTensor2(),
+            ResizeImage2(opts['inputSize'])
         ])
 
     def __call__(self, img, box, action_label=None, conf_label=None):

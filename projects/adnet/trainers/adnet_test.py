@@ -14,7 +14,7 @@ from torch import nn
 import torch.utils.data as data
 import glob
 from datasets.online_adaptation_dataset import OnlineAdaptationDataset, OnlineAdaptationDatasetStorage
-from utils.augmentations import ADNet_Augmentation2
+from utils.augmentations import ADNet_Augmentation,ADNet_Augmentation2
 from utils.do_action import do_action
 import time
 from utils.display import display_result, draw_boxes
@@ -83,7 +83,10 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
         torch.set_default_tensor_type('torch.FloatTensor')
 
     # transform = ADNet_Augmentation(opts)
-    transform = ADNet_Augmentation2(opts)
+
+    mean = np.array(opts['means'], dtype=np.float32)
+    mean = torch.from_numpy(mean).cuda()
+    transform = ADNet_Augmentation2(opts,mean)
 
     if isinstance(vid_path,list):
         print('Testing sequences in ' + str(vid_path[0][-43:-12]) + '...')
@@ -339,11 +342,14 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
             #     print('the num of pred boxes is 0!')
 
             ts_all = 0
+            frame2=frame.copy()
+            frame2=frame2.astype(np.float32)
+            frame2=torch.from_numpy(frame2).cuda()
             for t_id,curr_bbox in enumerate(frame_pred['bbox']):
                 t = 0
                 while True:
                     ts1=time.time()
-                    curr_patch, curr_bbox, _, _ = transform(frame, curr_bbox, None, None)
+                    curr_patch, curr_bbox, _, _ = transform(frame2, curr_bbox, None, None)
                     ts2=time.time()
                     spend_time['transform'] += ts2 - ts1
                     spend_time['n_transform'] += 1
