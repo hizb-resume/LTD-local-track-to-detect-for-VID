@@ -156,10 +156,11 @@ def get_train_dbs(vid_info, opts):
 # train_db_pos = []
 # train_db_neg = []
 
-def process_data_ILSVR(img_paths, opt,train_db_pos,train_db_neg,lock):
+# def process_data_ILSVR(img_paths, opt,train_db_pos,train_db_neg,lock):
+def process_data_ILSVR(img_paths, opt, train_db_pos_neg_all, lock):
     opts=opt.copy()
-    train_db_pos_gpu = []
-    train_db_neg_gpu = []
+    train_db_pos_neg_gpu = []
+    # train_db_neg_gpu = []
     for train_i in img_paths:
         train_db_pos_ = {
             'img_path': '',
@@ -174,6 +175,7 @@ def process_data_ILSVR(img_paths, opt,train_db_pos,train_db_neg,lock):
             'score_labels': []
         }
 
+
         #img_idx = train_sequences[train_i]
         #gt_bbox = vid_info['gt'][img_idx]
 
@@ -185,8 +187,14 @@ def process_data_ILSVR(img_paths, opt,train_db_pos,train_db_neg,lock):
         imginfo=get_xml_img_info(gt_file_path)
         gt_bboxs=imginfo['gts']
         opts['imgSize'] =imginfo['imgsize']
-
+        img_path = '../datasets/data/ILSVRC/Data/VID/train/' + train_i + '.JPEG'
         for gt_bbox in gt_bboxs:
+            train_db_pos_neg = {
+                'img_path': '',
+                'bboxes': [],
+                'labels': [],
+                'score_labels': []
+            }
             pos_examples = []
             while len(pos_examples) < opts['nPos_train']:
                 pos = gen_samples('gaussian', gt_bbox, opts['nPos_train']*5, opts, 0.1, 5)
@@ -220,26 +228,40 @@ def process_data_ILSVR(img_paths, opt,train_db_pos,train_db_neg,lock):
             action_labels_neg = np.transpose(action_labels_neg).tolist()
 
             # action_labels = action_labels_pos + action_labels_neg
-            img_path='../datasets/data/ILSVRC/Data/VID/train/'+train_i+'.JPEG'
 
 
-            train_db_pos_['bboxes'].extend(pos_examples)
-            train_db_pos_['labels'].extend(action_labels_pos)
+            # train_db_pos_['bboxes'].extend(pos_examples)
+            # train_db_pos_['labels'].extend(action_labels_pos)
+            # # score labels: 1 is positive. 0 is negative
+            # train_db_pos_['score_labels'].extend(list(np.ones(len(pos_examples), dtype=int)))
+            #
+            #
+            # train_db_neg_['bboxes'].extend(neg_examples)
+            # train_db_neg_['labels'].extend(action_labels_neg)
+            # # score labels: 1 is positive. 0 is negative
+            # train_db_neg_['score_labels'].extend(list(np.zeros(len(neg_examples), dtype=int)))
+
+            train_db_pos_neg['bboxes'].extend(pos_examples)
+            train_db_pos_neg['labels'].extend(action_labels_pos)
             # score labels: 1 is positive. 0 is negative
-            train_db_pos_['score_labels'].extend(list(np.ones(len(pos_examples), dtype=int)))
+            train_db_pos_neg['score_labels'].extend(list(np.ones(len(pos_examples), dtype=int)))
 
 
-            train_db_neg_['bboxes'].extend(neg_examples)
-            train_db_neg_['labels'].extend(action_labels_neg)
+            train_db_pos_neg['bboxes'].extend(neg_examples)
+            train_db_pos_neg['labels'].extend(action_labels_neg)
             # score labels: 1 is positive. 0 is negative
-            train_db_neg_['score_labels'].extend(list(np.zeros(len(neg_examples), dtype=int)))
+            train_db_pos_neg['score_labels'].extend(list(np.zeros(len(neg_examples), dtype=int)))
 
-        train_db_pos_['img_path'] = img_path
-        train_db_neg_['img_path'] = img_path
+            train_db_pos_neg['img_path'] = img_path
+        # train_db_pos_['img_path'] = img_path
+        # train_db_neg_['img_path'] = img_path
 
-        if len(train_db_pos_['bboxes']) != 0 and len(train_db_neg_['bboxes']) != 0:
-            train_db_pos_gpu.append(train_db_pos_)
-            train_db_neg_gpu.append(train_db_neg_)
+            # if len(train_db_pos_['bboxes']) != 0 and len(train_db_neg_['bboxes']) != 0:
+            #     train_db_pos_gpu.append(train_db_pos_)
+            #     train_db_neg_gpu.append(train_db_neg_)
+            if len(train_db_pos_neg['bboxes']) != 0 :
+                train_db_pos_neg_gpu.append(train_db_pos_neg)
+                # train_db_neg_gpu.append(train_db_neg_)
             # box_ii += 1
 
         # img_ii += 1
@@ -268,10 +290,10 @@ def process_data_ILSVR(img_paths, opt,train_db_pos,train_db_neg,lock):
     try:
         lock.acquire()
         # print("len(train_db_pos_gpu): %d" % len(train_db_pos_gpu))
-        train_db_pos.extend(train_db_pos_gpu)
+        train_db_pos_neg_all.extend(train_db_pos_neg_gpu)
         # print("len(train_db_pos): %d" % len(train_db_pos))
         # print("len(train_db_neg_gpu): %d" % len(train_db_neg_gpu))
-        train_db_neg.extend(train_db_neg_gpu)
+        # train_db_neg.extend(train_db_neg_gpu)
         # print("len(train_db_neg): %d" % len(train_db_neg))
     except Exception as err:
         raise err
@@ -294,8 +316,9 @@ def get_train_dbs_ILSVR(opts):
 
     #train_sequences = list(range(0, vid_info['nframes'], gt_skip))
 
-    train_db_pos = multiprocessing.Manager().list()
-    train_db_neg = multiprocessing.Manager().list()
+    # train_db_pos = multiprocessing.Manager().list()
+    # train_db_neg = multiprocessing.Manager().list()
+    train_db_pos_neg = multiprocessing.Manager().list()
 
     train_img_info_file=os.path.join('../datasets/data/ILSVRC/ImageSets/VID/train.txt')
     train_img_info = open(train_img_info_file, "r")
@@ -313,7 +336,7 @@ def get_train_dbs_ILSVR(opts):
     # t0=time.time()
     #t2 = time.time()
 
-    cpu_num=27
+    cpu_num=1
     if all_img_num<cpu_num:
         cpu_num=all_img_num
     every_gpu_img=all_img_num//cpu_num
@@ -325,7 +348,7 @@ def get_train_dbs_ILSVR(opts):
     lock = multiprocessing.Manager().Lock()
     record = []
     for i in range(cpu_num):
-        process = multiprocessing.Process(target=process_data_ILSVR, args=(img_paths_as[i], opts,train_db_pos,train_db_neg,lock))
+        process = multiprocessing.Process(target=process_data_ILSVR, args=(img_paths_as[i], opts,train_db_pos_neg,lock))
         process.start()
         record.append(process)
     for process in record:
@@ -339,15 +362,16 @@ def get_train_dbs_ILSVR(opts):
 
     # print("finally: len(train_db_pos): %d" % len(train_db_pos))
     # print("finally: len(train_db_neg): %d" % len(train_db_neg))
-    print('before train_db_pos=list(train_db_pos)', end=' : ')
+    print('before train_db_pos=list(train_db_pos_neg)', end=' : ')
     print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
-    train_db_pos=list(train_db_pos)
-    print('before train_db_neg=list(train_db_neg)', end=' : ')
+    train_db_pos=list(train_db_pos_neg)
+    # print('before train_db_neg=list(train_db_neg)', end=' : ')
+    # print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+    # train_db_neg=list(train_db_neg)
+    print('after train_db_neg=list(train_db_pos_neg)', end=' : ')
     print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
-    train_db_neg=list(train_db_neg)
-    print('after train_db_neg=list(train_db_neg)', end=' : ')
-    print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
-    return train_db_pos, train_db_neg
+    # return train_db_pos, train_db_neg
+    return train_db_pos_neg
 
 
 

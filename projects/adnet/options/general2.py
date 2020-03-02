@@ -23,7 +23,7 @@ opts = {
         'learningRate' : 10e-5,
         'conserveMemory' : True,
         #'gt_skip' : 1,
-        'gt_skip' : 5000,
+        'gt_skip' : 10000,
         'rl_num_batches' : 5,
         'RL_steps' : 10
     },

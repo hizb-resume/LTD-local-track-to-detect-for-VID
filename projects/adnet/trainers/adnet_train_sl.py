@@ -166,7 +166,7 @@ def adnet_train_sl(args, opts):
     print("before  data_loaders.append(data.DataLoader(dataset_pos_neg", end=' : ')
     print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
     for dataset_pos_neg in datasets_pos_neg:
-        data_loaders.append(data.DataLoader(dataset_pos_neg, opts['minibatch_size'], num_workers=args.num_workers, shuffle=True, pin_memory=True))
+        data_loaders.append(data.DataLoader(dataset_pos_neg, opts['minibatch_size'], num_workers=args.num_workers, shuffle=True, pin_memory=False))
     # for dataset_neg in datasets_neg:
     #     data_loaders_neg.append(data.DataLoader(dataset_neg, opts['minibatch_size'], num_workers=args.num_workers, shuffle=True, pin_memory=True))
     print("after  data_loaders.append(data.DataLoader(dataset_pos_neg", end=' : ')

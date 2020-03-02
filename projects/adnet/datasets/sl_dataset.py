@@ -37,7 +37,7 @@ class SLDataset(data.Dataset):
 
         if self.transform is not None:
             for i,bbox in enumerate(bboxes):
-                ims=None
+                # ims=None
                 if i==0:
                 # im, bbox, action_label, score_label = self.transform(frame2, bbox, action_labels[i], score_labels[i])
                     ims, _, _, _ = self.transform(frame2, bbox, action_labels[i], score_labels[i])
@@ -103,7 +103,8 @@ def initialize_pos_neg_dataset(train_videos, opts, transform=None, multidomain=T
 
         if train_videos == None:
             print("generating dataset from ILSVR dataset...")
-            train_db_pos_, train_db_neg_ = get_train_dbs_ILSVR(opts)
+            # train_db_pos_, train_db_neg_ = get_train_dbs_ILSVR(opts)
+            train_db_pos_neg_ = get_train_dbs_ILSVR(opts)
         else:
             # print("generating dataset from video " + str(vid_idx + 1) + "/" + str(num_videos) +
             #   "(current total data (pos-neg): " + str(len(train_db_pos['labels'])) +
@@ -119,24 +120,24 @@ def initialize_pos_neg_dataset(train_videos, opts, transform=None, multidomain=T
         # separate for each bboxes sample
         print("before train_db_pos['img_path'].extend", end=' : ')
         print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
-        for sample_idx in range(len(train_db_pos_)):
+        for sample_idx in range(len(train_db_pos_neg_)):
             # for img_path_idx in range(len(train_db_pos_[sample_idx]['score_labels'])):
-            train_db['img_path'].append(train_db_pos_[sample_idx]['img_path'])
-            train_db['bboxes'].append(train_db_pos_[sample_idx]['bboxes'])
-            train_db['labels'].append(train_db_pos_[sample_idx]['labels'])
-            train_db['score_labels'].append(train_db_pos_[sample_idx]['score_labels'])
+            train_db['img_path'].append(train_db_pos_neg_[sample_idx]['img_path'])
+            train_db['bboxes'].append(train_db_pos_neg_[sample_idx]['bboxes'])
+            train_db['labels'].append(train_db_pos_neg_[sample_idx]['labels'])
+            train_db['score_labels'].append(train_db_pos_neg_[sample_idx]['score_labels'])
             # train_db['vid_idx'].extend(np.repeat(vid_idx, len(train_db_pos_[sample_idx]['img_path'])))
             train_db['vid_idx'].append(vid_idx)
         # print("\nFinish generating positive dataset... (current total data: " + str(len(train_db_pos['labels'])) + ")")
 
-        for sample_idx in range(len(train_db_neg_)):
-            # for img_path_idx in range(len(train_db_neg_[sample_idx]['score_labels'])):
-            train_db['img_path'].append(train_db_neg_[sample_idx]['img_path'])
-            train_db['bboxes'].append(train_db_neg_[sample_idx]['bboxes'])
-            train_db['labels'].append(train_db_neg_[sample_idx]['labels'])
-            train_db['score_labels'].append(train_db_neg_[sample_idx]['score_labels'])
-            # train_db['vid_idx'].extend(np.repeat(vid_idx, len(train_db_neg_[sample_idx]['img_path'])))
-            train_db['vid_idx'].append(vid_idx)
+        # for sample_idx in range(len(train_db_neg_)):
+        #     # for img_path_idx in range(len(train_db_neg_[sample_idx]['score_labels'])):
+        #     train_db['img_path'].append(train_db_neg_[sample_idx]['img_path'])
+        #     train_db['bboxes'].append(train_db_neg_[sample_idx]['bboxes'])
+        #     train_db['labels'].append(train_db_neg_[sample_idx]['labels'])
+        #     train_db['score_labels'].append(train_db_neg_[sample_idx]['score_labels'])
+        #     # train_db['vid_idx'].extend(np.repeat(vid_idx, len(train_db_neg_[sample_idx]['img_path'])))
+        #     train_db['vid_idx'].append(vid_idx)
         # print("\nFinish generating negative dataset... (current total data: " + str(len(train_db_neg['labels'])) + ")")
 
         print("after train_db_neg['img_path'].extend", end=' : ')
