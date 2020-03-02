@@ -336,7 +336,8 @@ def get_train_dbs_ILSVR(opts):
     # t0=time.time()
     #t2 = time.time()
 
-    cpu_num=1
+    # cpu_num=27
+    cpu_num = 24
     if all_img_num<cpu_num:
         cpu_num=all_img_num
     every_gpu_img=all_img_num//cpu_num

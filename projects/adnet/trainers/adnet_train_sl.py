@@ -281,7 +281,7 @@ def adnet_train_sl(args, opts):
                 images=images.reshape(-1,3,112,112)
                 bbox=bbox.reshape(-1,4)
                 action_label=action_label.reshape(-1,11)
-                score_label=score_label.shape(-1)
+                score_label=score_label.reshape(-1)
                 vid_idx=vid_idx.reshape(-1)
             except StopIteration:
                 batch_iterators[curr_domain] = iter(data_loader[curr_domain])
@@ -289,7 +289,7 @@ def adnet_train_sl(args, opts):
                 images = images.reshape(-1, 3, 112, 112)
                 bbox = bbox.reshape(-1, 4)
                 action_label = action_label.reshape(-1, 11)
-                score_label = score_label.shape(-1)
+                score_label = score_label.reshape(-1)
                 vid_idx = vid_idx.reshape(-1)
         # for images, bbox, action_label, score_label, vid_idx in data_loaders[curr_domain]:
             # TODO: check if this requires grad is really false like in Variable
@@ -298,17 +298,17 @@ def adnet_train_sl(args, opts):
             # pos_idx=ids.nonzero()
             # neg_idx=torch.where(score_label<=0.3)
             # neg_idx=neg_idx[0].tolist()
-            if args.cuda:
-                images = torch.Tensor(images.cuda())
-                bbox = torch.Tensor(bbox.cuda())
-                action_label = torch.Tensor(action_label.cuda())
-                score_label = torch.Tensor(score_label.float().cuda())
-
-            else:
-                images = torch.Tensor(images)
-                bbox = torch.Tensor(bbox)
-                action_label = torch.Tensor(action_label)
-                score_label = torch.Tensor(score_label)
+            # if args.cuda:
+            #     images = torch.Tensor(images.cuda())
+            #     bbox = torch.Tensor(bbox.cuda())
+            #     action_label = torch.Tensor(action_label.cuda())
+            #     score_label = torch.Tensor(score_label.float().cuda())
+            #
+            # else:
+            #     images = torch.Tensor(images)
+            #     bbox = torch.Tensor(bbox)
+            #     action_label = torch.Tensor(action_label)
+            #     score_label = torch.Tensor(score_label)
 
             t0 = time.time()
 
