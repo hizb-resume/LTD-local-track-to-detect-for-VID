@@ -13,7 +13,7 @@ import torch.nn.functional as F
 
 class ToTensor(object):
     def __call__(self, cvimage, box=None, action_label=None, conf_label=None):
-        return torch.from_numpy(cvimage.astype(np.float32)).permute(2, 0, 1), box, action_label, conf_label
+        return torch.from_numpy(cvimage.astype(np.float32)).unsqueeze(0).permute(0, 3,1,2), box, action_label, conf_label
 
 class ToTensor2(object):
     def __call__(self, cvimage, box=None, action_label=None, conf_label=None):
@@ -129,8 +129,8 @@ class ResizeImage2(object):
         # im = cv2.resize(image, dsize=tuple(self.inputSize[:2]))
         im=image.unsqueeze(0)
         im = F.interpolate(im,tuple(self.inputSize[:2]))
-        im = im.squeeze(0)
-        return im.permute(0,2, 1), box, action_label, conf_label
+        # im = im.squeeze(0)
+        return im.permute(0,1, 3,2), box, action_label, conf_label
 
 class Compose(object):
     """Composes several augmentations together.
