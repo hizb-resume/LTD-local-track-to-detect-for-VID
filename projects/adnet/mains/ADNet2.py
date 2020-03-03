@@ -19,9 +19,10 @@ def str2bool(v):
 parser = argparse.ArgumentParser(
     description='ADNet training')
 # parser.add_argument('--resume', default='weights/ADNet_SL_backup.pth', type=str, help='Resume from checkpoint')
-parser.add_argument('--resume', default='weights/ADNet_RL_2epoch8_backup.pth', type=str, help='Resume from checkpoint')
+# parser.add_argument('--resume', default='weights/ADNet_RL_2epoch8_backup.pth', type=str, help='Resume from checkpoint')
+parser.add_argument('--resume', default='weights/ADNet_SL_epoch1.pth', type=str, help='Resume from checkpoint')
 parser.add_argument('--num_workers', default=8, type=int, help='Number of workers used in dataloading')
-parser.add_argument('--start_iter', default=0, type=int, help='Begin counting iterations starting from this value (should be used with resume)')
+parser.add_argument('--start_iter', default=2, type=int, help='Begin counting iterations starting from this value (should be used with resume)')
 parser.add_argument('--cuda', default=True, type=str2bool, help='Use cuda to train model')
 parser.add_argument('--gamma', default=0.1, type=float, help='Gamma update for SGD')
 parser.add_argument('--visualize', default=True, type=str2bool, help='Use tensorboardx to for loss visualization')
@@ -32,7 +33,7 @@ parser.add_argument('--save_file', default='ADNet_SL_', type=str, help='save fil
 parser.add_argument('--save_file_RL', default='ADNet_RL_', type=str, help='save file part of file name for RL')
 parser.add_argument('--start_epoch', default=0, type=int, help='Begin counting epochs starting from this value')
 
-parser.add_argument('--run_supervised', default=True, type=str2bool, help='Whether to run supervised learning or not')
+parser.add_argument('--run_supervised', default=False, type=str2bool, help='Whether to run supervised learning or not')
 
 parser.add_argument('--multidomain', default=False, type=str2bool, help='Separating weight for each videos (default) or not')
 
@@ -68,7 +69,9 @@ if __name__ == "__main__":
             opts['num_videos'] = len(train_videos['video_names'])
 
         if args.start_iter == 0:  # means the weight came from the SL
-            net, domain_specific_nets = adnet(opts, trained_file=args.resume, random_initialize_domain_specific=True, multidomain=args.multidomain)
+            # net, domain_specific_nets = adnet(opts, trained_file=args.resume, random_initialize_domain_specific=True, multidomain=args.multidomain)
+            net, domain_specific_nets = adnet(opts, trained_file=args.resume, random_initialize_domain_specific=False,
+                                              multidomain=args.multidomain)
         else:  # resume the adnet
             net, domain_specific_nets = adnet(opts, trained_file=args.resume, random_initialize_domain_specific=False, multidomain=args.multidomain)
 

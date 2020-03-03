@@ -212,7 +212,7 @@ def adnet_train_sl(args, opts):
                 'adnet_domain_specific_state_dict': domain_specific_nets,
                 'optimizer_state_dict': optimizer.state_dict(),
             }, os.path.join(args.save_folder, args.save_file) +
-                       'epoch' + repr(epoch-1) + '.pth')
+                       'epoch' + repr(epoch-1) + '_final.pth')
 
             if args.visualize:
                 writer.add_scalars('data/epoch_loss', {'action_loss': action_loss / epoch_size,
@@ -395,7 +395,7 @@ def adnet_train_sl(args, opts):
                     'adnet_domain_specific_state_dict': domain_specific_nets,
                     'optimizer_state_dict': optimizer.state_dict(),
                 }, os.path.join(args.save_folder, args.save_file) +
-                           repr(iteration) + '_epoch' + repr(epoch) +'.pth')
+                           'epoch' + repr(epoch) +"_"+ repr(iteration) +'.pth')
             # iteration = iteration + 1
             # if args.multidomain:
             #     curr_domain = which_domain[iteration % len(which_domain)]
