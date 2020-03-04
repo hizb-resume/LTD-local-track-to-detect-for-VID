@@ -260,6 +260,50 @@ def get_siamese_train_infos():
     :param file_path: the path of the train.txt
     :return:
     '''
+    # videos_infos =[]
+    video_infos = {
+        'gt': [],
+        'trackid':[],
+        'img_files':[],
+        'vid_id':[]
+    }
+    train_img_info_file = os.path.join('../datasets/data/ILSVRC/ImageSets/VID/train.txt')
+    train_img_info = open(train_img_info_file, "r")
+    img_paths = train_img_info.readlines()
+    img_paths = [line.split(' ')[0] for line in img_paths]
+    train_img_info.close()
+    v_id=0
+    for train_i in range(len(img_paths)):
+        if img_paths[train_i][-6:]=='000000':
+            if train_i!=0:
+                v_id+=1
+                # videos_infos.append(video_infos)
+                # video_infos = {
+                #     'gt': [],
+                #     'trackid': [],
+                #     'img_files': [],
+                #     'vid_id':[]
+                # }
+        gt_file_path = '../datasets/data/ILSVRC/Annotations/VID/train/' + img_paths[train_i] + '.xml'
+        imginfo = get_xml_img_info(gt_file_path)
+        if(len(imginfo['gts'])==0):
+            continue
+        video_infos['gt'].extend(imginfo['gts'])
+        video_infos['trackid'].extend(imginfo['trackid'])
+        img_path = '../datasets/data/ILSVRC/Data/VID/val/' + img_paths[train_i] + '.JPEG'
+        for id_box_nm in len(imginfo['gts']):
+            video_infos['img_files'].append(img_path)
+            video_infos['vid_id'].append(v_id)
+    # videos_infos.append(video_infos)
+    # return videos_infos
+    return video_infos
+
+def get_siamese_train_infos2():
+    '''
+    get {gts,img_files(path),name,db_name,nframes}for all videos
+    :param file_path: the path of the train.txt
+    :return:
+    '''
     videos_infos =[]
     video_infos = {
         #'imgsize': [], #in supervised training, imgsize is used for generating boxes that near the gt box
