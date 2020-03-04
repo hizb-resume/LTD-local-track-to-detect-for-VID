@@ -50,7 +50,9 @@ class SiameseNetworkDataset(Dataset):
                 letf_bd = 0
             if right_bd > (self.lens - 2):
                 right_bd=self.lens - 1
+            ij=0
             while True:
+                ij+=1
                 # keep looping till the same class image is found
                 idx = random.randint(letf_bd, right_bd)
                 if idx==index:
@@ -61,6 +63,13 @@ class SiameseNetworkDataset(Dataset):
                 if img0_vidid==img1_vidid and img0_tackid==img1_tackid:
                     img1_path = self.train_db['img_files'][idx]
                     img1_gt = self.train_db['gt'][idx]
+                    break
+                elif ij<1000:
+                    continue
+                else:
+                    img1_path = self.train_db['img_files'][idx]
+                    img1_gt = self.train_db['gt'][idx]
+                    label=0
                     break
         else:
             while True:
