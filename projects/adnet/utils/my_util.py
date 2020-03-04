@@ -290,8 +290,8 @@ def get_siamese_train_infos():
             continue
         video_infos['gt'].extend(imginfo['gts'])
         video_infos['trackid'].extend(imginfo['trackid'])
-        img_path = '../datasets/data/ILSVRC/Data/VID/val/' + img_paths[train_i] + '.JPEG'
-        for id_box_nm in len(imginfo['gts']):
+        img_path = '../datasets/data/ILSVRC/Data/VID/train/' + img_paths[train_i] + '.JPEG'
+        for id_box_nm in range(len(imginfo['gts'])):
             video_infos['img_files'].append(img_path)
             video_infos['vid_id'].append(v_id)
     # videos_infos.append(video_infos)
@@ -380,8 +380,8 @@ def get_siamese_train_infos2():
         video_infos['gt'].extend(imginfo['gts'])
         video_infos['trackid'].extend(imginfo['trackid'])
         # video_infos['name'].append(imginfo['name'])
-        img_path = '../datasets/data/ILSVRC/Data/VID/val/' + img_paths[train_i] + '.JPEG'
-        for id_box_nm in len(imginfo['gts']):
+        img_path = '../datasets/data/ILSVRC/Data/VID/train/' + img_paths[train_i] + '.JPEG'
+        for id_box_nm in range(len(imginfo['gts'])):
             video_infos['img_files'].append(img_path)
             video_infos['vid_id'].append(v_id)
     # video_infos['nframes'] = int(img_paths[-1][-6:]) + 1

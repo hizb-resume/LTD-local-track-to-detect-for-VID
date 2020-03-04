@@ -15,7 +15,7 @@ from utils.gen_action_labels import gen_action_labels
 from utils.my_util import get_xml_box_label
 from utils.my_util import get_xml_img_size
 from utils.my_util import get_xml_img_info
-from utils.my_util import get_siamese_train_infos
+from utils.my_util import get_siamese_train_infos,get_siamese_train_infos2
 
 def process_data_siamese(img_paths, opt, train_db_pos_neg_all, lock):
     opts=opt.copy()
@@ -163,7 +163,7 @@ def process_data_siamese(img_paths, opt, train_db_pos_neg_all, lock):
     #print(sign, os.getpid())
     #lock.release()
 
-def get_train_dbs_siamese(opts):
+def get_train_dbs_siamese():
     # opts['scale_factor'] = 1.05
     # gt_skip = opts['train']['gt_skip']
 

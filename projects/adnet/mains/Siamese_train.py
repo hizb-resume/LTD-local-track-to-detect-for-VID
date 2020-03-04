@@ -23,7 +23,7 @@ if __name__ == "__main__" :
         os.makedirs(Config.weight_dir)
     train_db=get_train_dbs_siamese()
     folder_dataset = dset.ImageFolder(root=Config.training_dir)
-    siamese_dataset = SiameseNetworkDataset(imageFolderDataset=folder_dataset,train_db,
+    siamese_dataset = SiameseNetworkDataset(imageFolderDataset=folder_dataset,train_db=train_db,
                                             transform=transforms.Compose([transforms.Resize((100, 100)),
                                                                           transforms.ToTensor()
                                                                           ])
