@@ -32,8 +32,8 @@ if __name__ == "__main__" :
     #img1 = cv2.imread('image1')
     #img2 = cv2.imread('image2')
     #reduce size and grayscale
-    #image1=cv2.cvtColor(cv2.resize(img1,(8, 8), interpolation=cv2.INTER_CUBIC)
-    #image2=cv2.cvtColor(cv2.resize(img2,(8, 8), interpolation=Cv2.INTER_CUBIC)
+    #image1=cv2.cvtColor(cv2.resize(img1,(8, 8), interpolation=cv2.INTER_CUBIC),cv2.COLOR_BGR2GRAY)
+    #image2=cv2.cvtColor(cv2.resize(img2,(8, 8), interpolation=Cv2.INTER_CUBIC),cv2.COLOR_BGR2GRAY)
     hash1 = aHash(image1)
     hash2 = aHash(image2)
     dist = Hamming_distance(hash1, hash2)

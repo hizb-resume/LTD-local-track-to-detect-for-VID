@@ -15,7 +15,7 @@ from torch import nn
 import torch.utils.data as data
 import glob
 from datasets.online_adaptation_dataset import OnlineAdaptationDataset, OnlineAdaptationDatasetStorage
-from utils.augmentations import ADNet_Augmentation,ADNet_Augmentation2
+from utils.augmentations import ADNet_Augmentation,ADNet_Augmentation2,ADNet_Augmentation3
 from utils.do_action import do_action
 import time
 from utils.display import display_result, draw_boxes
@@ -89,6 +89,7 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
     mean = np.array(opts['means'], dtype=np.float32)
     mean = torch.from_numpy(mean).cuda()
     transform = ADNet_Augmentation2(opts,mean)
+    transform3 = ADNet_Augmentation3()
 
     if isinstance(vid_path,list):
         print('Testing sequences in ' + str(vid_path[0][-43:-12]) + '...')
@@ -133,6 +134,9 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
         'score_cls': [],
         'bbox': []
     }
+
+    pre_aera=[]
+    curr_aera=[]
 
     spend_time={
         'predict':0,
@@ -296,6 +300,7 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
             frame_pred['obj_name'] = []
             frame_pred['bbox'] = []
             frame_pred['score_cls'] = []
+            pre_aera=[]
             ts1=time.time()
             n_bbox=len(boxes)
             for i_d in range(n_bbox):
@@ -303,6 +308,8 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
                 frame_pred['obj_name'].append(classes[i_d])
                 frame_pred['bbox'].append(boxes[i_d])
                 frame_pred['score_cls'].append(scores[i_d])
+                t_aera, _ = transform3(frame, boxes[i_d])
+                pre_aera.append(t_aera)
             vid_pred['frame_id'].extend(np.full(n_bbox, frame_pred['frame_id']))
             vid_pred['track_id'].extend(frame_pred['track_id'])
             vid_pred['obj_name'].extend(frame_pred['obj_name'])
@@ -435,6 +442,7 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
                     frame_pred['obj_name']=[]
                     frame_pred['bbox']=[]
                     frame_pred['score_cls']=[]
+                    pre_aera=[]
                     ts1=time.time()
                     n_bbox = len(boxes)
                     for i_d in range(n_bbox):
@@ -442,6 +450,8 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
                         frame_pred['obj_name'].append(classes[i_d])
                         frame_pred['bbox'].append(boxes[i_d])
                         frame_pred['score_cls'].append(scores[i_d])
+                        t_aera, _ = transform3(frame, boxes[i_d])
+                        pre_aera.append(t_aera)
                     ts2=time.time()
                     spend_time['append'] += ts2 - ts1
                     # vid_pred['frame_id'].extend(np.full(n_bbox, frame_pred['frame_id']))
@@ -488,6 +498,15 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
                     # frame_pred['obj_name'] = []
                     frame_pred['bbox'][t_id] = curr_bbox
                     frame_pred['score_cls'][t_id] = curr_score
+
+                    curr_aera,  _ = transform3(frame, curr_bbox)
+                    # hash1 = aHash(pre_aera[t_id])
+                    # hash2 = aHash(curr_aera)
+                    # dist = Hamming_distance(hash1, hash2)
+                    # # convert distance to similarity
+                    # similarity = 1 - dist * 1.0 / 64
+                    # print('dist is %d, similarity is %d\n ' % (dist,similarity))
+                    pre_aera[t_id]=curr_aera
 
             if is_negative==False:
                 spend_time['track'] += ts_all
