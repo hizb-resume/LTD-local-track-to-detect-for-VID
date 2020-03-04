@@ -14,7 +14,7 @@ import PIL.ImageOps
 import torch.nn as nn
 from torch import optim
 import torch.nn.functional as F
-import os
+import os,time
 from datasets.SiameseDataset import Config,SiameseNetworkDataset
 from datasets.get_train_db_siamese import get_train_dbs_siamese
 from models.SiameseNet import SiameseNetwork,ContrastiveLoss
@@ -47,8 +47,11 @@ if __name__ == "__main__" :
     counter = []
     loss_history = []
     iteration_number = 0
+    print("lens of data: %d" % siamese_dataset.__len__())
+    print("lens of iter: %d"%len(train_dataloader))
 
     for epoch in range(Config.start_epoch, Config.train_number_epochs):
+        loss_ave=0
         for i, data in enumerate(train_dataloader, 0):
             img0, img1, label = data
             img0, img1, label = img0.cuda(), img1.cuda(), label.cuda()
@@ -57,11 +60,19 @@ if __name__ == "__main__" :
             loss_contrastive = criterion(output1, output2, label)
             loss_contrastive.backward()
             optimizer.step()
+            loss_ave+=loss_contrastive.item()
             if i % 10 == 0:
-                print("Epoch number {}\n Current loss {}\n".format(epoch, loss_contrastive.item()))
                 iteration_number += 10
                 counter.append(iteration_number)
                 loss_history.append(loss_contrastive.item())
+            if i % 100 == 0:
+                print("Epoch: %d, Iter: %d, loss-ave: %.2f, loss-now: %.2f."%(
+                    epoch,i,loss_ave/100, loss_contrastive.item()))
+                loss_ave=0
+            if i%1000==0:
+                print("time now:", end=' : ')
+                print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+
         print('Saving state, epoch:', epoch)
         torch.save({
             'epoch': epoch ,

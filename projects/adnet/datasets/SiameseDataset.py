@@ -19,7 +19,7 @@ class Config():
     testing_dir = "./data/faces/testing/"
     weight_dir="siameseWeight/"
     start_epoch=0
-    train_batch_size = 64
+    train_batch_size = 256
     train_number_epochs = 100
 
 class SiameseNetworkDataset(Dataset):
@@ -87,13 +87,13 @@ class SiameseNetworkDataset(Dataset):
         img0 = img0.convert("L")    #convert to grayscale img
         img1 = img1.convert("L")
 
-        if index%5==0:
-            if label==0:
-                s='false'
-            else:
-                s='True'
-            img0.save("temimg/%d-%s-0.JPEG"%(index,s))
-            img1.save("temimg/%d-%s-%d.JPEG" %(index,s,idx))
+        # if index%5==0:
+        #     if label==0:
+        #         s='false'
+        #     else:
+        #         s='True'
+        #     img0.save("temimg/%d-%s-0.JPEG"%(index,s))
+        #     img1.save("temimg/%d-%s-%d.JPEG" %(index,s,idx))
 
         if self.should_invert:  #Inverts binary images in black and white
             img0 = PIL.ImageOps.invert(img0)
