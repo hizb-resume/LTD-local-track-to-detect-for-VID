@@ -5,6 +5,7 @@ if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
 import cv2
 import os
 import numpy as np
+from PIL import Image #use PIL to processs img
 import torch
 import torchsnooper
 import torch.optim as optim
@@ -20,6 +21,7 @@ import time
 from utils.display import display_result, draw_boxes
 from utils.gen_samples import gen_samples
 from utils.precision_plot import distance_precision_plot, iou_precision_plot
+from utils.my_util import aHash,Hamming_distance
 from random import shuffle
 from tensorboardX import SummaryWriter
 from detectron2.structures import Boxes,RotatedBoxes
@@ -486,6 +488,7 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
                     # frame_pred['obj_name'] = []
                     frame_pred['bbox'][t_id] = curr_bbox
                     frame_pred['score_cls'][t_id] = curr_score
+
             if is_negative==False:
                 spend_time['track'] += ts_all
                 spend_time['n_track_frames'] += 1

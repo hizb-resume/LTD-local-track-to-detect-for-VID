@@ -24,6 +24,28 @@ def test():
     # img_files = glob.glob(os.path.join(vidDir,'ILSVRC201*_VID_train_000*','*.mp4'))
     # img_files.sort(key=str.lower)
 
+#mean hash function
+def aHash(image):
+    image_new= image
+    #calculate mean
+    avreage = np.mean(image_new)
+    hash = []
+    for i in range(image.shape[0]):
+        for j in range(image.shape[1]):
+            if image[i,j] > avreage:
+                hash.append(1)
+            else:
+                hash.append(0)
+    return hash
+
+#calculate the hamming distance
+def Hamming_distance(hash1, hash2):
+    num=0
+    for index in range(len(hash1)):
+        if hash1[index] != hash2[index]:
+            num +=1
+    return num
+
 def cal_iou(box1, box2):
     r"""
     iou = list(map(cal_iou, result_boxes, result_boxes_gt))
