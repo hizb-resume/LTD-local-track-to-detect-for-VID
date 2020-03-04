@@ -15,11 +15,13 @@ from torch import optim
 import torch.nn.functional as F
 import os
 from datasets.SiameseDataset import Config,SiameseNetworkDataset
+from datasets.get_train_db_siamese import get_train_dbs_siamese
 from models.SiameseNet import SiameseNetwork,ContrastiveLoss
 
 if __name__ == "__main__" :
     if not os.path.exists(Config.weight_dir):
         os.makedirs(Config.weight_dir)
+    train_db=get_train_dbs_siamese()
     folder_dataset = dset.ImageFolder(root=Config.training_dir)
     siamese_dataset = SiameseNetworkDataset(imageFolderDataset=folder_dataset,train_db,
                                             transform=transforms.Compose([transforms.Resize((100, 100)),
