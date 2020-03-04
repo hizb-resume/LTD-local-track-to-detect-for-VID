@@ -17,6 +17,7 @@ from utils.my_util import get_xml_img_size
 from utils.my_util import get_xml_img_info
 from utils.my_util import get_siamese_train_infos,get_siamese_train_infos2
 
+'''
 def process_data_siamese(img_paths, opt, train_db_pos_neg_all, lock):
     opts=opt.copy()
     train_db_pos_neg_gpu = []
@@ -162,20 +163,22 @@ def process_data_siamese(img_paths, opt, train_db_pos_neg_all, lock):
     #lock.acquire()
     #print(sign, os.getpid())
     #lock.release()
+'''
 
 def get_train_dbs_siamese():
     # opts['scale_factor'] = 1.05
     # gt_skip = opts['train']['gt_skip']
 
-    print('before get_train_dbs_ILSVR', end=' : ')
+    print('before get_train_dbs_siamese', end=' : ')
     print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
 
-    train_db_pos_neg = multiprocessing.Manager().list()
+    # train_db_pos_neg = multiprocessing.Manager().list()
 
     videos_infos= get_siamese_train_infos()
 
-    all_vid_num = len(videos_infos)
+    # all_box_num = len(videos_infos['gt'])
 
+    '''
     # cpu_num=27
     gpu_num = 24
     if all_vid_num<gpu_num:
@@ -194,12 +197,13 @@ def get_train_dbs_siamese():
         record.append(process)
     for process in record:
         process.join()
+    '''
 
-    print('before train_db_pos=list(train_db_pos_neg)', end=' : ')
-    print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
-    train_db_pos_neg=list(train_db_pos_neg)
-    print('after train_db_neg=list(train_db_pos_neg)', end=' : ')
+    # print('before train_db_pos=list(train_db_pos_neg)', end=' : ')
+    # print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+    # train_db_pos_neg=list(videos_infos)
+    print('after get_train_dbs_siamese', end=' : ')
     print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
     # return train_db_pos, train_db_neg
-    return train_db_pos_neg
+    return videos_infos
 

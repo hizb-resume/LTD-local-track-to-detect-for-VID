@@ -24,36 +24,68 @@ class Config():
 
 class SiameseNetworkDataset(Dataset):
 
-    def __init__(self, imageFolderDataset, train_db, transform=None, should_invert=True):
-        self.imageFolderDataset = imageFolderDataset
+    def __init__(self, train_db, transform=None, should_invert=True):
+        # self.imageFolderDataset = imageFolderDataset
         self.train_db = train_db
         self.transform = transform
         self.should_invert = should_invert
+        self.lens=len(self.train_db['gt'])
 
     def __getitem__(self, index):
-        img0_tuple = random.choice(self.imageFolderDataset.imgs)
+
+        # img0_tuple = random.choice(self.imageFolderDataset.imgs)
+        img0_path=self.train_db['img_files'][index]
+        img0_tackid=self.train_db['trackid'][index]
+        img0_vidid = self.train_db['vid_id'][index]
+        img0_gt = self.train_db['gt'][index]
+
         # we need to make sure approx 50% of images are in the same class
         should_get_same_class = random.randint(0, 1)
+        label=0
         if should_get_same_class:
+            label=1
+            letf_bd = index - 1000
+            right_bd = index + 1000
+            if letf_bd < 0:
+                letf_bd = 0
+            if right_bd > (self.lens - 2):
+                self.lens - 1
             while True:
                 # keep looping till the same class image is found
-                img1_tuple = random.choice(self.imageFolderDataset.imgs)
-                if img0_tuple[1] == img1_tuple[1]:
+                idx = random.randint(letf_bd, right_bd)
+                if idx==index:
+                    continue
+                img1_tackid = self.train_db['trackid'][idx]
+                img1_vidid = self.train_db['vid_id'][idx]
+
+                if img0_vidid==img1_vidid and img0_tackid==img1_tackid:
+                    img1_path = self.train_db['img_files'][idx]
+                    img1_gt = self.train_db['gt'][idx]
                     break
         else:
             while True:
                 # keep looping till a different class image is found
+                idx = random.randint(0, self.lens - 1)
+                if idx == index:
+                    continue
 
-                img1_tuple = random.choice(self.imageFolderDataset.imgs)
-                if img0_tuple[1] != img1_tuple[1]:
+                img1_tackid = self.train_db['trackid'][idx]
+                img1_vidid = self.train_db['vid_id'][idx]
+
+                if img0_vidid == img1_vidid and img0_tackid == img1_tackid:
+                    continue
+                else:
+                    img1_path = self.train_db['img_files'][idx]
+                    img1_gt = self.train_db['gt'][idx]
                     break
 
-        img0 = Image.open(img0_tuple[0])
-        img1 = Image.open(img1_tuple[0])
-        img0 = img0.convert("L")
+
+        img0 = Image.open(img0_path)
+        img1 = Image.open(img1_path)
+        img0 = img0.convert("L")    #convert to grayscale img
         img1 = img1.convert("L")
 
-        if self.should_invert:
+        if self.should_invert:  #Inverts binary images in black and white
             img0 = PIL.ImageOps.invert(img0)
             img1 = PIL.ImageOps.invert(img1)
 
@@ -61,10 +93,10 @@ class SiameseNetworkDataset(Dataset):
             img0 = self.transform(img0)
             img1 = self.transform(img1)
 
-        return img0, img1, torch.from_numpy(np.array([int(img1_tuple[1] != img0_tuple[1])], dtype=np.float32))
+        return img0, img1, torch.from_numpy(np.array([label], dtype=np.float32))
 
     def __len__(self):
-        return len(self.imageFolderDataset.imgs)
+        return self.lens
 
 if __name__ == "__main__" :
     # folder_dataset = dset.ImageFolder(root=Config.training_dir)
