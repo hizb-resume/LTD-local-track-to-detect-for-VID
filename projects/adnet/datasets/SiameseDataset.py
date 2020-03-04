@@ -24,8 +24,9 @@ class Config():
 
 class SiameseNetworkDataset(Dataset):
 
-    def __init__(self, imageFolderDataset, transform=None, should_invert=True):
+    def __init__(self, imageFolderDataset, train_db, transform=None, should_invert=True):
         self.imageFolderDataset = imageFolderDataset
+        self.train_db = train_db
         self.transform = transform
         self.should_invert = should_invert
 

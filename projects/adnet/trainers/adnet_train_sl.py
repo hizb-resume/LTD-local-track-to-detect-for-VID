@@ -192,6 +192,7 @@ def adnet_train_sl(args, opts):
     # iteration=0
     # curr_domain = 0
     for epoch in range(args.start_epoch, opts['numEpoch']):
+        ave_loss=0
         if epoch == args.start_epoch:
             t1 = time.time()
             t4 = time.time()
@@ -339,6 +340,7 @@ def adnet_train_sl(args, opts):
 
             action_loss += action_l.item()
             score_loss += score_l.item()
+            ave_loss+=loss.data.item()
 
             # save the ADNetDomainSpecific back to their module
             if args.cuda:
@@ -365,8 +367,10 @@ def adnet_train_sl(args, opts):
                 all_m = all_time % 3600 // 60
                 all_s = all_time % 60
                 t4=time.time()
-                print('epoch '+repr(epoch)+' || iter ' + repr(iteration) + ' || Loss: %.4f || Timer-iter: %d m %d s || Timer-all: %d d %d h %d m %d s || Timer-now: ' % (loss.data.item(),t3_m,t3_s,all_d,all_h,all_m,all_s),end='')
+                ave_loss=ave_loss/2000
+                print('epoch '+repr(epoch)+' | iter ' + repr(iteration) + ' | L-now: %.4f | L-ave: %.4f | T-iter: %d m %d s | T-all: %d d %d h %d m %d s | T-now: ' % (loss.data.item(),ave_loss,t3_m,t3_s,all_d,all_h,all_m,all_s),end='')
                 print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+                ave_loss=0
 
                 if args.visualize and args.send_images_to_visualization:
                     random_batch_index = np.random.randint(images.size(0))
