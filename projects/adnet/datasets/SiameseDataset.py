@@ -49,7 +49,7 @@ class SiameseNetworkDataset(Dataset):
             if letf_bd < 0:
                 letf_bd = 0
             if right_bd > (self.lens - 2):
-                self.lens - 1
+                right_bd=self.lens - 1
             while True:
                 # keep looping till the same class image is found
                 idx = random.randint(letf_bd, right_bd)
@@ -87,9 +87,13 @@ class SiameseNetworkDataset(Dataset):
         img0 = img0.convert("L")    #convert to grayscale img
         img1 = img1.convert("L")
 
-        if index<500:
-            img0.save("temimg/%d-0.JPEG"%index)
-            img1.save("temimg/%d-%d.JPEG" %(index,idx))
+        if index%5==0:
+            if label==0:
+                s='false'
+            else:
+                s='True'
+            img0.save("temimg/%d-%s-0.JPEG"%(index,s))
+            img1.save("temimg/%d-%s-%d.JPEG" %(index,s,idx))
 
         if self.should_invert:  #Inverts binary images in black and white
             img0 = PIL.ImageOps.invert(img0)

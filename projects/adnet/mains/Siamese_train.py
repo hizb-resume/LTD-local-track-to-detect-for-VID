@@ -31,7 +31,7 @@ if __name__ == "__main__" :
                                             , should_invert=False)
     train_dataloader = DataLoader(siamese_dataset,
                                   shuffle=True,
-                                  num_workers=2,
+                                  num_workers=8,
                                   batch_size=Config.train_batch_size)
     net = SiameseNetwork().cuda()
     criterion = ContrastiveLoss()
