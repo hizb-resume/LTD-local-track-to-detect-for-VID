@@ -89,7 +89,7 @@ class SiameseNetworkDataset(Dataset):
 
         if index<500:
             img0.save("temimg/%d-0.JPEG"%index)
-            img1.save("temimg/%d-%d.JPEG" % idx)
+            img1.save("temimg/%d-%d.JPEG" %(index,idx))
 
         if self.should_invert:  #Inverts binary images in black and white
             img0 = PIL.ImageOps.invert(img0)

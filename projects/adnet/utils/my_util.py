@@ -285,7 +285,7 @@ def get_siamese_train_infos():
                 #     'vid_id':[]
                 # }
         gt_file_path = '../datasets/data/ILSVRC/Annotations/VID/train/' + img_paths[train_i] + '.xml'
-        imginfo = get_xml_img_info(gt_file_path)
+        imginfo = get_xml_siamese_info(gt_file_path)
         if(len(imginfo['gts'])==0):
             continue
         video_infos['gt'].extend(imginfo['gts'])
@@ -351,7 +351,7 @@ def get_siamese_train_infos2():
         gt_file_path = '../datasets/data/ILSVRC/Annotations/VID/train/' + img_paths[train_i] + '.xml'
         # gt_bbox=get_xml_box_label(gt_file_path)
         # opts['imgSize'] = get_xml_img_size(gt_file_path)
-        imginfo = get_xml_img_info(gt_file_path)
+        imginfo = get_xml_siamese_info(gt_file_path)
         if(len(imginfo['gts'])==0):
             #print("stop")
             #imginfo['gts'].append([0,0,0,0])
@@ -440,6 +440,7 @@ def get_xml_img_info(xmlpath):
     return img_info
 
 
+
 def get_xml_siamese_info(xmlpath):
     img_info = {
         'trackid':[],
@@ -465,8 +466,8 @@ def get_xml_siamese_info(xmlpath):
         gt[1] = int(bb.find('ymin').text)
         gt[2] = int(bb.find('xmax').text)
         gt[3] = int(bb.find('ymax').text)
-        gt[2] = gt[2] - gt[0]
-        gt[3] = gt[3] - gt[1]
+        # gt[2] = gt[2] - gt[0]
+        # gt[3] = gt[3] - gt[1]
 
         img_info['trackid'].append(tckid)
         # img_info['name'].append(nm)
