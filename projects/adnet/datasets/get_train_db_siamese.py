@@ -164,7 +164,7 @@ def process_data_siamese(img_paths, opt, train_db_pos_neg_all, lock):
     #lock.release()
 
 def get_train_dbs_siamese(opts):
-    opts['scale_factor'] = 1.05
+    # opts['scale_factor'] = 1.05
     # gt_skip = opts['train']['gt_skip']
 
     print('before get_train_dbs_ILSVR', end=' : ')
@@ -174,22 +174,22 @@ def get_train_dbs_siamese(opts):
 
     videos_infos= get_siamese_train_infos()
 
-    all_img_num = len(img_paths)
+    all_vid_num = len(videos_infos)
 
     # cpu_num=27
-    cpu_num = 24
-    if all_img_num<cpu_num:
-        cpu_num=all_img_num
-    every_gpu_img=all_img_num//cpu_num
-    img_paths_as=[]
-    for gn in range(cpu_num-1):
-        img_paths_as.append(img_paths[gn*every_gpu_img:(gn+1)*every_gpu_img])
-    img_paths_as.append(img_paths[(cpu_num-1) * every_gpu_img:])
+    gpu_num = 24
+    if all_vid_num<gpu_num:
+        gpu_num=all_vid_num
+    every_gpu_img=all_vid_num//gpu_num
+    vid_paths_as=[]
+    for gn in range(gpu_num-1):
+        vid_paths_as.append(videos_infos[gn*every_gpu_img:(gn+1)*every_gpu_img])
+    vid_paths_as.append(videos_infos[(gpu_num-1) * every_gpu_img:])
 
     lock = multiprocessing.Manager().Lock()
     record = []
-    for i in range(cpu_num):
-        process = multiprocessing.Process(target=process_data_siamese, args=(img_paths_as[i], opts,train_db_pos_neg,lock))
+    for i in range(gpu_num):
+        process = multiprocessing.Process(target=process_data_siamese, args=(vid_paths_as[i], opts,train_db_pos_neg,lock))
         process.start()
         record.append(process)
     for process in record:
@@ -197,7 +197,7 @@ def get_train_dbs_siamese(opts):
 
     print('before train_db_pos=list(train_db_pos_neg)', end=' : ')
     print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
-    train_db_pos=list(train_db_pos_neg)
+    train_db_pos_neg=list(train_db_pos_neg)
     print('after train_db_neg=list(train_db_pos_neg)', end=' : ')
     print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
     # return train_db_pos, train_db_neg

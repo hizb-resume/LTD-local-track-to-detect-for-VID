@@ -267,8 +267,8 @@ def get_siamese_train_infos():
         # 'name':[],
         'trackid':[],
         'img_files':[],
-        'nframes':0,
-        'vid_id':0
+        # 'nframes':0,
+        'vid_id':[]
     }
     last_video_full=True
     train_img_info_file = os.path.join('../datasets/data/ILSVRC/ImageSets/VID/train.txt')
@@ -282,28 +282,28 @@ def get_siamese_train_infos():
     for train_i in range(len(img_paths)):
         if img_paths[train_i][-6:]=='000000':
             if train_i!=0:
-                if last_video_full==False:
-                    last_video_full=True
-                else:
-                    video_infos['nframes']=int(img_paths[train_i-1][-6:])+1
-                    video_infos['vid_id'] =v_id
-                    v_id+=1
-                    videos_infos.append(video_infos)
-                    # train_videos['video_names'].append(img_paths[train_i-1][-32:-7])
-                    # train_videos['video_paths'].append('../datasets/data/ILSVRC/Data/VID/val/' + img_paths[train_i-1][:-32])
-                    #train_videos['bench_names'] =
+                # if last_video_full==False:
+                #     last_video_full=True
+                # else:
+                    # video_infos['nframes']=int(img_paths[train_i-1][-6:])+1
+                # video_infos['vid_id'] =v_id
+                v_id+=1
+                videos_infos.append(video_infos)
+                # train_videos['video_names'].append(img_paths[train_i-1][-32:-7])
+                # train_videos['video_paths'].append('../datasets/data/ILSVRC/Data/VID/val/' + img_paths[train_i-1][:-32])
+                #train_videos['bench_names'] =
 
-                    video_infos = {
-                        # 'imgsize': [], #in supervised training, imgsize is used for generating boxes that near the gt box
-                        'gt': [],
-                        # 'name': [],
-                        'trackid': [],
-                        'img_files': [],
-                        'nframes': 0,
-                        'vid_id':0
-                    }
-        elif last_video_full==False:
-            continue
+                video_infos = {
+                    # 'imgsize': [], #in supervised training, imgsize is used for generating boxes that near the gt box
+                    'gt': [],
+                    # 'name': [],
+                    'trackid': [],
+                    'img_files': [],
+                    # 'nframes': 0,
+                    'vid_id':[]
+                }
+        # elif last_video_full==False:
+        #     continue
         gt_file_path = '../datasets/data/ILSVRC/Annotations/VID/train/' + img_paths[train_i] + '.xml'
         # gt_bbox=get_xml_box_label(gt_file_path)
         # opts['imgSize'] = get_xml_img_size(gt_file_path)
@@ -311,10 +311,11 @@ def get_siamese_train_infos():
         if(len(imginfo['gts'])==0):
             #print("stop")
             #imginfo['gts'].append([0,0,0,0])
-            last_video_full=False
+            # last_video_full=False
+            '''
             if img_paths[train_i][-6:]!='000000':
-                video_infos['nframes'] = int(img_paths[train_i - 1][-6:]) + 1
-                video_infos['vid_id'] = v_id
+                # video_infos['nframes'] = int(img_paths[train_i - 1][-6:]) + 1
+                # video_infos['vid_id'] = v_id
                 v_id += 1
                 videos_infos.append(video_infos)
                 # train_videos['video_names'].append(img_paths[train_i - 1][-32:-7])
@@ -326,9 +327,10 @@ def get_siamese_train_infos():
                     # 'name': [],
                     'trackid': [],
                     'img_files': [],
-                    'nframes': 0,
-                    'vid_id':0
+                    # 'nframes': 0,
+                    'vid_id':[]
                 }
+                '''
             continue
         #bug: if the gt size of the last img is 0, the final video will be added twice.
         video_infos['gt'].extend(imginfo['gts'])
@@ -337,9 +339,10 @@ def get_siamese_train_infos():
         img_path = '../datasets/data/ILSVRC/Data/VID/val/' + img_paths[train_i] + '.JPEG'
         for id_box_nm in len(imginfo['gts']):
             video_infos['img_files'].append(img_path)
-    video_infos['nframes'] = int(img_paths[-1][-6:]) + 1
-    video_infos['vid_id'] = v_id
-    v_id += 1
+            video_infos['vid_id'].append(v_id)
+    # video_infos['nframes'] = int(img_paths[-1][-6:]) + 1
+    # video_infos['vid_id'] = v_id
+    # v_id += 1
     videos_infos.append(video_infos)
     # train_videos['video_names'].append(img_paths[-1][-32:-7])
     # train_videos['video_paths'].append('../datasets/data/ILSVRC/Data/VID/val/' + img_paths[-1][:-32])

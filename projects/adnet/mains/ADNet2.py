@@ -20,7 +20,7 @@ parser = argparse.ArgumentParser(
     description='ADNet training')
 # parser.add_argument('--resume', default='weights/ADNet_SL_backup.pth', type=str, help='Resume from checkpoint')
 # parser.add_argument('--resume', default='weights/ADNet_RL_2epoch8_backup.pth', type=str, help='Resume from checkpoint')
-parser.add_argument('--resume', default='weights/ADNet_SL_epoch1.pth', type=str, help='Resume from checkpoint')
+parser.add_argument('--resume', default='weights/ADNet_SL_epoch2_final.pth', type=str, help='Resume from checkpoint')
 parser.add_argument('--num_workers', default=4, type=int, help='Number of workers used in dataloading')
 parser.add_argument('--start_iter', default=2, type=int, help='Begin counting iterations starting from this value (should be used with resume)')
 parser.add_argument('--cuda', default=True, type=str2bool, help='Use cuda to train model')
@@ -31,7 +31,7 @@ parser.add_argument('--save_folder', default='weights', help='Location to save c
 
 parser.add_argument('--save_file', default='ADNet_SL_', type=str, help='save file part of file name for SL')
 parser.add_argument('--save_file_RL', default='ADNet_RL_', type=str, help='save file part of file name for RL')
-parser.add_argument('--start_epoch', default=2, type=int, help='Begin counting epochs starting from this value')
+parser.add_argument('--start_epoch', default=3, type=int, help='Begin counting epochs starting from this value')
 
 parser.add_argument('--run_supervised', default=True, type=str2bool, help='Whether to run supervised learning or not')
 
@@ -42,7 +42,6 @@ parser.add_argument('--display_images', default=False, type=str2bool, help='Whet
 
 if __name__ == "__main__":
     args = parser.parse_args()
-
 
     # Supervised Learning part
     if args.run_supervised:
