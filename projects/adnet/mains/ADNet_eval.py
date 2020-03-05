@@ -17,6 +17,7 @@ from utils.ADNet_evalTools import gen_pred_file
 from utils.my_util import get_ILSVRC_eval_infos
 from trainers.adnet_test import adnet_test
 from datasets.ILSVRC import register_ILSVRC
+from models.SiameseNet import SiameseNetwork
 import torch
 torch.multiprocessing.set_start_method('spawn', force=True)
 import torch.backends.cudnn as cudnn
@@ -34,7 +35,7 @@ def str2bool(v):
 
 parser = argparse.ArgumentParser(
     description='ADNet test')
-parser.add_argument('--weight_file', default='weights/ADNet_SL_backup.pth', type=str, help='The pretrained weight file')
+parser.add_argument('--weight_file', default='weights/ADNet_SL_epoch14_final.pth', type=str, help='The pretrained weight file')
 parser.add_argument('--num_workers', default=6, type=int, help='Number of workers used in dataloading')
 parser.add_argument('--cuda', default=True, type=str2bool, help='Use cuda to train model')
 parser.add_argument('--visualize', default=False, type=str2bool, help='Use tensorboardx to for visualization')
@@ -79,6 +80,14 @@ if __name__ == "__main__":
 
     predictor = DefaultPredictor(cfg)
     class_names = metalog.get("thing_classes", None)
+
+    siamesenet = SiameseNetwork().cuda()
+    resume = 'siameseWeight/SiameseNet_epoch8_final.pth'
+    # resume = False
+    if resume:
+        siamesenet.load_weights(resume)
+        checkpoint = torch.load(resume)
+        # optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
     args = parser.parse_args()
     assert 0 < args.pos_samples_ratio <= 1, "the pos_samples_ratio valid range is (0, 1]"
@@ -178,7 +187,7 @@ if __name__ == "__main__":
             net.load_domain_specific(domain_nets[0])
         '''
 
-        vid_pred = adnet_test(net,predictor,metalog,class_names, vidx,vid_folder['img_files'], opts, args)
+        vid_pred = adnet_test(net,predictor,siamesenet,metalog,class_names, vidx,vid_folder['img_files'], opts, args)
         gen_pred_file('../datasets/data/ILSVRC-vid-eval-tem',vid_pred)
     #     all_precisions.append(precisions)
     #

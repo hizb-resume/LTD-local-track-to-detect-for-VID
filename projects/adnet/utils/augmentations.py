@@ -19,6 +19,10 @@ class ToTensor2(object):
     def __call__(self, cvimage, box=None, action_label=None, conf_label=None):
         return cvimage.permute(2, 0, 1), box, action_label, conf_label
 
+class ToTensor3(object):
+    def __call__(self, cvimage, box=None):
+        return torch.from_numpy(cvimage.astype(np.float32)), box
+
 class SubtractMeans(object):
     def __init__(self, mean):
         self.mean = np.array(mean, dtype=np.float32)
@@ -155,7 +159,7 @@ class ResizeImage2(object):
 
 class ResizeImage3(object):
     def __call__(self, image, box):
-        im = cv2.cvtColor(cv2.resize(image, dsize=(8,8),interpolation=cv2.INTER_CUBIC),cv2.COLOR_BGR2GRAY)
+        im = cv2.cvtColor(cv2.resize(image, dsize=(100,100),interpolation=cv2.INTER_CUBIC),cv2.COLOR_BGR2GRAY)
         # im=image.unsqueeze(0)
         # im = F.interpolate(im,tuple(self.inputSize[:2]))
         # im = im.squeeze(0)
@@ -229,7 +233,8 @@ class ADNet_Augmentation3(object):
     def __init__(self):
         self.augment = Compose3([
             CropRegion3(),
-            ResizeImage3()
+            ResizeImage3(),
+            ToTensor3()
         ])
 
     def __call__(self, img, box):

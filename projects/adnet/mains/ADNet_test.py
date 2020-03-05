@@ -12,6 +12,7 @@ tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 import _init_paths
 from options.general2 import opts
 from models.ADNet import adnet
+from models.SiameseNet import SiameseNetwork
 from utils.get_train_videos import get_train_videos
 from utils.ADNet_evalTools import gen_pred_file
 from trainers.adnet_test import adnet_test
@@ -77,6 +78,14 @@ if __name__ == "__main__":
 
     predictor = DefaultPredictor(cfg)
     class_names = metalog.get("thing_classes", None)
+
+    siamesenet = SiameseNetwork().cuda()
+    resume = 'siameseWeight/SiameseNet_epoch8_final.pth'
+    # resume = False
+    if resume:
+        siamesenet.load_weights(resume)
+        checkpoint = torch.load(resume)
+        # optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
     args = parser.parse_args()
     assert 0 < args.pos_samples_ratio <= 1, "the pos_samples_ratio valid range is (0, 1]"
@@ -175,7 +184,7 @@ if __name__ == "__main__":
             net.load_domain_specific(domain_nets[0])
         '''
 
-        vid_pred = adnet_test(net,predictor,metalog,class_names, vidx,vid_path, opts, args)
+        vid_pred = adnet_test(net,predictor,siamesenet,metalog,class_names, vidx,vid_path, opts, args)
         gen_pred_file(args.save_result_npy,vid_pred)
     #     all_precisions.append(precisions)
     #

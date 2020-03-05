@@ -12,7 +12,9 @@ import torch.optim as optim
 from models.ADNet import adnet
 from options.general import opts
 from torch import nn
+import torch.nn.functional as F
 import torch.utils.data as data
+from torch.autograd import Variable
 import glob
 from datasets.online_adaptation_dataset import OnlineAdaptationDataset, OnlineAdaptationDatasetStorage
 from utils.augmentations import ADNet_Augmentation,ADNet_Augmentation2,ADNet_Augmentation3
@@ -72,7 +74,7 @@ def pred(predictor,class_names,frame):
 #     return labels
 
 # @torchsnooper.snoop()
-def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
+def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts, args):
 
     if torch.cuda.is_available():
         if args.cuda:
@@ -500,12 +502,10 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
                     frame_pred['score_cls'][t_id] = curr_score
 
                     curr_aera,  _ = transform3(frame, curr_bbox)
-                    # hash1 = aHash(pre_aera[t_id])
-                    # hash2 = aHash(curr_aera)
-                    # dist = Hamming_distance(hash1, hash2)
-                    # # convert distance to similarity
-                    # similarity = 1 - dist * 1.0 / 64
-                    # print('dist is %d, similarity is %d\n ' % (dist,similarity))
+                    x0=pre_aera[t_id]
+                    output1, output2 = siamesenet(Variable(x0).cuda(), Variable(curr_aera).cuda())
+                    euclidean_distance = F.pairwise_distance(output1, output2)
+                    print('Dissimilarity is %d\n ' % (euclidean_distance.item()))
                     pre_aera[t_id]=curr_aera
 
             if is_negative==False:
