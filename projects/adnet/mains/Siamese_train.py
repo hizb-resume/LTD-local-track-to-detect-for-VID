@@ -36,8 +36,8 @@ if __name__ == "__main__" :
     net = SiameseNetwork().cuda()
     criterion = ContrastiveLoss()
     optimizer = optim.Adam(net.parameters(), lr=0.0005)
-    # resume = 'siameseWeight/SiameseNet_epoch1.pth'
-    resume=False
+    resume = 'siameseWeight/SiameseNet_epoch16_final.pth'
+    # resume=False
     if resume:
         net.load_weights(resume)
         checkpoint = torch.load(resume)

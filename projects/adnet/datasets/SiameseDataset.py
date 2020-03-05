@@ -17,7 +17,7 @@ import torch.nn.functional as F
 class Config():
     training_dir = "./data/faces/training/"
     testing_dir = "./data/faces/testing/"
-    weight_dir="siameseWeight/"
+    weight_dir="siameseWeight2/"
     start_epoch=0
     train_batch_size = 256
     train_number_epochs = 100
@@ -74,10 +74,21 @@ class SiameseNetworkDataset(Dataset):
         else:
             while True:
                 # keep looping till a different class image is found
-                idx = random.randint(0, self.lens - 1)
+                # idx = random.randint(0, self.lens - 1)
+                should_get_same_vid = random.randint(0, 1)
+                if should_get_same_vid:
+                    letf_bd = index - 500
+                    right_bd = index + 500
+                    if letf_bd < 0:
+                        letf_bd = 0
+                    if right_bd > (self.lens - 2):
+                        right_bd = self.lens - 1
+                    idx = random.randint(letf_bd, right_bd)
+                else:
+                    idx = random.randint(0, self.lens - 1)
+
                 if idx == index:
                     continue
-
                 img1_tackid = self.train_db['trackid'][idx]
                 img1_vidid = self.train_db['vid_id'][idx]
 
