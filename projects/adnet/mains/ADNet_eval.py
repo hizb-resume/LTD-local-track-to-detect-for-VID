@@ -22,7 +22,7 @@ import torch
 torch.multiprocessing.set_start_method('spawn', force=True)
 import torch.backends.cudnn as cudnn
 import torch.nn as nn
-
+import time
 import glob
 
 from detectron2.engine import DefaultPredictor
@@ -162,6 +162,7 @@ if __name__ == "__main__":
     videos_infos, train_videos = get_ILSVRC_eval_infos()
     print("videos nums: %d ."%(len(videos_infos)))
 
+    t_eval0=time.time()
     for vidx,vid_folder in enumerate(videos_infos):
     # for vidx  in range(998,len(videos_infos)):
     # for vidx in range(20):
@@ -192,3 +193,10 @@ if __name__ == "__main__":
     #     all_precisions.append(precisions)
     #
     # print(all_precisions)
+    t_eval1 = time.time()
+    all_time = t_eval1 - t_eval0
+    all_d = all_time // 86400
+    all_h = all_time % 86400 // 3600
+    all_m = all_time % 3600 // 60
+    all_s = all_time % 60
+    print("eval time cost: %d d %d h %d m %d s ."% (all_d,all_h,all_m,all_s))

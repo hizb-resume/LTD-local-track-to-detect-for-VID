@@ -295,7 +295,8 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
         if len(frame_pred['bbox']) == 0:
             sign_redet = True
             # print('the num of pred boxes is 0! pre frame: %d, now frame: %d .'%(frame_idx-1,frame_idx))
-        if frame_idx==0 or sign_redet==True or dis_redet==20:
+        # if frame_idx==0 or sign_redet==True or dis_redet==20:
+        if frame_idx == 0 or sign_redet == True:
             # print('redetection: frame %d'%frame_idx)
             ts1=time.time()
             boxes,classes,scores = pred(predictor,class_names, frame)
@@ -522,9 +523,38 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                     #     cv2.imwrite(filename1, x0_crop)
                     #     filename2 = "temimg/v%d-f%d-t%d-siam%.2f-cur.JPEG"%(vidx,frame_idx,t,euclidean_distance.item())
                     #     cv2.imwrite(filename2, curr_aera_crop)
-                    pre_aera[t_id]=curr_aera
+                    pre_aera[t_id] = curr_aera
                     pre_aera_crop[t_id] = curr_aera_crop
 
+                    if euclidean_distance.item() > 0.7:
+                        #redect:
+                        is_negative = True
+                        dis_redet = 0
+                        ts1 = time.time()
+                        boxes, classes, scores = pred(predictor, class_names, frame)
+                        ts2 = time.time()
+                        spend_time['predict'] += ts2 - ts1
+                        spend_time['n_predict_frames'] += 1
+                        # frame_pred['frame_id'] = frame_idx
+                        frame_pred['track_id'] = []
+                        frame_pred['obj_name'] = []
+                        frame_pred['bbox'] = []
+                        frame_pred['score_cls'] = []
+                        pre_aera = []
+                        pre_aera_crop = []
+                        ts1 = time.time()
+                        n_bbox = len(boxes)
+                        for i_d in range(n_bbox):
+                            frame_pred['track_id'].append(i_d)
+                            frame_pred['obj_name'].append(classes[i_d])
+                            frame_pred['bbox'].append(boxes[i_d])
+                            frame_pred['score_cls'].append(scores[i_d])
+                            t_aera, t_aera_crop, _ = transform3(frame, boxes[i_d])
+                            pre_aera.append(t_aera)
+                            pre_aera_crop.append(t_aera_crop)
+                        ts2 = time.time()
+                        spend_time['append'] += ts2 - ts1
+                        break
             if is_negative==False:
                 spend_time['track'] += ts_all
                 spend_time['n_track_frames'] += 1
