@@ -88,7 +88,7 @@ class CropRegion2(object):
         return im, box, action_label, conf_label
 
 class CropRegion3(object):
-    def __call__(self, image, box):
+    def __call__(self, image,img2, box):
         # image = np.array(image)
         box = np.array(box)
         if box is not None:
@@ -107,7 +107,7 @@ class CropRegion3(object):
         else:
             im = image[:, :, :]
 
-        return im, box
+        return im,im, box
 
 # crop "multiplication" times of the box width and height
 class CropRegion_withContext(object):
@@ -159,13 +159,13 @@ class ResizeImage2(object):
         return im.permute(0,1, 3,2), box, action_label, conf_label
 
 class ResizeImage3(object):
-    def __call__(self, image, box):
+    def __call__(self, image,img2, box):
         # im = cv2.cvtColor(cv2.resize(image, dsize=(100,100),interpolation=cv2.INTER_CUBIC),cv2.COLOR_BGR2GRAY)
         im = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         # im=image.unsqueeze(0)
         # im = F.interpolate(im,tuple(self.inputSize[:2]))
         # im = im.squeeze(0)
-        return im, box
+        return im,image, box
 
 class Compose(object):
     """Composes several augmentations together.
@@ -200,10 +200,10 @@ class Compose3(object):
     def __init__(self, transforms):
         self.transforms = transforms
 
-    def __call__(self, img, box=None):
+    def __call__(self, img1,img2, box=None):
         for t in self.transforms:
-            img, box = t(img, box)
-        return img, box
+            img1, img2,box = t(img1,img2, box)
+        return img1,img2, box
 
 
 class ADNet_Augmentation(object):
@@ -242,6 +242,6 @@ class ADNet_Augmentation3(object):
 
     def __call__(self, img, box):
         # return self.augment(img, box)
-        img,_=self.augment(img, box)
+        img,img_crop_origin,_=self.augment(img,img, box)
         img=Image.fromarray(img)
-        return self.transform3_adition(img).unsqueeze(0),box
+        return self.transform3_adition(img).unsqueeze(0),img_crop_origin,box

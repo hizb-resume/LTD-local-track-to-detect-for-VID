@@ -308,6 +308,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
             frame_pred['bbox'] = []
             frame_pred['score_cls'] = []
             pre_aera=[]
+            pre_aera_crop = []
             ts1=time.time()
             n_bbox=len(boxes)
             for i_d in range(n_bbox):
@@ -315,8 +316,9 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                 frame_pred['obj_name'].append(classes[i_d])
                 frame_pred['bbox'].append(boxes[i_d])
                 frame_pred['score_cls'].append(scores[i_d])
-                t_aera, _ = transform3(frame, boxes[i_d])
+                t_aera, t_aera_crop,_ = transform3(frame, boxes[i_d])
                 pre_aera.append(t_aera)
+                pre_aera_crop.append(t_aera_crop)
             vid_pred['frame_id'].extend(np.full(n_bbox, frame_pred['frame_id']))
             vid_pred['track_id'].extend(frame_pred['track_id'])
             vid_pred['obj_name'].extend(frame_pred['obj_name'])
@@ -450,6 +452,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                     frame_pred['bbox']=[]
                     frame_pred['score_cls']=[]
                     pre_aera=[]
+                    pre_aera_crop=[]
                     ts1=time.time()
                     n_bbox = len(boxes)
                     for i_d in range(n_bbox):
@@ -457,8 +460,9 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                         frame_pred['obj_name'].append(classes[i_d])
                         frame_pred['bbox'].append(boxes[i_d])
                         frame_pred['score_cls'].append(scores[i_d])
-                        t_aera, _ = transform3(frame, boxes[i_d])
+                        t_aera,t_aera_crop, _ = transform3(frame, boxes[i_d])
                         pre_aera.append(t_aera)
+                        pre_aera_crop.append(t_aera_crop)
                     ts2=time.time()
                     spend_time['append'] += ts2 - ts1
                     # vid_pred['frame_id'].extend(np.full(n_bbox, frame_pred['frame_id']))
@@ -506,12 +510,20 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                     frame_pred['bbox'][t_id] = curr_bbox
                     frame_pred['score_cls'][t_id] = curr_score
 
-                    curr_aera,  _ = transform3(frame, curr_bbox)
+                    curr_aera, curr_aera_crop, _ = transform3(frame, curr_bbox)
                     x0=pre_aera[t_id]
+                    x0_crop=pre_aera_crop[t_id]
                     output1, output2 = siamesenet(Variable(x0).cuda(), Variable(curr_aera).cuda())
                     euclidean_distance = F.pairwise_distance(output1, output2)
                     print('Dissimilarity is %d\n ' % (euclidean_distance.item()))
+                    if euclidean_distance.item()<0.5:
+                        filename1="temimg/%d-%d-%d-pre.JPEG"%(vidx,frame_idx,t)
+                        # cv2.imwrite(filename1, x0.numpy())
+                        cv2.imwrite(filename1, x0_crop)
+                        filename2 = "temimg/%d-%d-%d-cur.JPEG"%(vidx,frame_idx,t)
+                        cv2.imwrite(filename2, curr_aera_crop)
                     pre_aera[t_id]=curr_aera
+                    pre_aera_crop[t_id] = curr_aera_crop
 
             if is_negative==False:
                 spend_time['track'] += ts_all
