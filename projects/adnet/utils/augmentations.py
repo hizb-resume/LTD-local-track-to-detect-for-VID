@@ -10,6 +10,7 @@ import cv2
 import types
 from numpy import random
 import torch.nn.functional as F
+from PIL import Image
 
 class ToTensor(object):
     def __call__(self, cvimage, box=None, action_label=None, conf_label=None):
@@ -21,7 +22,7 @@ class ToTensor2(object):
 
 class ToTensor3(object):
     def __call__(self, cvimage, box=None):
-        return torch.from_numpy(cvimage.astype(np.float32)), box
+        return torch.from_numpy(cvimage.astype(np.float32)).unsqueeze(0), box
 
 class SubtractMeans(object):
     def __init__(self, mean):
@@ -159,7 +160,8 @@ class ResizeImage2(object):
 
 class ResizeImage3(object):
     def __call__(self, image, box):
-        im = cv2.cvtColor(cv2.resize(image, dsize=(100,100),interpolation=cv2.INTER_CUBIC),cv2.COLOR_BGR2GRAY)
+        # im = cv2.cvtColor(cv2.resize(image, dsize=(100,100),interpolation=cv2.INTER_CUBIC),cv2.COLOR_BGR2GRAY)
+        im = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         # im=image.unsqueeze(0)
         # im = F.interpolate(im,tuple(self.inputSize[:2]))
         # im = im.squeeze(0)
@@ -230,12 +232,16 @@ class ADNet_Augmentation2(object):
         return self.augment(img, box, action_label, conf_label)
 
 class ADNet_Augmentation3(object):
-    def __init__(self):
+    def __init__(self,transform3_adition):
         self.augment = Compose3([
             CropRegion3(),
             ResizeImage3(),
-            ToTensor3()
+            # ToTensor3()
         ])
+        self.transform3_adition=transform3_adition
 
     def __call__(self, img, box):
-        return self.augment(img, box)
+        # return self.augment(img, box)
+        img,_=self.augment(img, box)
+        img=Image.fromarray(img)
+        return self.transform3_adition(img).unsqueeze(0),box

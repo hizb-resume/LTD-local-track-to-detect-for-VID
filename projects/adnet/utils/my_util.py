@@ -190,6 +190,7 @@ def get_ILSVRC_eval_infos():
     img_paths = [line.split(' ')[0] for line in img_paths]
     train_img_info.close()
     for train_i in range(len(img_paths)):
+    # for train_i in range(10000):
         if img_paths[train_i][-6:]=='000000':
             if train_i!=0:
                 if last_video_full==False:

@@ -15,6 +15,7 @@ from torch import nn
 import torch.nn.functional as F
 import torch.utils.data as data
 from torch.autograd import Variable
+import torchvision.transforms as transforms
 import glob
 from datasets.online_adaptation_dataset import OnlineAdaptationDataset, OnlineAdaptationDatasetStorage
 from utils.augmentations import ADNet_Augmentation,ADNet_Augmentation2,ADNet_Augmentation3
@@ -91,7 +92,11 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
     mean = np.array(opts['means'], dtype=np.float32)
     mean = torch.from_numpy(mean).cuda()
     transform = ADNet_Augmentation2(opts,mean)
-    transform3 = ADNet_Augmentation3()
+
+    transform3_adition = transforms.Compose([transforms.Resize((100, 100)),
+                                    transforms.ToTensor()
+                                    ])
+    transform3 = ADNet_Augmentation3(transform3_adition)
 
     if isinstance(vid_path,list):
         print('Testing sequences in ' + str(vid_path[0][-43:-12]) + '...')

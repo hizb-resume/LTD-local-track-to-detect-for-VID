@@ -79,6 +79,8 @@ class SiameseNetwork(nn.Module):
             for k, v in pretrained_dict.items():
                 if 'module' in k:
                     name = k[7:]  # remove `module.`
+                else:
+                    name=k
                 new_state_dict[name] = v
             pretrained_dict = new_state_dict
 
