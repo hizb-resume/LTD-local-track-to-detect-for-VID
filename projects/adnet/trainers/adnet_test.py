@@ -516,12 +516,12 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                     output1, output2 = siamesenet(Variable(x0).cuda(), Variable(curr_aera).cuda())
                     euclidean_distance = F.pairwise_distance(output1, output2)
                     # print('Dissimilarity is %d\n ' % (euclidean_distance.item()))
-                    if euclidean_distance.item()<0.5:
-                        filename1="temimg/v%d-f%d-t%d-siam%.2f-pre.JPEG"%(vidx,frame_idx,t,euclidean_distance.item())
-                        # cv2.imwrite(filename1, x0.numpy())
-                        cv2.imwrite(filename1, x0_crop)
-                        filename2 = "temimg/v%d-f%d-t%d-siam%.2f-cur.JPEG"%(vidx,frame_idx,t,euclidean_distance.item())
-                        cv2.imwrite(filename2, curr_aera_crop)
+                    # if euclidean_distance.item()<0.5:
+                    #     filename1="temimg/v%d-f%d-t%d-siam%.2f-pre.JPEG"%(vidx,frame_idx,t,euclidean_distance.item())
+                    #     # cv2.imwrite(filename1, x0.numpy())
+                    #     cv2.imwrite(filename1, x0_crop)
+                    #     filename2 = "temimg/v%d-f%d-t%d-siam%.2f-cur.JPEG"%(vidx,frame_idx,t,euclidean_distance.item())
+                    #     cv2.imwrite(filename2, curr_aera_crop)
                     pre_aera[t_id]=curr_aera
                     pre_aera_crop[t_id] = curr_aera_crop
 
