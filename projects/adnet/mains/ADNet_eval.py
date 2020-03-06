@@ -71,16 +71,19 @@ def testsiamese(siamesenet,videos_infos):
                                              ])
     transform3 = ADNet_Augmentation3(transform3_adition)
     vlen=len(videos_infos)
-    for i in range(50):
-        vidx1 = random.randint(0, vlen)
-        fidx1=random.randint(0,videos_infos[vidx1]['nframes'])
+    for i in range(500):
+        vidx1 = random.randint(0, vlen-1)
+        fidx1=random.randint(0,videos_infos[vidx1]['nframes']-1)
         frame_path1 = videos_infos[vidx1]['img_files'][fidx1]
         frame1 = cv2.imread(frame_path1)
         gt1=videos_infos[vidx1]['gt'][fidx1][0]
         t_aera1, _, _ = transform3(frame1, gt1)
 
-        vidx2 = random.randint(0, vlen)
-        fidx2 = random.randint(0, videos_infos[vidx2]['nframes'])
+        while True:
+            vidx2 = random.randint(0, vlen-1)
+            if vidx2 != vidx1:
+                break
+        fidx2 = random.randint(0, videos_infos[vidx2]['nframes']-1)
         frame_path2 = videos_infos[vidx2]['img_files'][fidx2]
         frame2 = cv2.imread(frame_path2)
         gt2 = videos_infos[vidx2]['gt'][fidx2][0]
@@ -88,7 +91,10 @@ def testsiamese(siamesenet,videos_infos):
 
         output1, output2 = siamesenet(Variable(t_aera1).cuda(), Variable(t_aera2).cuda())
         euclidean_distance = F.pairwise_distance(output1, output2)
-        print(' %.2f\n ' % (euclidean_distance.item()),end='    ')
+        print(' \n%.2f ' % (euclidean_distance.item()),end='  ')
+        if euclidean_distance.item()<0.8:
+            print("vid1: %d, name1: %s; vid2: %d , name2: %s."%(
+                vidx1,videos_infos[vidx1]['name'][fidx1][0],vidx2,videos_infos[vidx2]['name'][fidx2][0]),end='  ')
 
 
 if __name__ == "__main__":
@@ -114,7 +120,7 @@ if __name__ == "__main__":
     class_names = metalog.get("thing_classes", None)
 
     siamesenet = SiameseNetwork().cuda()
-    resume = 'siameseWeight/SiameseNet_epoch8_final.pth'
+    resume = 'siameseWeight2/SiameseNet_epoch19_final.pth'
     # resume = False
     if resume:
         siamesenet.load_weights(resume)
@@ -194,8 +200,8 @@ if __name__ == "__main__":
     videos_infos, train_videos = get_ILSVRC_eval_infos()
     print("videos nums: %d ."%(len(videos_infos)))
 
-    testsiamese(siamesenet,videos_infos)
-    '''
+    # testsiamese(siamesenet,videos_infos)
+    
     t_eval0=time.time()
     for vidx,vid_folder in enumerate(videos_infos):
     # for vidx  in range(998,len(videos_infos)):
@@ -232,4 +238,4 @@ if __name__ == "__main__":
     all_m = all_time % 3600 // 60
     all_s = all_time % 60
     print("eval time cost: %d d %d h %d m %d s ."% (all_d,all_h,all_m,all_s))
-    '''
+    
