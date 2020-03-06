@@ -59,7 +59,7 @@ parser.add_argument('--visualize', default=False, type=str2bool, help='Use tenso
 # parser.add_argument('--send_images_to_visualization', type=str2bool, default=False, help='Sample a random image from each 10th batch, send it to visdom after augmentations step')
 parser.add_argument('--display_images', default=False, type=str2bool, help='Whether to display images or not')
 parser.add_argument('--save_result_images_bool', default=False, type=str2bool, help='save results folder')
-parser.add_argument('--save_result_images', default='save_result_images', type=str, help='save results folder')
+parser.add_argument('--save_result_images', default='save_result_images2', type=str, help='save results folder')
 parser.add_argument('--display_images_t', default=False, type=str2bool, help='display t patches between frames')
 parser.add_argument('--save_result_images_t', default=False, type=str2bool, help='save t patches between frames')
 # parser.add_argument('--save_result_npy', default='results_on_test_images_part2', type=str, help='save results folder')
@@ -215,7 +215,7 @@ if __name__ == "__main__":
         vid_folder = vid_path.split('/')[-2]
         # vid_path = "../../../demo/examples/jiaotong2.avi"
         # vid_folder=vid_path.split('/')[-1]
-        if args.save_result_images is not None:
+        if args.save_result_images_bool:
             args.save_result_images = os.path.join(args.save_result_images, vid_folder)
             if not os.path.exists(args.save_result_images):
                 os.makedirs(args.save_result_images)
@@ -244,7 +244,7 @@ if __name__ == "__main__":
 
             # net, domain_nets = adnet(opts, trained_file=args.weight_file, random_initialize_domain_specific=True)
             # net.train()
-            if args.save_result_images is not None:
+            if args.save_result_images_bool:
                 args.save_result_images = os.path.join(save_root, train_videos['video_names'][vidx])
                 if not os.path.exists(args.save_result_images):
                     os.makedirs(args.save_result_images)
