@@ -591,7 +591,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                 cv2.imshow("result",v.get_image())
                 cv2.waitKey(1)
 
-        if args.save_result_images:
+        if args.save_result_images_bool:
             filename = os.path.join(args.save_result_images, str(frame_idx).rjust(4,'0')+'-99-21-final' + '.jpg')
             # cv2.imwrite(filename, im_with_bb)
             if len(frame_pred['bbox']) == 0:
