@@ -16,7 +16,7 @@ parser.add_argument('--gengt', default=False, type=str2bool, help='generate gt r
 parser.add_argument('--doprecision', default=False, type=str2bool, help='run do precision function')
 parser.add_argument('--evalfilepath', default='../datasets/data/ILSVRC-vid-eval-tem-pred.txt', type=str, help='The eval results file')
 
-def gen_gt_file(path):
+def gen_gt_file(path,args):
     videos_infos,train_videos=get_ILSVRC_eval_infos(args)
     out_file = open('%s-gt.txt' % path, 'w')
     for tj in range(len(videos_infos)):
