@@ -15,6 +15,7 @@ from models.ADNet import adnet
 from utils.get_train_videos import get_train_videos
 from utils.ADNet_evalTools import gen_pred_file
 from utils.my_util import get_ILSVRC_eval_infos
+from utils.augmentations import ADNet_Augmentation3
 from trainers.adnet_test import adnet_test
 from datasets.ILSVRC import register_ILSVRC
 from models.SiameseNet import SiameseNetwork
@@ -23,7 +24,12 @@ torch.multiprocessing.set_start_method('spawn', force=True)
 import torch.backends.cudnn as cudnn
 import torch.nn as nn
 import time
+import cv2
+import random
 import glob
+import torch.nn.functional as F
+from torch.autograd import Variable
+import torchvision.transforms as transforms
 
 from detectron2.engine import DefaultPredictor
 from detectron2.config import get_cfg
@@ -57,6 +63,32 @@ parser.add_argument('--believe_score_result', default=0, type=int, help='Believe
 
 parser.add_argument('--pos_samples_ratio', default='0.5', type=float,
                     help='The ratio of positive in all samples for online adaptation. Rest of it will be negative samples. Default: 0.5')
+
+
+def testsiamese(siamesenet,videos_infos):
+    transform3_adition = transforms.Compose([transforms.Resize((100, 100)),
+                                             transforms.ToTensor()
+                                             ])
+    transform3 = ADNet_Augmentation3(transform3_adition)
+    vlen=len(videos_infos)
+    for i in range(50):
+        vidx1 = random.randint(0, vlen)
+        fidx1=random.randint(0,videos_infos[vidx1]['nframes'])
+        frame_path1 = videos_infos[vidx1]['img_files'][fidx1]
+        frame1 = cv2.imread(frame_path1)
+        gt1=videos_infos[vidx1]['gt'][fidx1][0]
+        t_aera1, _, _ = transform3(frame1, gt1)
+
+        vidx2 = random.randint(0, vlen)
+        fidx2 = random.randint(0, videos_infos[vidx2]['nframes'])
+        frame_path2 = videos_infos[vidx2]['img_files'][fidx2]
+        frame2 = cv2.imread(frame_path2)
+        gt2 = videos_infos[vidx2]['gt'][fidx2][0]
+        t_aera2, _, _ = transform3(frame2, gt2)
+
+        output1, output2 = siamesenet(Variable(t_aera1).cuda(), Variable(t_aera2).cuda())
+        euclidean_distance = F.pairwise_distance(output1, output2)
+        print(' %.2f\n ' % (euclidean_distance.item()),end='    ')
 
 
 if __name__ == "__main__":
@@ -162,6 +194,8 @@ if __name__ == "__main__":
     videos_infos, train_videos = get_ILSVRC_eval_infos()
     print("videos nums: %d ."%(len(videos_infos)))
 
+    testsiamese(siamesenet,videos_infos)
+    '''
     t_eval0=time.time()
     for vidx,vid_folder in enumerate(videos_infos):
     # for vidx  in range(998,len(videos_infos)):
@@ -180,13 +214,11 @@ if __name__ == "__main__":
         vid_path = os.path.join(train_videos['video_paths'][vidx], train_videos['video_names'][vidx])
 
         # load ADNetDomainSpecific
-        '''
     
-        if args.cuda:
-            net.module.load_domain_specific(domain_nets[0])
-        else:
-            net.load_domain_specific(domain_nets[0])
-        '''
+        # if args.cuda:
+        #     net.module.load_domain_specific(domain_nets[0])
+        # else:
+        #     net.load_domain_specific(domain_nets[0])
 
         vid_pred = adnet_test(net,predictor,siamesenet,metalog,class_names, vidx,vid_folder['img_files'], opts, args)
         gen_pred_file('../datasets/data/ILSVRC-vid-eval-tem',vid_pred)
@@ -200,3 +232,4 @@ if __name__ == "__main__":
     all_m = all_time % 3600 // 60
     all_s = all_time % 60
     print("eval time cost: %d d %d h %d m %d s ."% (all_d,all_h,all_m,all_s))
+    '''
