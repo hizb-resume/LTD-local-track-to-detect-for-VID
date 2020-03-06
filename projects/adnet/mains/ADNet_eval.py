@@ -164,7 +164,7 @@ if __name__ == "__main__":
 
     if args.save_result_images_bool:
         args.save_result_images = os.path.join(args.save_result_images,
-                                               os.path.basename(args.weight_file)[:-4] + '-' + str(args.pos_samples_ratio))
+                                               os.path.basename(args.weight_file)[:-4])
         if not os.path.exists(args.save_result_images):
             os.makedirs(args.save_result_images)
 
