@@ -325,7 +325,8 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
             vid_pred['obj_name'].extend(frame_pred['obj_name'])
             vid_pred['bbox'].extend(frame_pred['bbox'])
             vid_pred['score_cls'].extend(frame_pred['score_cls'])
-            sign_redet = False
+            if args.track:
+                sign_redet = False
             dis_redet = 0
             ts2=time.time()
             spend_time['append'] += ts2 - ts1
@@ -420,15 +421,15 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                     t += 1
 
                     # draw box or with display, then save
-                    # if args.display_images:
-                    #     im_with_bb = display_result(frame, curr_bbox)  # draw box and display
-                    # else:
-                    #     im_with_bb = draw_boxes(frame, curr_bbox)
+                    if args.display_images_t:
+                        im_with_bb = display_result(frame, curr_bbox)  # draw box and display
+                    else:
+                        im_with_bb = draw_boxes(frame, curr_bbox)
 
-                    # if args.save_result_images:
-                    #     filename = os.path.join(args.save_result_images, str(frame_idx).rjust(4,'0')+'-'+str(t_id).rjust(2,'0')+'-' + str(t).rjust(2,'0') + '.jpg')
-                    #     cv2.imwrite(filename, im_with_bb)
-                    #     pass
+                    if args.save_result_images_t:
+                        filename = os.path.join(args.save_result_images, str(frame_idx).rjust(4,'0')+'-'+str(t_id).rjust(2,'0')+'-' + str(t).rjust(2,'0') + '.jpg')
+                        cv2.imwrite(filename, im_with_bb)
+                        pass
 
                     if action == opts['stop_action'] or t >= opts['num_action_step_max']:
                         break
@@ -526,7 +527,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                     pre_aera[t_id] = curr_aera
                     pre_aera_crop[t_id] = curr_aera_crop
 
-                    if euclidean_distance.item() > 0.7:
+                    if euclidean_distance.item() > args.siam_thred:
                         #redect:
                         is_negative = True
                         dis_redet = 0

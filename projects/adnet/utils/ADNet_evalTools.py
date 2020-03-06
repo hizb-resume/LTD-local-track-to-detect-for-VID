@@ -2,12 +2,21 @@ import _init_paths
 import numpy as np
 from utils.my_util import get_ILSVRC_eval_infos,cal_iou,cal_success
 from utils.overlap_ratio import overlap_ratio
+import argparse
+
+parser = argparse.ArgumentParser(
+    description='gen_gt_file')
+parser.add_argument('--eval_imgs', default=0, type=int,
+                    help='the num of imgs that picked from val.txt, 0 represent all imgs')
+parser.add_argument('--gt_skip', default=5, type=int, help='frame sampling frequency')
+
 
 def gen_gt_file(path):
-    videos_infos,train_videos=get_ILSVRC_eval_infos()
+    args = parser.parse_args()
+    videos_infos,train_videos=get_ILSVRC_eval_infos(args)
     out_file = open('%s-gt.txt' % path, 'w')
-    # for tj in range(len(videos_infos)):
-    for tj in range(10):
+    for tj in range(len(videos_infos)):
+    # for tj in range(10):
         for ti in range(len(videos_infos[tj]['gt'])):
             for tk in range(len(videos_infos[tj]['gt'][ti])):
                 # if tj==31 and ti==66:

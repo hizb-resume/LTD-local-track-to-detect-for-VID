@@ -161,7 +161,7 @@ def get_ILSVRC_videos_infos():
     train_videos['video_paths'].append('../datasets/data/ILSVRC/Data/VID/train/' + img_paths[-1][:-32])
     return videos_infos,train_videos
 
-def get_ILSVRC_eval_infos():
+def get_ILSVRC_eval_infos(args):
     '''
     get {gts,img_files(path),name,db_name,nframes}for all videos
     :param file_path: the path of the train.txt
@@ -185,11 +185,14 @@ def get_ILSVRC_eval_infos():
     train_img_info_file = os.path.join('../datasets/data/ILSVRC/ImageSets/VID/val.txt')
     train_img_info = open(train_img_info_file, "r")
     img_paths = train_img_info.readlines()
-    gt_skip=5
+    gt_skip=args.gt_skip
     # img_paths = img_paths[::gt_skip + 1]
     img_paths = [line.split(' ')[0] for line in img_paths]
     train_img_info.close()
-    for train_i in range(len(img_paths)):
+    eval_imgs=args.eval_imgs
+    if eval_imgs == 0:
+        eval_imgs=len(img_paths)
+    for train_i in range(eval_imgs):
     # for train_i in range(10000):
         if img_paths[train_i][-6:]=='000000':
             if train_i!=0:
