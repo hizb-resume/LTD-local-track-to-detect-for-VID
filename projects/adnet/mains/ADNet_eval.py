@@ -44,6 +44,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument('--weight_file', default='weights/ADNet_SL_epoch14_final.pth', type=str, help='The pretrained weight file')
 parser.add_argument('--weight_detector', default='../datasets/tem/train_output/model_0599999.pth', type=str, help='The pretrained weight file of detector')
 parser.add_argument('--weight_siamese', default='siameseWeight2/SiameseNet_epoch19_final.pth', type=str, help='The pretrained weight file of siamesenet')
+parser.add_argument('--results_file', default='../datasets/data/ILSVRC-vid-eval-tem', type=str, help='The eval results file')
 parser.add_argument('--v_start_id', default=0, type=int, help='The start no of eval videos')
 parser.add_argument('--v_end_id', default=None, type=int, help='The end no of eval videos')
 parser.add_argument('--track', default=True, type=str2bool, help='track between detect')
@@ -259,7 +260,7 @@ if __name__ == "__main__":
             #     net.load_domain_specific(domain_nets[0])
 
             vid_pred = adnet_test(net,predictor,siamesenet,metalog,class_names, vidx,vid_folder['img_files'], opts, args)
-            gen_pred_file('../datasets/data/ILSVRC-vid-eval-tem',vid_pred)
+            gen_pred_file(args.results_file,vid_pred)
         #     all_precisions.append(precisions)
         #
         # print(all_precisions)

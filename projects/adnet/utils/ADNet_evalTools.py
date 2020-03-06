@@ -9,10 +9,11 @@ parser = argparse.ArgumentParser(
 parser.add_argument('--eval_imgs', default=0, type=int,
                     help='the num of imgs that picked from val.txt, 0 represent all imgs')
 parser.add_argument('--gt_skip', default=5, type=int, help='frame sampling frequency')
-
+parser.add_argument('--gengt', default=False, type=str2bool, help='generate gt results and save to file')
+parser.add_argument('--doprecision', default=False, type=str2bool, help='run do precision function')
+parser.add_argument('--evalfilepath', default='../datasets/data/ILSVRC-vid-eval-tem-pred.txt', type=str, help='The eval results file')
 
 def gen_gt_file(path):
-    args = parser.parse_args()
     videos_infos,train_videos=get_ILSVRC_eval_infos(args)
     out_file = open('%s-gt.txt' % path, 'w')
     for tj in range(len(videos_infos)):
@@ -300,5 +301,8 @@ def do_precison2(path_pred,path_gt):
     print('all gt boxes: %d, missed boxess: %d, missed box ratio: %.2f%%.'%(n_all_boxes,n_miss_boxes,(n_miss_boxes/n_all_boxes)*100))
 
 if __name__ == "__main__":
-    # gen_gt_file('../datasets/data/ILSVRC-vid-eval')
-    do_precison2('../datasets/data/ILSVRC-vid-eval-tem-pred.txt','../datasets/data/ILSVRC-vid-eval-gt.txt')
+    args = parser.parse_args()
+    if args.gengt:
+        gen_gt_file('../datasets/data/ILSVRC-vid-eval',args)
+    if args.doprecision:
+        do_precison2(args.evalfilepath,'../datasets/data/ILSVRC-vid-eval-gt.txt')
