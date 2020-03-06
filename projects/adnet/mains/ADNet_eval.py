@@ -46,7 +46,7 @@ parser.add_argument('--weight_detector', default='../datasets/tem/train_output/m
 parser.add_argument('--weight_siamese', default='siameseWeight2/SiameseNet_epoch19_final.pth', type=str, help='The pretrained weight file of siamesenet')
 parser.add_argument('--results_file', default='../datasets/data/ILSVRC-vid-eval-tem', type=str, help='The eval results file')
 parser.add_argument('--v_start_id', default=0, type=int, help='The start no of eval videos')
-parser.add_argument('--v_end_id', default=None, type=int, help='The end no of eval videos')
+parser.add_argument('--v_end_id', default=0, type=int, help='The end no of eval videos')
 parser.add_argument('--track', default=True, type=str2bool, help='track between detect')
 parser.add_argument('--siam_thred', default=0.9, type=float, help='similarity thred between frames')
 parser.add_argument('--eval_imgs', default=0, type=int, help='the num of imgs that picked from val.txt, 0 represent all imgs')
@@ -58,7 +58,8 @@ parser.add_argument('--cuda', default=True, type=str2bool, help='Use cuda to tra
 parser.add_argument('--visualize', default=False, type=str2bool, help='Use tensorboardx to for visualization')
 # parser.add_argument('--send_images_to_visualization', type=str2bool, default=False, help='Sample a random image from each 10th batch, send it to visdom after augmentations step')
 parser.add_argument('--display_images', default=False, type=str2bool, help='Whether to display images or not')
-parser.add_argument('--save_result_images', default=None, type=str, help='save results folder')
+parser.add_argument('--save_result_images_bool', default=False, type=str2bool, help='save results folder')
+parser.add_argument('--save_result_images', default='save_result_images', type=str, help='save results folder')
 parser.add_argument('--display_images_t', default=False, type=str2bool, help='display t patches between frames')
 parser.add_argument('--save_result_images_t', default=False, type=str2bool, help='save t patches between frames')
 # parser.add_argument('--save_result_npy', default='results_on_test_images_part2', type=str, help='save results folder')
@@ -161,7 +162,7 @@ if __name__ == "__main__":
     # opts['finetune_iters_online'] = args.online_iteration
     # opts['redet_samples'] = args.redetection_samples
 
-    if args.save_result_images is not None:
+    if args.save_result_images_bool:
         args.save_result_images = os.path.join(args.save_result_images,
                                                os.path.basename(args.weight_file)[:-4] + '-' + str(args.pos_samples_ratio))
         if not os.path.exists(args.save_result_images):
@@ -230,7 +231,7 @@ if __name__ == "__main__":
             v_start_id=0
         elif v_start_id>=len(videos_infos):
             v_start_id=len(videos_infos)-1
-        if v_end_id is None or v_end_id>len(videos_infos):
+        if v_end_id ==0 or v_end_id>len(videos_infos):
             v_end_id=len(videos_infos)
 
         print("videos nums: %d ." % (v_end_id-v_start_id))

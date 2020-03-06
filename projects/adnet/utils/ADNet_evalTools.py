@@ -4,6 +4,9 @@ from utils.my_util import get_ILSVRC_eval_infos,cal_iou,cal_success
 from utils.overlap_ratio import overlap_ratio
 import argparse
 
+def str2bool(v):
+    return v.lower() in ("yes", "true", "t", "1")
+    
 parser = argparse.ArgumentParser(
     description='gen_gt_file')
 parser.add_argument('--eval_imgs', default=0, type=int,
