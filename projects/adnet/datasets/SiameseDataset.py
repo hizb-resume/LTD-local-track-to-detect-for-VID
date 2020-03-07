@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader, Dataset
 import matplotlib.pyplot as plt
 import torchvision.utils
 import numpy as np
+import cv2
 import random
 from PIL import Image
 import torch
