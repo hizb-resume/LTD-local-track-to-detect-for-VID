@@ -18,17 +18,20 @@ import os,time
 from datasets.SiameseDataset import Config,SiameseNetworkDataset
 from datasets.get_train_db_siamese import get_train_dbs_siamese
 from models.SiameseNet import SiameseNetwork,ContrastiveLoss
+from utils.augmentations import ADNet_Augmentation4
 
 if __name__ == "__main__" :
     if not os.path.exists(Config.weight_dir):
         os.makedirs(Config.weight_dir)
     train_db=get_train_dbs_siamese()
+    transform3_adition = transforms.Compose([transforms.Resize((100, 100)),
+                                             transforms.ToTensor()
+                                             ])
+    transform4 = ADNet_Augmentation4(transform3_adition)
     # folder_dataset = dset.ImageFolder(root=Config.training_dir)
     siamese_dataset = SiameseNetworkDataset(train_db=train_db,
-                                            transform=transforms.Compose([transforms.Resize((100, 100)),
-                                                                          transforms.ToTensor()
-                                                                          ])
-                                            , should_invert=False)
+                                            transform=transform4,
+                                            should_invert=False)
     train_dataloader = DataLoader(siamese_dataset,
                                   shuffle=True,
                                   num_workers=8,

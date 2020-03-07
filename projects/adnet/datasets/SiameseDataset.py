@@ -17,7 +17,7 @@ import torch.nn.functional as F
 class Config():
     training_dir = "./data/faces/training/"
     testing_dir = "./data/faces/testing/"
-    weight_dir="siameseWeight2/"
+    weight_dir="siameseWeight3/"
     start_epoch=0
     train_batch_size = 256
     train_number_epochs = 100
@@ -100,12 +100,15 @@ class SiameseNetworkDataset(Dataset):
                     break
 
 
-        img0 = Image.open(img0_path)
-        img1 = Image.open(img1_path)
-        img0 = img0.crop(img0_gt)
-        img1 = img1.crop(img1_gt)
-        img0 = img0.convert("L")    #convert to grayscale img
-        img1 = img1.convert("L")
+        # img0 = Image.open(img0_path)
+        # img1 = Image.open(img1_path)
+        # img0 = img0.crop(img0_gt)
+        # img1 = img1.crop(img1_gt)
+        # img0 = img0.convert("L")    #convert to grayscale img
+        # img1 = img1.convert("L")
+
+        img0=cv2.imread(img0_path)
+        img1 = cv2.imread(img1_path)
 
         # if index%5==0:
         #     if label==0:
@@ -115,13 +118,13 @@ class SiameseNetworkDataset(Dataset):
         #     img0.save("temimg/%d-%s-0.JPEG"%(index,s))
         #     img1.save("temimg/%d-%s-%d.JPEG" %(index,s,idx))
 
-        if self.should_invert:  #Inverts binary images in black and white
-            img0 = PIL.ImageOps.invert(img0)
-            img1 = PIL.ImageOps.invert(img1)
+        # if self.should_invert:  #Inverts binary images in black and white
+        #     img0 = PIL.ImageOps.invert(img0)
+        #     img1 = PIL.ImageOps.invert(img1)
 
         if self.transform is not None:
-            img0 = self.transform(img0)
-            img1 = self.transform(img1)
+            img0,_,_ = self.transform(img0,img0_gt)
+            img1,_,_ = self.transform(img1,img1_gt)
 
         return img0, img1, torch.from_numpy(np.array([label], dtype=np.float32))
 

@@ -93,7 +93,7 @@ class CropRegion3(object):
         box = np.array(box)
         if box is not None:
             center = box[0:2] + 0.5 * box[2:4]
-            wh = box[2:4] * 1  # multiplication = 1.4
+            wh = box[2:4] * 1.4  # multiplication = 1.4
             box_lefttop = center - 0.5 * wh
             box_rightbottom = center + 0.5 * wh
             box_ = [
@@ -245,3 +245,18 @@ class ADNet_Augmentation3(object):
         img,img_crop_origin,_=self.augment(img,img, box)
         img=Image.fromarray(img)
         return self.transform3_adition(img).unsqueeze(0),img_crop_origin,box
+
+class ADNet_Augmentation4(object):
+    def __init__(self,transform3_adition):
+        self.augment = Compose3([
+            CropRegion3(),
+            ResizeImage3(),
+            # ToTensor3()
+        ])
+        self.transform3_adition=transform3_adition
+
+    def __call__(self, img, box):
+        # return self.augment(img, box)
+        img,img_crop_origin,_=self.augment(img,img, box)
+        img=Image.fromarray(img)
+        return self.transform3_adition(img),img_crop_origin,box
