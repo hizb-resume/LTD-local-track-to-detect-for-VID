@@ -1,4 +1,6 @@
 import _init_paths
+import tensorflow as tf
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 import numpy as np
 from utils.my_util import get_ILSVRC_eval_infos,cal_iou,cal_success
 from utils.overlap_ratio import overlap_ratio
