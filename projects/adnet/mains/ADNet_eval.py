@@ -52,6 +52,7 @@ parser.add_argument('--siam_thred', default=0.9, type=float, help='similarity th
 parser.add_argument('--eval_imgs', default=0, type=int, help='the num of imgs that picked from val.txt, 0 represent all imgs')
 parser.add_argument('--gt_skip', default=5, type=int, help='frame sampling frequency')
 parser.add_argument('--test1vid', default=False, type=str2bool, help='only test 1 video')
+parser.add_argument('--useSiamese', default=True, type=str2bool, help='use siamese or not')
 
 parser.add_argument('--num_workers', default=6, type=int, help='Number of workers used in dataloading')
 parser.add_argument('--cuda', default=True, type=str2bool, help='Use cuda to train model')
