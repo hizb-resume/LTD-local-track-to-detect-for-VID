@@ -348,7 +348,7 @@ def do_precison2(path_pred,path_gt):
                         # n_miss_pics += 1
                     k += 1
             i+=1
-    rltTable = PrettyTable(["category", "n_box", "n_miss", "AP50_iou",
+    rltTable = PrettyTable(["category", "n_box", "n_miss","miss_ratio", "AP50_iou",
                             "AP50_cls", "AP60_iou", "AP60_cls", "AP70_iou", "AP70_cls"])
     totalRow=copy.deepcopy(cls_info)
     totalRow["name"]="Total"
@@ -356,6 +356,7 @@ def do_precison2(path_pred,path_gt):
         total_inf[ito]["iou_success_all"] =cal_success(total_inf[ito]["ious"])
         total_inf[ito]["cls_success_all"] =cal_success(total_inf[ito]["ious_cls"])
         rltTable.add_row([total_inf[ito]["name"],total_inf[ito]["n_instances"],total_inf[ito]["n_missed"],
+                          str(round(total_inf[ito]["n_missed"]/total_inf[ito]["n_instances"]*100,2))+'%',
                           total_inf[ito]["iou_success_all"][10][1],total_inf[ito]["cls_success_all"][10][1],
                           total_inf[ito]["iou_success_all"][12][1], total_inf[ito]["cls_success_all"][12][1],
                           total_inf[ito]["iou_success_all"][14][1], total_inf[ito]["cls_success_all"][14][1],])
@@ -365,8 +366,9 @@ def do_precison2(path_pred,path_gt):
         totalRow["ious_cls"].extend(total_inf[ito]["ious_cls"])
     totalRow["iou_success_all"]=cal_success(totalRow["ious"])
     totalRow["cls_success_all"] = cal_success(totalRow["ious_cls"])
-    rltTable.add_row(["--------","------","-----","-------","-------","-------","-------","-------","-------",])
+    rltTable.add_row(["----------","------","-----","------","-------","-------","-------","-------","-------","-------",])
     rltTable.add_row([totalRow["name"], totalRow["n_instances"], totalRow["n_missed"],
+                      str(round(totalRow["n_missed"]/totalRow["n_instances"]*100,2))+'%',
                       totalRow["iou_success_all"][10][1], totalRow["cls_success_all"][10][1],
                       totalRow["iou_success_all"][12][1], totalRow["cls_success_all"][12][1],
                       totalRow["iou_success_all"][14][1], totalRow["cls_success_all"][14][1], ])
