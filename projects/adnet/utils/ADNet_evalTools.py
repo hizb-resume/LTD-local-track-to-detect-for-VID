@@ -18,8 +18,8 @@ parser.add_argument('--eval_imgs', default=0, type=int,
                     help='the num of imgs that picked from val.txt, 0 represent all imgs')
 parser.add_argument('--gt_skip', default=5, type=int, help='frame sampling frequency')
 parser.add_argument('--gengt', default=False, type=str2bool, help='generate gt results and save to file')
-parser.add_argument('--doprecision', default=False, type=str2bool, help='run do precision function')
-parser.add_argument('--evalfilepath', default='../datasets/data/ILSVRC-vid-eval-tem-pred.txt', type=str, help='The eval results file')
+parser.add_argument('--doprecision', default=True, type=str2bool, help='run do precision function')
+parser.add_argument('--evalfilepath', default='../datasets/data/ILSVRC-vid-eval-del-pred.txt', type=str, help='The eval results file')
 
 def gen_gt_file(path,args):
     videos_infos,train_videos=get_ILSVRC_eval_infos(args)
@@ -200,8 +200,8 @@ def read_pred_results_info(path_pred):
         tsp = line.split(',')
         for ti in range(4):
             box_inf.append(int(tsp[ti]))
-        box_inf.append(tsp[5])
-        for ti in range(6, 10):
+        box_inf.append(tsp[4])
+        for ti in range(5, 10):
             box_inf.append(float(tsp[ti]))
         if id_vid == -1 and id_frame == -1 and id_track == -1:
             id_vid = box_inf[0]
@@ -451,7 +451,11 @@ def do_precison2(path_pred,path_gt):
                         cls_id = int(vid_classes.class_string_to_comp_code(str(cls_name))) - 1
                         total_inf[cls_id]["ious"].append(iou)
                         total_inf[cls_id]["n_instances"] += 1
-                        total_inf[cls_id]["n_track"] += vids_pred[i]['detortrack'][k][id_bgt]
+                        trackid1=vids_gt[j]['track_id'][l][id_bgt]
+                        for tck2 in range(len(bboxs_pred)):
+                            trackid2=vids_pred[i]['track_id'][k][tck2]
+                            if trackid1==trackid2:
+                                total_inf[cls_id]["n_track"] += vids_pred[i]['detortrack'][k][id_bgt]
                         ious.append(iou)
                         if vids_pred[i]['obj_name'][k][id_iou]==vids_gt[j]['obj_name'][l][id_bgt]:
                             total_inf[cls_id]["ious_cls"].append(iou)
@@ -475,8 +479,12 @@ def do_precison2(path_pred,path_gt):
     for ito in range(len(CLASS_NAMES)):
         total_inf[ito]["iou_success_all"] =cal_success(total_inf[ito]["ious"])
         total_inf[ito]["cls_success_all"] =cal_success(total_inf[ito]["ious_cls"])
+        if total_inf[ito]["n_instances"]==0:
+            ttem='0 %'
+        else:
+            ttem=str(round(total_inf[ito]["n_missed"]/total_inf[ito]["n_instances"]*100,2))+'%'
         rltTable.add_row([total_inf[ito]["name"],total_inf[ito]["n_instances"],total_inf[ito]["n_missed"],
-                          str(round(total_inf[ito]["n_missed"]/total_inf[ito]["n_instances"]*100,2))+'%',
+                          ttem,
                           total_inf[ito]["n_track"],
                           total_inf[ito]["iou_success_all"][10][1],total_inf[ito]["cls_success_all"][10][1],
                           total_inf[ito]["iou_success_all"][12][1], total_inf[ito]["cls_success_all"][12][1],
@@ -489,8 +497,12 @@ def do_precison2(path_pred,path_gt):
     totalRow["iou_success_all"]=cal_success(totalRow["ious"])
     totalRow["cls_success_all"] = cal_success(totalRow["ious_cls"])
     rltTable.add_row(["----------","------","-----","------","-------","------","-------","-------","-------","-------","-------",])
+    if total_inf[ito]["n_instances"]==0:
+        ttem='0 %'
+    else:
+        ttem=str(round(totalRow["n_missed"]/totalRow["n_instances"]*100,2))+'%'
     rltTable.add_row([totalRow["name"], totalRow["n_instances"], totalRow["n_missed"],
-                      str(round(totalRow["n_missed"]/totalRow["n_instances"]*100,2))+'%',
+                      ttem,
                       totalRow["n_track"],
                       totalRow["iou_success_all"][10][1], totalRow["cls_success_all"][10][1],
                       totalRow["iou_success_all"][12][1], totalRow["cls_success_all"][12][1],

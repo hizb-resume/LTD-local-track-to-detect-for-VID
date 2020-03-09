@@ -79,8 +79,11 @@ def cal_success(iou):
     overlap_thresholds = np.arange(0, 1.05, 0.05)
     for overlap_threshold in overlap_thresholds:
         t=[]
-        success = sum(np.array(iou) > overlap_threshold) / len(iou)
-        success=round(success, 4)
+        if len(iou)==0:
+            success=0
+        else:
+            success = sum(np.array(iou) > overlap_threshold) / len(iou)
+            success=round(success, 4)
         t.append(overlap_threshold)
         t.append(success)
         success_all.append(t)
