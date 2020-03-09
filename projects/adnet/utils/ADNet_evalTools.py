@@ -348,10 +348,10 @@ def do_precison2(path_pred,path_gt):
                         # n_miss_pics += 1
                     k += 1
             i+=1
-    rltTable = PrettyTable(["category", "n_instances", "n_missed", "AP50_iou",
+    rltTable = PrettyTable(["category", "n_box", "n_miss", "AP50_iou",
                             "AP50_cls", "AP60_iou", "AP60_cls", "AP70_iou", "AP70_cls"])
     totalRow=copy.deepcopy(cls_info)
-    totalRow["name"]="total"
+    totalRow["name"]="Total"
     for ito in range(len(CLASS_NAMES)):
         total_inf[ito]["iou_success_all"] =cal_success(total_inf[ito]["ious"])
         total_inf[ito]["cls_success_all"] =cal_success(total_inf[ito]["ious_cls"])
@@ -365,22 +365,23 @@ def do_precison2(path_pred,path_gt):
         totalRow["ious_cls"].extend(total_inf[ito]["ious_cls"])
     totalRow["iou_success_all"]=cal_success(totalRow["ious"])
     totalRow["cls_success_all"] = cal_success(totalRow["ious_cls"])
+    rltTable.add_row(["--------","------","-----","-------","-------","-------","-------","-------","-------",])
     rltTable.add_row([totalRow["name"], totalRow["n_instances"], totalRow["n_missed"],
                       totalRow["iou_success_all"][10][1], totalRow["cls_success_all"][10][1],
                       totalRow["iou_success_all"][12][1], totalRow["cls_success_all"][12][1],
                       totalRow["iou_success_all"][14][1], totalRow["cls_success_all"][14][1], ])
     rltTable.align["n_instances"] = "l"
     print(rltTable)
-    iou_success_all=cal_success(ious)
-    cls_success_all = cal_success(ious_cls)
-    print('iou precision(iou>%.2f): %.2f%%.' % (iou_success_all[10][0], (iou_success_all[10][1]) * 100))
-    print('cls precision(iou>%.2f): %.2f%%.' % (cls_success_all[10][0], (cls_success_all[10][1]) * 100))
-    print('iou precision(iou>%.2f): %.2f%%.' % (iou_success_all[12][0], (iou_success_all[12][1]) * 100))
-    print('cls precision(iou>%.2f): %.2f%%.' % (cls_success_all[12][0], (cls_success_all[12][1]) * 100))
-    print('iou precision(iou>%.2f): %.2f%%.'%(iou_success_all[14][0],(iou_success_all[14][1])*100))
-    print('cls precision(iou>%.2f): %.2f%%.'%(cls_success_all[14][0],(cls_success_all[14][1])*100))
-    print('all gt imgs: %d, missed imgs: %d, missed img ratio: %.2f%%.'%(n_all_pics,n_miss_pics,(n_miss_pics/n_all_pics)*100))
-    print('all gt boxes: %d, missed boxess: %d, missed box ratio: %.2f%%.'%(n_all_boxes,n_miss_boxes,(n_miss_boxes/n_all_boxes)*100))
+    # iou_success_all=cal_success(ious)
+    # cls_success_all = cal_success(ious_cls)
+    # print('iou precision(iou>%.2f): %.2f%%.' % (iou_success_all[10][0], (iou_success_all[10][1]) * 100))
+    # print('cls precision(iou>%.2f): %.2f%%.' % (cls_success_all[10][0], (cls_success_all[10][1]) * 100))
+    # print('iou precision(iou>%.2f): %.2f%%.' % (iou_success_all[12][0], (iou_success_all[12][1]) * 100))
+    # print('cls precision(iou>%.2f): %.2f%%.' % (cls_success_all[12][0], (cls_success_all[12][1]) * 100))
+    # print('iou precision(iou>%.2f): %.2f%%.'%(iou_success_all[14][0],(iou_success_all[14][1])*100))
+    # print('cls precision(iou>%.2f): %.2f%%.'%(cls_success_all[14][0],(cls_success_all[14][1])*100))
+    # print('all gt imgs: %d, missed imgs: %d, missed img ratio: %.2f%%.'%(n_all_pics,n_miss_pics,(n_miss_pics/n_all_pics)*100))
+    # print('all gt boxes: %d, missed boxess: %d, missed box ratio: %.2f%%.'%(n_all_boxes,n_miss_boxes,(n_miss_boxes/n_all_boxes)*100))
 
 if __name__ == "__main__":
     args = parser.parse_args()
