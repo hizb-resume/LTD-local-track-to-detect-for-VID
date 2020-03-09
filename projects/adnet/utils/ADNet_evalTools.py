@@ -58,6 +58,7 @@ def gen_pred_file(path,vid_pred):
         out_file.write(str(vid_pred['vid_id']) + ',' +
                        str(vid_pred['frame_id'][ti]) + ',' +
                        str(vid_pred['track_id'][ti]) + ',' +
+                       str(vid_pred['detortrack'][ti]) + ',' +
                        str(vid_pred['obj_name'][ti]) + ',' +
                        '%.2f'%(vid_pred['score_cls'][ti]) + ',' +
                        '%.1f'%(vid_pred['bbox'][ti][0]) + ',' +
@@ -169,6 +170,122 @@ def read_results_info(path_pred):
     pred_file.close()
     return vids_pred
 
+
+def read_pred_results_info(path_pred):
+    vids_pred = []
+    vid_pred = {
+        'vid_id': 0,
+        'frame_id': [],
+        'track_id': [],
+        'detortrack': [],
+        'obj_name': [],
+        'score_cls': [],
+        'bbox': []
+    }
+    img_pred = {
+        'track_id': [],
+        'detortrack': [],
+        'obj_name': [],
+        'score_cls': [],
+        'bbox': []
+    }
+    pred_file = open(path_pred, 'r')
+    list1 = pred_file.readlines()
+    # img_paths = [line.split(',') for line in list1]
+    id_vid = -1
+    id_frame = -1
+    id_track = -1
+    for line in list1:
+        box_inf = []
+        tsp = line.split(',')
+        for ti in range(4):
+            box_inf.append(int(tsp[ti]))
+        box_inf.append(tsp[5])
+        for ti in range(6, 10):
+            box_inf.append(float(tsp[ti]))
+        if id_vid == -1 and id_frame == -1 and id_track == -1:
+            id_vid = box_inf[0]
+            id_frame = box_inf[1]
+            # id_track = box_inf[2]
+            img_pred['track_id'].append(box_inf[2])
+            img_pred['detortrack'].append(box_inf[3])
+            img_pred['obj_name'].append(box_inf[4])
+            img_pred['score_cls'].append(box_inf[5])
+            img_pred['bbox'].append(box_inf[6:])
+            vid_pred['vid_id'] = box_inf[0]
+        else:
+            if id_vid != box_inf[0]:
+                vid_pred['frame_id'].append(id_frame)
+                vid_pred['track_id'].append(img_pred['track_id'])
+                vid_pred['detortrack'].append(img_pred['detortrack'])
+                vid_pred['obj_name'].append(img_pred['obj_name'])
+                vid_pred['score_cls'].append(img_pred['score_cls'])
+                vid_pred['bbox'].append(img_pred['bbox'])
+                vids_pred.append(vid_pred)
+                vid_pred = {
+                    'vid_id': 0,
+                    'frame_id': [],
+                    'track_id': [],
+                    'detortrack': [],
+                    'obj_name': [],
+                    'score_cls': [],
+                    'bbox': []
+                }
+                vid_pred['vid_id'] = box_inf[0]
+                id_vid = box_inf[0]
+                id_frame = box_inf[1]
+                img_pred = {
+                    'track_id': [],
+                    'detortrack': [],
+                    'obj_name': [],
+                    'score_cls': [],
+                    'bbox': []
+                }
+                img_pred['track_id'].append(box_inf[2])
+                img_pred['detortrack'].append(box_inf[3])
+                img_pred['obj_name'].append(box_inf[4])
+                img_pred['score_cls'].append(box_inf[5])
+                img_pred['bbox'].append(box_inf[6:])
+            else:
+                if id_frame != box_inf[1]:
+                    vid_pred['frame_id'].append(id_frame)
+                    vid_pred['track_id'].append(img_pred['track_id'])
+                    vid_pred['detortrack'].append(img_pred['detortrack'])
+                    vid_pred['obj_name'].append(img_pred['obj_name'])
+                    vid_pred['score_cls'].append(img_pred['score_cls'])
+                    vid_pred['bbox'].append(img_pred['bbox'])
+                    id_frame = box_inf[1]
+                    img_pred = {
+                        'track_id': [],
+                        'detortrack': [],
+                        'obj_name': [],
+                        'score_cls': [],
+                        'bbox': []
+                    }
+                    img_pred['track_id'].append(box_inf[2])
+                    img_pred['detortrack'].append(box_inf[3])
+                    img_pred['obj_name'].append(box_inf[4])
+                    img_pred['score_cls'].append(box_inf[5])
+                    img_pred['bbox'].append(box_inf[6:])
+                else:
+                    img_pred['track_id'].append(box_inf[2])
+                    img_pred['detortrack'].append(box_inf[3])
+                    img_pred['obj_name'].append(box_inf[4])
+                    img_pred['score_cls'].append(box_inf[5])
+                    img_pred['bbox'].append(box_inf[6:])
+    vid_pred['frame_id'].append(id_frame)
+    vid_pred['track_id'].append(img_pred['track_id'])
+    vid_pred['detortrack'].append(img_pred['detortrack'])
+    vid_pred['obj_name'].append(img_pred['obj_name'])
+    vid_pred['score_cls'].append(img_pred['score_cls'])
+    vid_pred['bbox'].append(img_pred['bbox'])
+    vids_pred.append(vid_pred)
+    # img_paths.append(box_inf)
+    # img_paths=np.asarray(img_paths)
+    # t1=img_paths[0]
+    pred_file.close()
+    return vids_pred
+
 def maxiou(box,bboxs_pred):
     if len(bboxs_pred)==0:
         return 0,0
@@ -224,7 +341,8 @@ def do_precison2(path_pred,path_gt):
     ]
     ious=[]
     ious_cls=[]
-    vids_pred =read_results_info(path_pred)
+    # vids_pred =read_results_info(path_pred)
+    vids_pred = read_pred_results_info(path_pred)
     vids_gt =read_results_info(path_gt)
     n_all_boxes=0
     n_miss_boxes=0
@@ -234,6 +352,7 @@ def do_precison2(path_pred,path_gt):
         "name":"",
         "n_instances":0,
         "n_missed":0,
+        "n_track": 0,
         "ious":[],
         "ious_cls":[],
         "iou_success_all": [],
@@ -332,6 +451,7 @@ def do_precison2(path_pred,path_gt):
                         cls_id = int(vid_classes.class_string_to_comp_code(str(cls_name))) - 1
                         total_inf[cls_id]["ious"].append(iou)
                         total_inf[cls_id]["n_instances"] += 1
+                        total_inf[cls_id]["n_track"] += vids_pred[i]['detortrack'][k][id_bgt]
                         ious.append(iou)
                         if vids_pred[i]['obj_name'][k][id_iou]==vids_gt[j]['obj_name'][l][id_bgt]:
                             total_inf[cls_id]["ious_cls"].append(iou)
@@ -348,7 +468,7 @@ def do_precison2(path_pred,path_gt):
                         # n_miss_pics += 1
                     k += 1
             i+=1
-    rltTable = PrettyTable(["category", "n_box", "n_miss","miss_ratio", "AP50_iou",
+    rltTable = PrettyTable(["category", "n_box", "n_miss","miss_ratio", "n_track", "AP50_iou",
                             "AP50_cls", "AP60_iou", "AP60_cls", "AP70_iou", "AP70_cls"])
     totalRow=copy.deepcopy(cls_info)
     totalRow["name"]="Total"
@@ -357,18 +477,21 @@ def do_precison2(path_pred,path_gt):
         total_inf[ito]["cls_success_all"] =cal_success(total_inf[ito]["ious_cls"])
         rltTable.add_row([total_inf[ito]["name"],total_inf[ito]["n_instances"],total_inf[ito]["n_missed"],
                           str(round(total_inf[ito]["n_missed"]/total_inf[ito]["n_instances"]*100,2))+'%',
+                          total_inf[ito]["n_track"],
                           total_inf[ito]["iou_success_all"][10][1],total_inf[ito]["cls_success_all"][10][1],
                           total_inf[ito]["iou_success_all"][12][1], total_inf[ito]["cls_success_all"][12][1],
                           total_inf[ito]["iou_success_all"][14][1], total_inf[ito]["cls_success_all"][14][1],])
         totalRow["n_instances"]+=total_inf[ito]["n_instances"]
         totalRow["n_missed"] += total_inf[ito]["n_missed"]
+        totalRow["n_track"] += total_inf[ito]["n_track"]
         totalRow["ious"].extend(total_inf[ito]["ious"])
         totalRow["ious_cls"].extend(total_inf[ito]["ious_cls"])
     totalRow["iou_success_all"]=cal_success(totalRow["ious"])
     totalRow["cls_success_all"] = cal_success(totalRow["ious_cls"])
-    rltTable.add_row(["----------","------","-----","------","-------","-------","-------","-------","-------","-------",])
+    rltTable.add_row(["----------","------","-----","------","-------","------","-------","-------","-------","-------","-------",])
     rltTable.add_row([totalRow["name"], totalRow["n_instances"], totalRow["n_missed"],
                       str(round(totalRow["n_missed"]/totalRow["n_instances"]*100,2))+'%',
+                      totalRow["n_track"],
                       totalRow["iou_success_all"][10][1], totalRow["cls_success_all"][10][1],
                       totalRow["iou_success_all"][12][1], totalRow["cls_success_all"][12][1],
                       totalRow["iou_success_all"][14][1], totalRow["cls_success_all"][14][1], ])

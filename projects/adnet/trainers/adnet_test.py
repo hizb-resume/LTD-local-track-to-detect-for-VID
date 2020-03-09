@@ -129,6 +129,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
         'vid_id':vidx,
         'frame_id':[],
         'track_id':[],
+        'detortrack':[],
         'obj_name':[],
         'score_cls':[],
         'bbox':[]
@@ -323,6 +324,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                     pre_aera_crop.append(t_aera_crop)
             vid_pred['frame_id'].extend(np.full(n_bbox, frame_pred['frame_id']))
             vid_pred['track_id'].extend(frame_pred['track_id'])
+            vid_pred['detortrack'].extend(np.full(n_bbox,0))
             vid_pred['obj_name'].extend(frame_pred['obj_name'])
             vid_pred['bbox'].extend(frame_pred['bbox'])
             vid_pred['score_cls'].extend(frame_pred['score_cls'])
@@ -559,13 +561,17 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                             ts2 = time.time()
                             spend_time['append'] += ts2 - ts1
                             break
+            n_bbox=len(frame_pred['bbox'])
             if is_negative==False:
                 spend_time['track'] += ts_all
                 spend_time['n_track_frames'] += 1
+                vid_pred['detortrack'].extend(np.full(n_bbox, 1))
                 # if args.display_images:
                 #     im_with_bb = display_result(frame, frame_pred['bbox'])  # draw box and display
                 # else:
                 #     im_with_bb = draw_boxes(frame, frame_pred['bbox'])
+            else:
+                vid_pred['detortrack'].extend(np.full(n_bbox, 0))
             ts1=time.time()
             vid_pred['frame_id'].extend(np.full(n_bbox, frame_pred['frame_id']))
             vid_pred['track_id'].extend(frame_pred['track_id'])
