@@ -237,6 +237,25 @@ if __name__ == "__main__":
 
         print("videos nums: %d ." % (v_end_id-v_start_id))
 
+        spend_times = {
+            'predict': 0,
+            'n_predict_frames': 0,
+            'track': 0,
+            'n_track_frames': 0,
+            'readframe': 0,
+            'n_readframe': 0,
+            'append': 0,
+            'n_append': 0,
+            'transform': 0,
+            'n_transform': 0,
+            # 'cuda':0,
+            # 'n_cuda':0,
+            'argmax_after_forward': 0,
+            'n_argmax_after_forward': 0,
+            'do_action': 0,
+            'n_do_action': 0
+        }
+
         t_eval0=time.time()
         # for vidx,vid_folder in enumerate(videos_infos):
         for vidx  in range(v_start_id,v_end_id):
@@ -261,8 +280,24 @@ if __name__ == "__main__":
             # else:
             #     net.load_domain_specific(domain_nets[0])
 
-            vid_pred = adnet_test(net,predictor,siamesenet,metalog,class_names, vidx,vid_folder['img_files'], opts, args)
+            vid_pred,spend_time = adnet_test(net,predictor,siamesenet,metalog,class_names, vidx,vid_folder['img_files'], opts, args)
             gen_pred_file(args.results_file,vid_pred)
+
+            spend_times['predict']+=spend_time['predict']
+            spend_times['n_predict_frames'] += spend_time['n_predict_frames']
+            spend_times['track'] += spend_time['track']
+            spend_times['n_track_frames'] += spend_time['n_track_frames']
+            spend_times['readframe'] += spend_time['readframe']
+            spend_times['n_readframe'] += spend_time['n_readframe']
+            spend_times['append'] += spend_time['append']
+            spend_times['n_append'] += spend_time['n_append']
+            spend_times['transform'] += spend_time['transform']
+            spend_times['n_transform'] += spend_time['n_transform']
+            spend_times['argmax_after_forward'] += spend_time['argmax_after_forward']
+            spend_times['n_argmax_after_forward'] += spend_time['n_argmax_after_forward']
+            spend_times['do_action'] += spend_time['do_action']
+            spend_times['n_do_action'] += spend_time['n_do_action']
+
         #     all_precisions.append(precisions)
         #
         # print(all_precisions)
@@ -272,5 +307,40 @@ if __name__ == "__main__":
         all_h = all_time % 86400 // 3600
         all_m = all_time % 3600 // 60
         all_s = all_time % 60
-        print("eval time cost: %d d %d h %d m %d s ."% (all_d,all_h,all_m,all_s))
+        print("all vids eval time cost: %d d %d h %d m %d s .\n"% (all_d,all_h,all_m,all_s))
+
+        if spend_time['n_predict_frames'] != 0:
+            print("whole predict time: %.2fs, predict frames: %d, average time: %.2fms." % (
+                spend_time['predict'], spend_time['n_predict_frames'],
+                (spend_time['predict'] / spend_time['n_predict_frames']) * 1000))
+        if spend_time['n_track_frames'] != 0:
+            print("whole track time: %.2fs, track frames: %d, average time: %.2fms." % (
+                spend_time['track'], spend_time['n_track_frames'],
+                (spend_time['track'] / spend_time['n_track_frames']) * 1000))
+        if spend_time['n_readframe'] != 0:
+            print("whole readframe time: %.2fs, readframes: %d, average time: %.2fms." % (
+                spend_time['readframe'], spend_time['n_readframe'],
+                (spend_time['readframe'] / spend_time['n_readframe']) * 1000))
+        if spend_time['n_append'] != 0:
+            print("whole append time: %.2fs, n_append: %d, average time: %.2fms." % (
+                spend_time['append'], spend_time['n_append'],
+                (spend_time['append'] / spend_time['n_append']) * 1000))
+        if spend_time['n_transform'] != 0:
+            print("whole transform time: %.2fs, n_transform: %d, average time: %.2fms." % (
+                spend_time['transform'], spend_time['n_transform'],
+                (spend_time['transform'] / spend_time['n_transform']) * 1000))
+        # if spend_time['n_cuda'] != 0:
+        #     print(".cuda time: %.2fs, n_transform call: %d, average time: %.2fms." % (
+        #         spend_time['cuda'], spend_time['n_cuda'],
+        #         (spend_time['cuda'] / spend_time['n_cuda']) * 1000))
+
+        if spend_time['n_argmax_after_forward'] != 0:
+            print("whole argmax_after_forward time: %.2fs, n_argmax_after_forward: %d, average time: %.2fms." % (
+                spend_time['argmax_after_forward'], spend_time['n_argmax_after_forward'],
+                (spend_time['argmax_after_forward'] / spend_time['n_argmax_after_forward']) * 1000))
+        if spend_time['n_do_action'] != 0:
+            print("whole do_action time: %.2fs, n_do_action: %d, average time: %.2fms." % (
+                spend_time['do_action'], spend_time['n_do_action'],
+                (spend_time['do_action'] / spend_time['n_do_action']) * 1000))
+        print('\n')
     

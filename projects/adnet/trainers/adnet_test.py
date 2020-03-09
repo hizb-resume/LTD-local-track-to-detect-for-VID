@@ -758,30 +758,30 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
         print("track time: %.2fs, track frames: %d, average time: %.2fms." % (
             spend_time['track'], spend_time['n_track_frames'],
             (spend_time['track'] / spend_time['n_track_frames']) * 1000))
-    if spend_time['n_readframe']!=0:
-        print("readframe time: %.2fs, readframes: %d, average time: %.2fms." % (
-            spend_time['readframe'], spend_time['n_readframe'],
-            (spend_time['readframe'] / spend_time['n_readframe']) * 1000))
-    if spend_time['n_append']!=0:
-        print("append time: %.2fs, n_append: %d, average time: %.2fms." % (
-            spend_time['append'], spend_time['n_append'],
-            (spend_time['append'] / spend_time['n_append']) * 1000))
-    if spend_time['n_transform']!=0:
-        print("transform time: %.2fs, n_transform: %d, average time: %.2fms." % (
-            spend_time['transform'], spend_time['n_transform'],
-            (spend_time['transform'] / spend_time['n_transform']) * 1000))
+    # if spend_time['n_readframe']!=0:
+    #     print("readframe time: %.2fs, readframes: %d, average time: %.2fms." % (
+    #         spend_time['readframe'], spend_time['n_readframe'],
+    #         (spend_time['readframe'] / spend_time['n_readframe']) * 1000))
+    # if spend_time['n_append']!=0:
+    #     print("append time: %.2fs, n_append: %d, average time: %.2fms." % (
+    #         spend_time['append'], spend_time['n_append'],
+    #         (spend_time['append'] / spend_time['n_append']) * 1000))
+    # if spend_time['n_transform']!=0:
+    #     print("transform time: %.2fs, n_transform: %d, average time: %.2fms." % (
+    #         spend_time['transform'], spend_time['n_transform'],
+    #         (spend_time['transform'] / spend_time['n_transform']) * 1000))
     # if spend_time['n_cuda'] != 0:
     #     print(".cuda time: %.2fs, n_transform call: %d, average time: %.2fms." % (
     #         spend_time['cuda'], spend_time['n_cuda'],
     #         (spend_time['cuda'] / spend_time['n_cuda']) * 1000))
 
-    if spend_time['n_argmax_after_forward']!=0:
-        print("argmax_after_forward time: %.2fs, n_argmax_after_forward: %d, average time: %.2fms." % (
-            spend_time['argmax_after_forward'], spend_time['n_argmax_after_forward'],
-            (spend_time['argmax_after_forward'] / spend_time['n_argmax_after_forward']) * 1000))
-    if spend_time['n_do_action']!=0:
-        print("do_action time: %.2fs, n_do_action: %d, average time: %.2fms." % (
-            spend_time['do_action'], spend_time['n_do_action'],
-            (spend_time['do_action'] / spend_time['n_do_action']) * 1000))
+    # if spend_time['n_argmax_after_forward']!=0:
+    #     print("argmax_after_forward time: %.2fs, n_argmax_after_forward: %d, average time: %.2fms." % (
+    #         spend_time['argmax_after_forward'], spend_time['n_argmax_after_forward'],
+    #         (spend_time['argmax_after_forward'] / spend_time['n_argmax_after_forward']) * 1000))
+    # if spend_time['n_do_action']!=0:
+    #     print("do_action time: %.2fs, n_do_action: %d, average time: %.2fms." % (
+    #         spend_time['do_action'], spend_time['n_do_action'],
+    #         (spend_time['do_action'] / spend_time['n_do_action']) * 1000))
     print('\n')
-    return vid_pred
+    return vid_pred,spend_time
