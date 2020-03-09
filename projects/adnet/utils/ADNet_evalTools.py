@@ -4,7 +4,10 @@ tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 import numpy as np
 from utils.my_util import get_ILSVRC_eval_infos,cal_iou,cal_success
 from utils.overlap_ratio import overlap_ratio
+from utils import vid_classes
 import argparse
+import copy
+from prettytable import PrettyTable
 
 def str2bool(v):
     return v.lower() in ("yes", "true", "t", "1")
@@ -212,6 +215,13 @@ def do_precison(path_pred,path_gt):
     print('cls precision(iou>%.2f): %.2f'%(cls_success_all[14][0],cls_success_all[14][1]))
 
 def do_precison2(path_pred,path_gt):
+    CLASS_NAMES = [
+        'airplane', 'antelope', 'bear', 'bicycle', 'bird', 'bus', 'car',
+        'cattle', 'dog', 'domestic_cat', 'elephant', 'fox', 'giant_panda',
+        'hamster', 'horse', 'lion', 'lizard', 'monkey', 'motorcycle',
+        'rabbit', 'red_panda', 'sheep', 'snake', 'squirrel', 'tiger',
+        'train', 'turtle', 'watercraft', 'whale', 'zebra'
+    ]
     ious=[]
     ious_cls=[]
     vids_pred =read_results_info(path_pred)
@@ -220,13 +230,32 @@ def do_precison2(path_pred,path_gt):
     n_miss_boxes=0
     n_all_pics=0
     n_miss_pics=0
+    cls_info={
+        "name":"",
+        "n_instances":0,
+        "n_missed":0,
+        "ious":[],
+        "ious_cls":[],
+        "iou_success_all": [],
+        "cls_success_all":[]
+    }
+    total_inf=[]
+    for ito in range(len(CLASS_NAMES)):
+        total_inf.append(copy.deepcopy(cls_info))
+        total_inf[ito]["name"]=CLASS_NAMES[ito]
     i = 0
     for j in range(len(vids_gt)):
         idg=vids_gt[j]['vid_id']
         if i>=len(vids_pred):
             for l in range(len(vids_gt[j]['frame_id'])):
                 bboxs_gt = vids_gt[j]['bbox'][l]
-                for _ in range(len(bboxs_gt)):
+                for tid in range(len(bboxs_gt)):
+                    cls_name=vids_gt[j]['obj_name'][l][tid]
+                    cls_id=int(vid_classes.class_string_to_comp_code(str(cls_name)))-1
+                    total_inf[cls_id]["ious"].append(0)
+                    total_inf[cls_id]["ious_cls"].append(0)
+                    total_inf[cls_id]["n_instances"]+=1
+                    total_inf[cls_id]["n_missed"]+=1
                     ious.append(0)
                     ious_cls.append(0)
                     n_all_boxes+=1
@@ -239,7 +268,13 @@ def do_precison2(path_pred,path_gt):
             if idg<vids_pred[i]['vid_id']:
                 for l in range(len(vids_gt[j]['frame_id'])):
                     bboxs_gt = vids_gt[j]['bbox'][l]
-                    for _ in range(len(bboxs_gt)):
+                    for tid in range(len(bboxs_gt)):
+                        cls_name = vids_gt[j]['obj_name'][l][tid]
+                        cls_id = int(vid_classes.class_string_to_comp_code(str(cls_name))) - 1
+                        total_inf[cls_id]["ious"].append(0)
+                        total_inf[cls_id]["ious_cls"].append(0)
+                        total_inf[cls_id]["n_instances"] += 1
+                        total_inf[cls_id]["n_missed"] += 1
                         ious.append(0)
                         ious_cls.append(0)
                         n_all_boxes += 1
@@ -255,7 +290,13 @@ def do_precison2(path_pred,path_gt):
                 idgf=vids_gt[j]['frame_id'][l]
                 if k>=len(vids_pred[i]['frame_id']):
                     bboxs_gt = vids_gt[j]['bbox'][l]
-                    for _ in range(len(bboxs_gt)):
+                    for tid in range(len(bboxs_gt)):
+                        cls_name = vids_gt[j]['obj_name'][l][tid]
+                        cls_id = int(vid_classes.class_string_to_comp_code(str(cls_name))) - 1
+                        total_inf[cls_id]["ious"].append(0)
+                        total_inf[cls_id]["ious_cls"].append(0)
+                        total_inf[cls_id]["n_instances"] += 1
+                        total_inf[cls_id]["n_missed"] += 1
                         ious.append(0)
                         ious_cls.append(0)
                         n_all_boxes += 1
@@ -266,7 +307,13 @@ def do_precison2(path_pred,path_gt):
                 elif idgf !=vids_pred[i]['frame_id'][k]:
                     if idgf < vids_pred[i]['frame_id'][k]:
                         bboxs_gt = vids_gt[j]['bbox'][l]
-                        for _ in range(len(bboxs_gt)):
+                        for tid in range(len(bboxs_gt)):
+                            cls_name = vids_gt[j]['obj_name'][l][tid]
+                            cls_id = int(vid_classes.class_string_to_comp_code(str(cls_name))) - 1
+                            total_inf[cls_id]["ious"].append(0)
+                            total_inf[cls_id]["ious_cls"].append(0)
+                            total_inf[cls_id]["n_instances"] += 1
+                            total_inf[cls_id]["n_missed"] += 1
                             ious.append(0)
                             ious_cls.append(0)
                             n_all_boxes += 1
@@ -281,10 +328,17 @@ def do_precison2(path_pred,path_gt):
                     bboxs_pred= vids_pred[i]['bbox'][k]
                     for id_bgt,box in enumerate(bboxs_gt):
                         id_iou,iou=maxiou(box,bboxs_pred)
+                        cls_name = vids_gt[j]['obj_name'][l][id_bgt]
+                        cls_id = int(vid_classes.class_string_to_comp_code(str(cls_name))) - 1
+                        total_inf[cls_id]["ious"].append(iou)
+                        total_inf[cls_id]["n_instances"] += 1
                         ious.append(iou)
                         if vids_pred[i]['obj_name'][k][id_iou]==vids_gt[j]['obj_name'][l][id_bgt]:
+                            total_inf[cls_id]["ious_cls"].append(iou)
                             ious_cls.append(iou)
                         else:
+                            total_inf[cls_id]["ious_cls"].append(0)
+                            # total_inf[cls_id]["n_missed"] += 1
                             ious_cls.append(0)
                             # print("gt: %s, pred: %s"%(vids_gt[j]['obj_name'][l][id_bgt],vids_pred[i]['obj_name'][k][id_iou]))
                         n_all_boxes += 1
@@ -294,6 +348,29 @@ def do_precison2(path_pred,path_gt):
                         # n_miss_pics += 1
                     k += 1
             i+=1
+    rltTable = PrettyTable(["category", "n_instances", "n_missed", "AP50_iou",
+                            "AP50_cls", "AP60_iou", "AP60_cls", "AP70_iou", "AP70_cls"])
+    totalRow=copy.deepcopy(cls_info)
+    totalRow["name"]="total"
+    for ito in range(len(CLASS_NAMES)):
+        total_inf[ito]["iou_success_all"] =cal_success(total_inf[ito]["ious"])
+        total_inf[ito]["cls_success_all"] =cal_success(total_inf[ito]["ious_cls"])
+        rltTable.add_row([total_inf[ito]["name"],total_inf[ito]["n_instances"],total_inf[ito]["n_missed"],
+                          total_inf[ito]["iou_success_all"][10][1],total_inf[ito]["cls_success_all"][10][1],
+                          total_inf[ito]["iou_success_all"][12][1], total_inf[ito]["cls_success_all"][12][1],
+                          total_inf[ito]["iou_success_all"][14][1], total_inf[ito]["cls_success_all"][14][1],])
+        totalRow["n_instances"]+=total_inf[ito]["n_instances"]
+        totalRow["n_missed"] += total_inf[ito]["n_missed"]
+        totalRow["ious"].extend(total_inf[ito]["ious"])
+        totalRow["ious_cls"].extend(total_inf[ito]["ious_cls"])
+    totalRow["iou_success_all"]=cal_success(totalRow["ious"])
+    totalRow["cls_success_all"] = cal_success(totalRow["ious_cls"])
+    rltTable.add_row([totalRow["name"], totalRow["n_instances"], totalRow["n_missed"],
+                      totalRow["iou_success_all"][10][1], totalRow["cls_success_all"][10][1],
+                      totalRow["iou_success_all"][12][1], totalRow["cls_success_all"][12][1],
+                      totalRow["iou_success_all"][14][1], totalRow["cls_success_all"][14][1], ])
+    rltTable.align["n_instances"] = "l"
+    print(rltTable)
     iou_success_all=cal_success(ious)
     cls_success_all = cal_success(ious_cls)
     print('iou precision(iou>%.2f): %.2f%%.' % (iou_success_all[10][0], (iou_success_all[10][1]) * 100))
