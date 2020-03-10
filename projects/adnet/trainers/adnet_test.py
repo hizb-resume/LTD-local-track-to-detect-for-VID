@@ -24,7 +24,7 @@ import time
 from utils.display import display_result, draw_boxes
 from utils.gen_samples import gen_samples
 from utils.precision_plot import distance_precision_plot, iou_precision_plot
-from utils.my_util import aHash,Hamming_distance
+from utils.my_util import aHash,Hamming_distance,cal_iou
 from random import shuffle
 from tensorboardX import SummaryWriter
 from detectron2.structures import Boxes,RotatedBoxes
@@ -271,6 +271,9 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
     # for frame_idx in range(length):
     sign_redet=False
     dis_redet=0
+    n_trackid=-1
+    obj_area=[]
+    obj_box=[]
     for frame_idx in range(vid_info['nframes']):
     ## for frame_idx, frame_path in enumerate(vid_info['img_files']):
         # frame_idx = idx
@@ -313,15 +316,59 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
             pre_aera_crop = []
             ts1=time.time()
             n_bbox=len(boxes)
-            for i_d in range(n_bbox):
-                frame_pred['track_id'].append(i_d)
-                frame_pred['obj_name'].append(classes[i_d])
-                frame_pred['bbox'].append(boxes[i_d])
-                frame_pred['score_cls'].append(scores[i_d])
-                if args.useSiamese:
-                    t_aera, t_aera_crop,_ = transform3(frame, boxes[i_d])
-                    pre_aera.append(t_aera)
-                    pre_aera_crop.append(t_aera_crop)
+            if frame_idx==0:
+                for i_d in range(n_bbox):
+                    n_trackid+=1
+                    frame_pred['track_id'].append(n_trackid)
+                    frame_pred['obj_name'].append(classes[i_d])
+                    frame_pred['bbox'].append(boxes[i_d])
+                    frame_pred['score_cls'].append(scores[i_d])
+                    if args.useSiamese or args.checktrackid:
+                        t_aera, t_aera_crop,_ = transform3(frame, boxes[i_d])
+                        if args.useSiamese:
+                            pre_aera.append(t_aera)
+                            pre_aera_crop.append(t_aera_crop)
+                        if args.checktrackid:
+                            obj_area.append(t_aera)
+                            obj_box.append(boxes[i_d])
+            else:
+                for i_d in range(n_bbox):
+                    if args.useSiamese or args.checktrackid:
+                        t_aera, t_aera_crop,_ = transform3(frame, boxes[i_d])
+                        if args.useSiamese:
+                            pre_aera.append(t_aera)
+                            pre_aera_crop.append(t_aera_crop)
+                        if args.checktrackid:
+                            # calculate the id of the box with the highest similarity
+                            # if thred of the highest similarity is higher than 0.9,
+                            # n_trackid +1
+                            maxid=0
+                            maxdistance=9999
+                            for nt in len(obj_area):
+                                output1, output2 = siamesenet(Variable(t_aera).cuda(), Variable(obj_area[nt]).cuda())
+                                euclidean_distance = F.pairwise_distance(output1, output2)
+                                if euclidean_distance<maxdistance:
+                                    maxdistance=euclidean_distance
+                                    maxid=nt
+                            if maxdistance>args.siam_thred and cal_iou(boxes[i_d],obj_box[maxid])<0.6:
+                                n_trackid += 1
+                                obj_area.append(t_aera)
+                                obj_box.append(boxes[i_d])
+                                frame_pred['track_id'].append(n_trackid)
+                            else:
+                                frame_pred['track_id'].append(maxid)
+                        else:
+                            # n_trackid_t=i_d
+                            frame_pred['track_id'].append(i_d)
+                            # obj_area.append(t_aera)
+                    else:
+                        frame_pred['track_id'].append(i_d)
+                    # n_trackid+=1
+                    # frame_pred['track_id'].append(n_trackid_t)
+                    frame_pred['obj_name'].append(classes[i_d])
+                    frame_pred['bbox'].append(boxes[i_d])
+                    frame_pred['score_cls'].append(scores[i_d])
+
             vid_pred['frame_id'].extend(np.full(n_bbox, frame_pred['frame_id']))
             vid_pred['track_id'].extend(frame_pred['track_id'])
             vid_pred['detortrack'].extend(np.full(n_bbox,0))
@@ -461,14 +508,41 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                     ts1=time.time()
                     n_bbox = len(boxes)
                     for i_d in range(n_bbox):
-                        frame_pred['track_id'].append(i_d)
+                        if args.useSiamese or args.checktrackid:
+                            t_aera, t_aera_crop, _ = transform3(frame, boxes[i_d])
+                            if args.useSiamese:
+                                pre_aera.append(t_aera)
+                                pre_aera_crop.append(t_aera_crop)
+                            if args.checktrackid:
+                                # calculate the id of the box with the highest similarity
+                                # if thred of the highest similarity is higher than 0.9,
+                                # n_trackid +1
+                                maxid = 0
+                                maxdistance = 9999
+                                for nt in len(obj_area):
+                                    output1, output2 = siamesenet(Variable(t_aera).cuda(),
+                                                                  Variable(obj_area[nt]).cuda())
+                                    euclidean_distance = F.pairwise_distance(output1, output2)
+                                    if euclidean_distance < maxdistance:
+                                        maxdistance = euclidean_distance
+                                        maxid = nt
+                                if maxdistance > args.siam_thred and cal_iou(boxes[i_d], obj_box[maxid]) < 0.6:
+                                    n_trackid += 1
+                                    obj_area.append(t_aera)
+                                    obj_box.append(boxes[i_d])
+                                    frame_pred['track_id'].append(n_trackid)
+                                else:
+                                    frame_pred['track_id'].append(maxid)
+                            else:
+                                # n_trackid_t=i_d
+                                frame_pred['track_id'].append(i_d)
+                                # obj_area.append(t_aera)
+                        else:
+                            frame_pred['track_id'].append(i_d)
                         frame_pred['obj_name'].append(classes[i_d])
                         frame_pred['bbox'].append(boxes[i_d])
                         frame_pred['score_cls'].append(scores[i_d])
-                        if args.useSiamese:
-                            t_aera,t_aera_crop, _ = transform3(frame, boxes[i_d])
-                            pre_aera.append(t_aera)
-                            pre_aera_crop.append(t_aera_crop)
+
                     ts2=time.time()
                     spend_time['append'] += ts2 - ts1
                     # vid_pred['frame_id'].extend(np.full(n_bbox, frame_pred['frame_id']))
@@ -551,13 +625,37 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                             ts1 = time.time()
                             n_bbox = len(boxes)
                             for i_d in range(n_bbox):
-                                frame_pred['track_id'].append(i_d)
-                                frame_pred['obj_name'].append(classes[i_d])
-                                frame_pred['bbox'].append(boxes[i_d])
-                                frame_pred['score_cls'].append(scores[i_d])
                                 t_aera, t_aera_crop, _ = transform3(frame, boxes[i_d])
                                 pre_aera.append(t_aera)
                                 pre_aera_crop.append(t_aera_crop)
+                                if args.checktrackid:
+                                    # calculate the id of the box with the highest similarity
+                                    # if thred of the highest similarity is higher than 0.9,
+                                    # n_trackid +1
+                                    maxid = 0
+                                    maxdistance = 9999
+                                    for nt in len(obj_area):
+                                        output1, output2 = siamesenet(Variable(t_aera).cuda(),
+                                                                      Variable(obj_area[nt]).cuda())
+                                        euclidean_distance = F.pairwise_distance(output1, output2)
+                                        if euclidean_distance < maxdistance:
+                                            maxdistance = euclidean_distance
+                                            maxid = nt
+                                    if maxdistance > args.siam_thred and cal_iou(boxes[i_d], obj_box[maxid]) < 0.6:
+                                        n_trackid += 1
+                                        obj_area.append(t_aera)
+                                        obj_box.append(boxes[i_d])
+                                        frame_pred['track_id'].append(n_trackid)
+                                    else:
+                                        frame_pred['track_id'].append(maxid)
+                                else:
+                                    # n_trackid_t=i_d
+                                    frame_pred['track_id'].append(i_d)
+                                # frame_pred['track_id'].append(i_d)
+                                frame_pred['obj_name'].append(classes[i_d])
+                                frame_pred['bbox'].append(boxes[i_d])
+                                frame_pred['score_cls'].append(scores[i_d])
+
                             ts2 = time.time()
                             spend_time['append'] += ts2 - ts1
                             break
