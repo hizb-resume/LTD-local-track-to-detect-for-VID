@@ -344,7 +344,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                             # n_trackid +1
                             maxid=0
                             maxdistance=9999
-                            for nt in len(obj_area):
+                            for nt in range(len(obj_area)):
                                 output1, output2 = siamesenet(Variable(t_aera).cuda(), Variable(obj_area[nt]).cuda())
                                 euclidean_distance = F.pairwise_distance(output1, output2)
                                 if euclidean_distance<maxdistance:
@@ -519,7 +519,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                                 # n_trackid +1
                                 maxid = 0
                                 maxdistance = 9999
-                                for nt in len(obj_area):
+                                for nt in range(len(obj_area)):
                                     output1, output2 = siamesenet(Variable(t_aera).cuda(),
                                                                   Variable(obj_area[nt]).cuda())
                                     euclidean_distance = F.pairwise_distance(output1, output2)
@@ -634,7 +634,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                                     # n_trackid +1
                                     maxid = 0
                                     maxdistance = 9999
-                                    for nt in len(obj_area):
+                                    for nt in range(len(obj_area)):
                                         output1, output2 = siamesenet(Variable(t_aera).cuda(),
                                                                       Variable(obj_area[nt]).cuda())
                                         euclidean_distance = F.pairwise_distance(output1, output2)
