@@ -359,6 +359,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                                 frame_pred['track_id'].append(n_trackid)
                             else:
                                 frame_pred['track_id'].append(maxid)
+                                obj_box[maxid]=boxes[i_d]
                         else:
                             # n_trackid_t=i_d
                             frame_pred['track_id'].append(i_d)
@@ -535,6 +536,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                                     frame_pred['track_id'].append(n_trackid)
                                 else:
                                     frame_pred['track_id'].append(maxid)
+                                    obj_box[maxid] = boxes[i_d]
                             else:
                                 # n_trackid_t=i_d
                                 frame_pred['track_id'].append(i_d)
@@ -651,6 +653,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                                         frame_pred['track_id'].append(n_trackid)
                                     else:
                                         frame_pred['track_id'].append(maxid)
+                                        obj_box[maxid] = boxes[i_d]
                                 else:
                                     # n_trackid_t=i_d
                                     frame_pred['track_id'].append(i_d)
@@ -662,6 +665,9 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                             ts2 = time.time()
                             spend_time['append'] += ts2 - ts1
                             break
+                        else:
+                            if args.checktrackid:
+                                obj_box[frame_pred['track_id'][t_id]] = curr_bbox
             n_bbox=len(frame_pred['bbox'])
             if is_negative==False:
                 spend_time['track'] += ts_all
