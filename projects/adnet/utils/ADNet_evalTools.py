@@ -42,9 +42,12 @@ def gen_gt_file(path,args):
     out_file.close()
 
 
-def gen_pred_file(path,vid_pred):
+def gen_pred_file(path,vid_pred,isstart):
     # out_file = open('%s-pred.txt' % path, 'w')
-    out_file = open('%s-pred.txt' % path, 'a')
+    if isstart:
+        out_file = open('%s-pred.txt' % path, 'w')
+    else:
+        out_file = open('%s-pred.txt' % path, 'a')
     for ti in range(len(vid_pred['bbox'])):
         # out_file.write(str(vid_pred['vid_id']) + ',' +
         #                str(vid_pred['frame_id'][ti]) + ',' +
@@ -455,7 +458,7 @@ def do_precison2(path_pred,path_gt):
                         for tck2 in range(len(bboxs_pred)):
                             trackid2=vids_pred[i]['track_id'][k][tck2]
                             if trackid1==trackid2:
-                                total_inf[cls_id]["n_track"] += vids_pred[i]['detortrack'][k][id_bgt]
+                                total_inf[cls_id]["n_track"] += vids_pred[i]['detortrack'][k][tck2]
                         ious.append(iou)
                         if vids_pred[i]['obj_name'][k][id_iou]==vids_gt[j]['obj_name'][l][id_bgt]:
                             total_inf[cls_id]["ious_cls"].append(iou)

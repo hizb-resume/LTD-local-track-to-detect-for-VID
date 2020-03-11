@@ -282,7 +282,8 @@ if __name__ == "__main__":
             #     net.load_domain_specific(domain_nets[0])
 
             vid_pred,spend_time = adnet_test(net,predictor,siamesenet,metalog,class_names, vidx,vid_folder['img_files'], opts, args)
-            gen_pred_file(args.results_file,vid_pred)
+            isstart=vidx==v_start_id
+            gen_pred_file(args.results_file,vid_pred,isstart)
 
             spend_times['predict']+=spend_time['predict']
             spend_times['n_predict_frames'] += spend_time['n_predict_frames']
