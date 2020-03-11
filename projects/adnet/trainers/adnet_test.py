@@ -316,7 +316,8 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
             pre_aera_crop = []
             ts1=time.time()
             n_bbox=len(boxes)
-            if frame_idx==0:
+            # if frame_idx==0:
+            if n_trackid==-1:
                 for i_d in range(n_bbox):
                     n_trackid+=1
                     frame_pred['track_id'].append(n_trackid)
@@ -350,6 +351,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                                 if euclidean_distance<maxdistance:
                                     maxdistance=euclidean_distance
                                     maxid=nt
+                            # print(maxid,len(obj_box))
                             if maxdistance>args.siam_thred and cal_iou(boxes[i_d],obj_box[maxid])<0.6:
                                 n_trackid += 1
                                 obj_area.append(t_aera)
@@ -641,6 +643,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                                         if euclidean_distance < maxdistance:
                                             maxdistance = euclidean_distance
                                             maxid = nt
+                                    # print("maxdistance: %.2f, iou: %.2f."%(maxdistance,cal_iou(boxes[i_d], obj_box[maxid])))
                                     if maxdistance > args.siam_thred and cal_iou(boxes[i_d], obj_box[maxid]) < 0.6:
                                         n_trackid += 1
                                         obj_area.append(t_aera)
