@@ -222,12 +222,12 @@ def _create_text_labels2(classes, scores,trackids, class_names):
     if scores is not None:
         if labels is None:
             if trackids is not None:
-                labels = ["trackid:{} {:.0f}%".format(t,s * 100) for t,s in zip(trackids,scores)]
+                labels = ["objectid:{} {:.0f}%".format(t,s * 100) for t,s in zip(trackids,scores)]
             else:
                 labels = ["{:.0f}%".format(s * 100) for s in scores]
         else:
             if trackids is not None:
-                labels = ["{} trackid:{} {:.0f}%".format(l,t, s * 100) for l,t, s in zip(labels,trackids, scores)]
+                labels = ["{},objectid:{},{:.0f}%".format(l,t, s * 100) for l,t, s in zip(labels,trackids, scores)]
             else:
                 labels = ["{} {:.0f}%".format(l, s * 100) for l, s in zip(labels, scores)]
     return labels
