@@ -694,6 +694,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                 outputs={
                     "pred_boxes":boxes,
                     "scores":frame_pred['score_cls'],
+                    "trackids":frame_pred['track_id'],
                     "pred_classes":frame_pred['obj_name']
                 }
                 v = Visualizer(frame[:, :, ::-1], metalog, scale=1.2)
@@ -713,6 +714,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                 outputs={
                     "pred_boxes":boxes,
                     "scores":frame_pred['score_cls'],
+                    "trackids": frame_pred['track_id'],
                     "pred_classes":frame_pred['obj_name']
                 }
                 v = Visualizer(frame[:, :, ::-1], metalog, scale=1.2)
