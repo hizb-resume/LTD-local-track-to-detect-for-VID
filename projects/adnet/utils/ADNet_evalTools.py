@@ -19,7 +19,7 @@ parser.add_argument('--eval_imgs', default=0, type=int,
 parser.add_argument('--gt_skip', default=5, type=int, help='frame sampling frequency')
 parser.add_argument('--gengt', default=False, type=str2bool, help='generate gt results and save to file')
 parser.add_argument('--doprecision', default=True, type=str2bool, help='run do precision function')
-parser.add_argument('--evalfilepath', default='../datasets/data/ILSVRC-vid-eval-del-pred.txt', type=str, help='The eval results file')
+parser.add_argument('--evalfilepath', default='../datasets/data/ILSVRC-vid-eval-delete-pred.txt', type=str, help='The eval results file')
 
 def gen_gt_file(path,args):
     videos_infos,train_videos=get_ILSVRC_eval_infos(args)
@@ -599,14 +599,15 @@ def do_precison3(path_pred,path_gt):
         "cls_success_all":[]
     }
     total_inf=[]
+
+    gt_counter_per_class = [0]*len(CLASS_NAMES)
     tpfp_info = []
-    gt_counter_per_class = []
     for ito in range(len(CLASS_NAMES)):
-        total_inf.append(copy.deepcopy(cls_info))
-        total_inf[ito]["name"]=CLASS_NAMES[ito]
+        # total_inf.append(copy.deepcopy(cls_info))
+        # total_inf[ito]["name"]=CLASS_NAMES[ito]
         tpfp_info.append([])
-        gt_counter_per_class.append(0)
-    gt_counter_per_class=[]
+        # gt_counter_per_class.append([0])
+    # gt_counter_per_class=[]
     for ti in range(len(vids_gt)):
         for tj in range(len(vids_gt[ti]['obj_name'])):
             for tk in range(len(vids_gt[ti]['obj_name'][tj])):
