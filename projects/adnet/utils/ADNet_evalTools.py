@@ -634,6 +634,7 @@ def do_precison3(path_pred,path_gt):
                 cls_id = int(vid_classes.class_string_to_comp_code(str(cls_name))) - 1
                 if iou>args.iou_thred and vids_pred[i]['obj_name'][k][id_bpre]==vids_gt[j]['obj_name'][l][id_iou]:
                     tpfp_info[cls_id].append({"confidence": vids_pred[i]['score_cls'][k][id_bpre], "tp": 1, "fp": 0})
+                    bboxs_gt.remove(bboxs_gt[id_iou])
                 else:
                     tpfp_info[cls_id].append({"confidence": vids_pred[i]['score_cls'][k][id_bpre], "tp": 0, "fp": 1})
     sum_AP = 0.0
@@ -675,7 +676,7 @@ def do_precison3(path_pred,path_gt):
     for ito in range(len(CLASS_NAMES)):
         rltTable.add_row([CLASS_NAMES[ito],gt_counter_per_class[ito],ap[ito],])
         n_all_gt+=gt_counter_per_class[ito]
-    rltTable.add_row(["----------","------","-------",])
+    rltTable.add_row(["----------","------","--------------",])
 
     rltTable.add_row(["Total", n_all_gt, mAP, ])
     rltTable.align["n_gtbox"] = "l"
