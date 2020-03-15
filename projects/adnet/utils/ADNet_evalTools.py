@@ -629,10 +629,19 @@ def do_precison3(path_pred,path_gt):
             bboxs_gt=vids_gt[j]['bbox'][l]
             bboxs_pred= vids_pred[i]['bbox'][k]
             for id_bpre, box in enumerate(bboxs_pred):
-                id_iou, iou = maxiou(box, bboxs_gt)
-                cls_name = vids_gt[j]['obj_name'][l][id_iou]
+                iou=0
+                id_iou=-1
+                for id_obj,obj_gt in enumerate(bboxs_gt):
+                    if vids_pred[i]['obj_name'][k][id_bpre]==vids_gt[j]['obj_name'][l][id_obj]:
+                        tiou=cal_iou(box, obj_gt)
+                        if tiou>iou:
+                            iou=tiou
+                            id_iou=id_obj
+                # id_iou, iou = maxiou(box, bboxs_gt)
+                # cls_name = vids_gt[j]['obj_name'][l][id_iou]
+                cls_name = vids_pred[i]['obj_name'][k][id_bpre]
                 cls_id = int(vid_classes.class_string_to_comp_code(str(cls_name))) - 1
-                if iou>args.iou_thred and vids_pred[i]['obj_name'][k][id_bpre]==vids_gt[j]['obj_name'][l][id_iou]:
+                if iou>args.iou_thred:
                     tpfp_info[cls_id].append({"confidence": vids_pred[i]['score_cls'][k][id_bpre], "tp": 1, "fp": 0})
                     bboxs_gt.remove(bboxs_gt[id_iou])
                 else:
