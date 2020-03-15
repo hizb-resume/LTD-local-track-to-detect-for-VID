@@ -19,6 +19,7 @@ parser.add_argument('--eval_imgs', default=0, type=int,
 parser.add_argument('--gt_skip', default=5, type=int, help='frame sampling frequency')
 parser.add_argument('--gengt', default=False, type=str2bool, help='generate gt results and save to file')
 parser.add_argument('--doprecision', default=True, type=str2bool, help='run do precision function')
+parser.add_argument('--iou_thred', default=0.7, type=float, help='iou thred')
 parser.add_argument('--evalfilepath', default='../datasets/data/ILSVRC-vid-eval-delete-pred.txt', type=str, help='The eval results file')
 
 def gen_gt_file(path,args):
@@ -631,7 +632,7 @@ def do_precison3(path_pred,path_gt):
                 id_iou, iou = maxiou(box, bboxs_gt)
                 cls_name = vids_gt[j]['obj_name'][l][id_iou]
                 cls_id = int(vid_classes.class_string_to_comp_code(str(cls_name))) - 1
-                if iou>0.5 and vids_pred[i]['obj_name'][k][id_bpre]==vids_gt[j]['obj_name'][l][id_iou]:
+                if iou>args.iou_thred and vids_pred[i]['obj_name'][k][id_bpre]==vids_gt[j]['obj_name'][l][id_iou]:
                     tpfp_info[cls_id].append({"confidence": vids_pred[i]['score_cls'][k][id_bpre], "tp": 1, "fp": 0})
                 else:
                     tpfp_info[cls_id].append({"confidence": vids_pred[i]['score_cls'][k][id_bpre], "tp": 0, "fp": 1})
