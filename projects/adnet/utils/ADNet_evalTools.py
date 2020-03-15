@@ -523,9 +523,165 @@ def do_precison2(path_pred,path_gt):
     # print('all gt imgs: %d, missed imgs: %d, missed img ratio: %.2f%%.'%(n_all_pics,n_miss_pics,(n_miss_pics/n_all_pics)*100))
     # print('all gt boxes: %d, missed boxess: %d, missed box ratio: %.2f%%.'%(n_all_boxes,n_miss_boxes,(n_miss_boxes/n_all_boxes)*100))
 
+def voc_ap(rec, prec):
+    """
+    --- Official matlab code VOC2012---
+    mrec=[0 ; rec ; 1];
+    mpre=[0 ; prec ; 0];
+    for i=numel(mpre)-1:-1:1
+            mpre(i)=max(mpre(i),mpre(i+1));
+    end
+    i=find(mrec(2:end)~=mrec(1:end-1))+1;
+    ap=sum((mrec(i)-mrec(i-1)).*mpre(i));
+    """
+    rec.insert(0, 0.0) # insert 0.0 at begining of list
+    rec.append(1.0) # insert 1.0 at end of list
+    mrec = rec[:]
+    prec.insert(0, 0.0) # insert 0.0 at begining of list
+    prec.append(0.0) # insert 0.0 at end of list
+    mpre = prec[:]
+    """
+     This part makes the precision monotonically decreasing
+        (goes from the end to the beginning)
+        matlab: for i=numel(mpre)-1:-1:1
+                    mpre(i)=max(mpre(i),mpre(i+1));
+    """
+    # matlab indexes start in 1 but python in 0, so I have to do:
+    #     range(start=(len(mpre) - 2), end=0, step=-1)
+    # also the python function range excludes the end, resulting in:
+    #     range(start=(len(mpre) - 2), end=-1, step=-1)
+    for i in range(len(mpre)-2, -1, -1):
+        mpre[i] = max(mpre[i], mpre[i+1])
+    """
+     This part creates a list of indexes where the recall changes
+        matlab: i=find(mrec(2:end)~=mrec(1:end-1))+1;
+    """
+    i_list = []
+    for i in range(1, len(mrec)):
+        if mrec[i] != mrec[i-1]:
+            i_list.append(i) # if it was matlab would be i + 1
+    """
+     The Average Precision (AP) is the area under the curve
+        (numerical integration)
+        matlab: ap=sum((mrec(i)-mrec(i-1)).*mpre(i));
+    """
+    ap = 0.0
+    for i in i_list:
+        ap += ((mrec[i]-mrec[i-1])*mpre[i])
+    return ap, mrec, mpre
+
+def do_precison3(path_pred,path_gt):
+    #https://github.com/Cartucho/mAP
+    CLASS_NAMES = [
+        'airplane', 'antelope', 'bear', 'bicycle', 'bird', 'bus', 'car',
+        'cattle', 'dog', 'domestic_cat', 'elephant', 'fox', 'giant_panda',
+        'hamster', 'horse', 'lion', 'lizard', 'monkey', 'motorcycle',
+        'rabbit', 'red_panda', 'sheep', 'snake', 'squirrel', 'tiger',
+        'train', 'turtle', 'watercraft', 'whale', 'zebra'
+    ]
+    ious=[]
+    ious_cls=[]
+    # vids_pred =read_results_info(path_pred)
+    vids_pred = read_pred_results_info(path_pred)
+    vids_gt =read_results_info(path_gt)
+    n_all_boxes=0
+    n_miss_boxes=0
+    n_all_pics=0
+    n_miss_pics=0
+    cls_info={
+        "name":"",
+        "n_instances":0,
+        "n_missed":0,
+        "n_track": 0,
+        "ious":[],
+        "ious_cls":[],
+        "iou_success_all": [],
+        "cls_success_all":[]
+    }
+    total_inf=[]
+    tpfp_info = []
+    gt_counter_per_class = []
+    for ito in range(len(CLASS_NAMES)):
+        total_inf.append(copy.deepcopy(cls_info))
+        total_inf[ito]["name"]=CLASS_NAMES[ito]
+        tpfp_info.append([])
+        gt_counter_per_class.append(0)
+    gt_counter_per_class=[]
+    for ti in range(len(vids_gt)):
+        for tj in range(len(vids_gt[ti]['obj_name'])):
+            for tk in range(len(vids_gt[ti]['obj_name'][tj])):
+                cls_name = vids_gt[ti]['obj_name'][tj][tk]
+                cls_id = int(vid_classes.class_string_to_comp_code(str(cls_name))) - 1
+                gt_counter_per_class[cls_id]+=1
+    j = 0
+    for i in range(len(vids_pred)):
+        idv = vids_pred[i]['vid_id']
+        while idv != vids_gt[j]['vid_id']:
+            # print("i_pred: %d, vid_id_pred: %d; j_gt: %d, vid_id_gt: %d."%(i,idv,j,vids_gt[j]['vid_id']))
+            j += 1
+        l = 0
+        for k in range(len(vids_pred[i]['frame_id'])):
+            idf = vids_pred[i]['frame_id'][k]
+            while idf != vids_gt[j]['frame_id'][l]:
+                l += 1
+            bboxs_gt=vids_gt[j]['bbox'][l]
+            bboxs_pred= vids_pred[i]['bbox'][k]
+            for id_bpre, box in enumerate(bboxs_pred):
+                id_iou, iou = maxiou(box, bboxs_gt)
+                cls_name = vids_gt[j]['obj_name'][l][id_iou]
+                cls_id = int(vid_classes.class_string_to_comp_code(str(cls_name))) - 1
+                if iou>0.5 and vids_pred[i]['obj_name'][k][id_bpre]==vids_gt[j]['obj_name'][l][id_iou]:
+                    tpfp_info[cls_id].append({"confidence": vids_pred[i]['score_cls'][k][id_bpre], "tp": 1, "fp": 0})
+                else:
+                    tpfp_info[cls_id].append({"confidence": vids_pred[i]['score_cls'][k][id_bpre], "tp": 0, "fp": 1})
+    sum_AP = 0.0
+    ap=[]
+    for ito in range(len(CLASS_NAMES)):
+        tpfp_info[ito].sort(key=lambda x: float(x['confidence']), reverse=True)
+        # compute precision/recall
+        tp=[]
+        fp=[]
+        cumsum1 = 0
+        cumsum2 = 0
+        for idx in range(len(tpfp_info[ito])):
+            # temval=tpfp_info[ito][idx]
+            # val1=temval["tp"]
+            # val2=temval["fp"]
+            val1 = tpfp_info[ito][idx]["tp"]
+            val2 = tpfp_info[ito][idx]["fp"]
+            tpfp_info[ito][idx]["tp"]+=cumsum1
+            tp.append(tpfp_info[ito][idx]["tp"])
+            tpfp_info[ito][idx]["fp"]+=cumsum2
+            fp.append(tpfp_info[ito][idx]["fp"])
+            cumsum1+=val1
+            cumsum2 += val2
+        rec = tp[:]
+        for idx, val in enumerate(tp):
+            rec[idx] = float(tp[idx]) / gt_counter_per_class[ito]
+        # print(rec)
+        prec = tp[:]
+        for idx, val in enumerate(tp):
+            prec[idx] = float(tp[idx]) / (fp[idx] + tp[idx])
+        apt, mrec, mprec = voc_ap(rec[:], prec[:])
+        ap.append(apt)
+        sum_AP += apt
+    mAP = sum_AP / len(CLASS_NAMES)
+
+    rltTable = PrettyTable(["category", "n_gtbox","AP"])
+    totalRow=copy.deepcopy(cls_info)
+    n_all_gt=0
+    for ito in range(len(CLASS_NAMES)):
+        rltTable.add_row([CLASS_NAMES[ito],gt_counter_per_class[ito],ap[ito],])
+        n_all_gt+=gt_counter_per_class[ito]
+    rltTable.add_row(["----------","------","-------",])
+
+    rltTable.add_row(["Total", n_all_gt, mAP, ])
+    rltTable.align["n_gtbox"] = "l"
+    print(rltTable)
+
 if __name__ == "__main__":
     args = parser.parse_args()
     if args.gengt:
         gen_gt_file('../datasets/data/ILSVRC-vid-eval',args)
     if args.doprecision:
-        do_precison2(args.evalfilepath,'../datasets/data/ILSVRC-vid-eval-gt.txt')
+        do_precison3(args.evalfilepath,'../datasets/data/ILSVRC-vid-eval-gt.txt')
