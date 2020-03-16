@@ -645,7 +645,7 @@ def do_precison3(path_pred, path_gt):
                     cls_name = vids_pred[i]['obj_name'][k][id_bpre]
                     cls_id = int(vid_classes.class_string_to_comp_code(str(cls_name))) - 1
                     tpfp_info[cls_id].append({"confidence": vids_pred[i]['score_cls'][k][id_bpre], "tp": 0, "fp": 1})
-                    print(vids_pred[i]['score_cls'][k][id_bpre])
+                    # print(vids_pred[i]['score_cls'][k][id_bpre])
                 continue
             else:
                 while idf > vids_gt[j]['frame_id'][l]:
@@ -659,7 +659,7 @@ def do_precison3(path_pred, path_gt):
                     cls_name = vids_pred[i]['obj_name'][k][id_bpre]
                     cls_id = int(vid_classes.class_string_to_comp_code(str(cls_name))) - 1
                     tpfp_info[cls_id].append({"confidence": vids_pred[i]['score_cls'][k][id_bpre], "tp": 0, "fp": 1})
-                    print(vids_pred[i]['score_cls'][k][id_bpre])
+                    # print(vids_pred[i]['score_cls'][k][id_bpre])
                 continue
             bboxs_gt = vids_gt[j]['bbox'][l]
             bboxs_pred = vids_pred[i]['bbox'][k]
