@@ -23,13 +23,15 @@ parser.add_argument('--gt_skip', default=5, type=int, help='frame sampling frequ
 parser.add_argument('--gengt', default=False, type=str2bool, help='generate gt results and save to file')
 parser.add_argument('--doprecision', default=True, type=str2bool, help='run do precision function')
 parser.add_argument('--iou_thred', default=0.7, type=float, help='iou thred')
+parser.add_argument('--evalgtpath', default='../datasets/data/ILSVRC-vid-eval-gt-skip5.txt', type=str,
+                    help='The eval gt file')
 parser.add_argument('--evalfilepath', default='../datasets/data/ILSVRC-vid-eval-delete-pred.txt', type=str,
                     help='The eval results file')
 
 
 def gen_gt_file(path, args):
     videos_infos, train_videos = get_ILSVRC_eval_infos(args)
-    out_file = open('%s-gt.txt' % path, 'w')
+    out_file = open('%s-gt-skip%d.txt' % (path,args.gt_skip), 'w')
     for tj in range(len(videos_infos)):
         # for tj in range(10):
         for ti in range(len(videos_infos[tj]['gt'])):
@@ -724,4 +726,4 @@ if __name__ == "__main__":
     if args.gengt:
         gen_gt_file('../datasets/data/ILSVRC-vid-eval', args)
     if args.doprecision:
-        do_precison3(args.evalfilepath, '../datasets/data/ILSVRC-vid-eval-gt.txt')
+        do_precison3(args.evalfilepath, args.evalgtpath)
