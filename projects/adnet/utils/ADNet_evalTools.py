@@ -637,13 +637,36 @@ def do_precison3(path_pred, path_gt):
         l = 0
         for k in range(len(vids_pred[i]['frame_id'])):
             idf = vids_pred[i]['frame_id'][k]
-            while idf != vids_gt[j]['frame_id'][l]:
-                l += 1
+            # while idf != vids_gt[j]['frame_id'][l]:
+            #     l += 1
+            if l>= len(vids_gt[j]['frame_id']):
+                bboxs_pred = vids_pred[i]['bbox'][k]
+                for id_bpre, box in enumerate(bboxs_pred):
+                    cls_name = vids_pred[i]['obj_name'][k][id_bpre]
+                    cls_id = int(vid_classes.class_string_to_comp_code(str(cls_name))) - 1
+                    tpfp_info[cls_id].append({"confidence": vids_pred[i]['score_cls'][k][id_bpre], "tp": 0, "fp": 1})
+                    print(vids_pred[i]['score_cls'][k][id_bpre])
+                continue
+            else:
+                while idf > vids_gt[j]['frame_id'][l]:
+                # print(idv,idf,k,vids_gt[j]['frame_id'][l],l)
+                    l += 1
+                    if l>= len(vids_gt[j]['frame_id']):
+                        break
+            if l>= len(vids_gt[j]['frame_id']) or idf<vids_gt[j]['frame_id'][l]:
+                bboxs_pred = vids_pred[i]['bbox'][k]
+                for id_bpre, box in enumerate(bboxs_pred):
+                    cls_name = vids_pred[i]['obj_name'][k][id_bpre]
+                    cls_id = int(vid_classes.class_string_to_comp_code(str(cls_name))) - 1
+                    tpfp_info[cls_id].append({"confidence": vids_pred[i]['score_cls'][k][id_bpre], "tp": 0, "fp": 1})
+                    print(vids_pred[i]['score_cls'][k][id_bpre])
+                continue
             bboxs_gt = vids_gt[j]['bbox'][l]
             bboxs_pred = vids_pred[i]['bbox'][k]
             for id_bpre, box in enumerate(bboxs_pred):
                 id_iou, iou = maxiou(box, bboxs_gt)
-                cls_name = vids_gt[j]['obj_name'][l][id_iou]
+                # cls_name = vids_gt[j]['obj_name'][l][id_iou]
+                cls_name = vids_pred[i]['obj_name'][k][id_bpre]
                 cls_id = int(vid_classes.class_string_to_comp_code(str(cls_name))) - 1
                 if iou > args.iou_thred and vids_pred[i]['obj_name'][k][id_bpre] == vids_gt[j]['obj_name'][l][id_iou]:
                     tpfp_info[cls_id].append({"confidence": vids_pred[i]['score_cls'][k][id_bpre], "tp": 1, "fp": 0})
