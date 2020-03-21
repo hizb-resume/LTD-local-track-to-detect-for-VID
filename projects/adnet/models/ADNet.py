@@ -82,6 +82,14 @@ class ADNetDomainSpecific(nn.Module):
 
         pass
 
+class testStructure(nn.Module):
+    def __init__(self, base_network):
+        super(testStructure,self).__init__()
+        self.base_network = base_network
+
+    def forward(self, x):
+        x = self.base_network(x)
+        return x
 
 class ADNet(nn.Module):
 
@@ -95,7 +103,8 @@ class ADNet(nn.Module):
 
         self.base_network = base_network
         self.fc4_5 = nn.Sequential(
-            nn.Linear(18432, 512),  # TODO: (slightly different from paper): nn.Linear(4608, 512),  # [0]
+            # nn.Linear(18432, 512),  # TODO: (slightly different from paper): nn.Linear(4608, 512),  # [0]
+            nn.Linear(4608, 512),
             nn.ReLU(),
             nn.Dropout(0.5),
             nn.Linear(512, 512),  # [3]
@@ -277,11 +286,13 @@ def adnet(opts, base_network='vggm', trained_file=None, random_initialize_domain
 
     if base_network == 'vggm':
         base_network = vggm()  # by default, load vggm's weights too
-        base_network = base_network.features[0:10]
+        # base_network = base_network.features[0:10]
+        base_network = base_network.features[0:15]
 
     else:  # change this part if adding more base network variant
         base_network = vggm()
-        base_network = base_network.features[0:10]
+        # base_network = base_network.features[0:10]
+        base_network = base_network.features[0:15]
 
     if trained_file:
         assert num_classes == settings['num_classes'], \
@@ -334,7 +345,8 @@ def adnet(opts, base_network='vggm', trained_file=None, random_initialize_domain
 if __name__ == "__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     base_network = vggm()
-    base_network = base_network.features[0:10]
+    base_network = base_network.features[0:15]
+    # model = testStructure(base_network=base_network).to(device)
     model = ADNet(base_network=base_network, opts=None).to(device)
 
     summary(model, (3, 112, 112))
