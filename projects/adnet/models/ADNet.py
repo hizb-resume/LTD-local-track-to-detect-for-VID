@@ -12,6 +12,7 @@ import os
 from utils.get_action_history_onehot import get_action_history_onehot
 
 from models.vggm import vggm
+from torchsummary import summary
 
 __all__ = ['vggm']
 
@@ -329,3 +330,11 @@ def adnet(opts, base_network='vggm', trained_file=None, random_initialize_domain
             domain_nets[idx].fc7.bias.data.fill_(0)
 
     return adnet_model, domain_nets
+
+if __name__ == "__main__":
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    base_network = vggm()
+    base_network = base_network.features[0:10]
+    model = ADNet(base_network=base_network, opts=None).to(device)
+
+    summary(model, (3, 112, 112))
