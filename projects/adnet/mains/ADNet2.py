@@ -1,4 +1,4 @@
-import _init_pathsD
+import _init_paths
 import tensorflow as tf
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 from trainers.adnet_train_sl import adnet_train_sl
