@@ -41,15 +41,15 @@ def str2bool(v):
 
 parser = argparse.ArgumentParser(
     description='ADNet eval')
-parser.add_argument('--weight_file', default='weights/ADNet_SL_epoch14_final.pth', type=str, help='The pretrained weight file')
+parser.add_argument('--weight_file', default='weights2/ADNet_SL_epoch24_10000.pth', type=str, help='The pretrained weight file')
 parser.add_argument('--weight_detector', default='../datasets/tem/train_output/model_0599999.pth', type=str, help='The pretrained weight file of detector')
 parser.add_argument('--weight_siamese', default='siameseWeight2/SiameseNet_epoch19_final.pth', type=str, help='The pretrained weight file of siamesenet')
-parser.add_argument('--results_file', default='../datasets/data/ILSVRC-vid-eval-tem', type=str, help='The eval results file')
+parser.add_argument('--results_file', default='../datasets/data/ILSVRC-vid-eval-delete', type=str, help='The eval results file')
 parser.add_argument('--v_start_id', default=0, type=int, help='The start no of eval videos')
 parser.add_argument('--v_end_id', default=0, type=int, help='The end no of eval videos')
 parser.add_argument('--track', default=True, type=str2bool, help='track between detect')
 parser.add_argument('--siam_thred', default=0.9, type=float, help='similarity thred between frames')
-parser.add_argument('--eval_imgs', default=0, type=int, help='the num of imgs that picked from val.txt, 0 represent all imgs')
+parser.add_argument('--eval_imgs', default=1000, type=int, help='the num of imgs that picked from val.txt, 0 represent all imgs')
 parser.add_argument('--gt_skip', default=5, type=int, help='frame sampling frequency')
 parser.add_argument('--test1vid', default=False, type=str2bool, help='only test 1 video')
 parser.add_argument('--useSiamese', default=True, type=str2bool, help='use siamese or not')

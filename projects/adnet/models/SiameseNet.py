@@ -14,6 +14,7 @@ import torch.nn as nn
 from torch import optim
 import torch.nn.functional as F
 import os
+from torchsummary import summary
 
 class SiameseNetwork(nn.Module):
     def __init__(self):
@@ -114,3 +115,10 @@ class ContrastiveLoss(torch.nn.Module):
 
 
         return loss_contrastive
+
+
+if __name__ == "__main__":
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = SiameseNetwork().to(device)
+
+    summary(model, [(1, 100, 100), (1, 100, 100)])
