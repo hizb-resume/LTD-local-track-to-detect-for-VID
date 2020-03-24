@@ -408,7 +408,8 @@ def process_data_ILSVR_consecutive_frame(img_paths, opt, train_db_pos_neg_all, l
                             train_db_pos_neg['score_labels'].extend(list(np.ones(1, dtype=int)))
                             train_db_pos_neg['score_labels'].extend(list(np.zeros(1, dtype=int)))
 
-            if len(train_db_pos_neg['bboxes']) >0:
+            # if len(train_db_pos_neg['bboxes']) >0:
+            if len(train_db_pos_neg['bboxes']) == 2*max_dis:
                 train_db_pos_neg_gpu.append(train_db_pos_neg)
     try:
         lock.acquire()
