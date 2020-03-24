@@ -383,7 +383,7 @@ def process_data_ILSVR_consecutive_frame(img_paths, opt, train_db_pos_neg_all, l
     for train_i in img_paths:
         n_frames=len(train_i['gt'])
         max_dis=10
-        for i in range(n_frames-1,-1,-1):
+        for i in range(n_frames-1,0,-1):
             train_db_pos_neg = {
                 'img_path': train_i['img_files'][i],
                 'bboxes': [],
@@ -398,8 +398,8 @@ def process_data_ILSVR_consecutive_frame(img_paths, opt, train_db_pos_neg_all, l
                         if train_i['trackid'][j][k]==train_i['trackid'][i][l]:
                             pos_neg_box=train_i['gt'][j][k]
                             gt_bbox=train_i['gt'][i][l]
-                            train_db_pos_neg['bboxes'].extend(pos_neg_box)
-                            train_db_pos_neg['bboxes'].extend(pos_neg_box)
+                            train_db_pos_neg['bboxes'].append(pos_neg_box)
+                            train_db_pos_neg['bboxes'].append(pos_neg_box)
                             action_label_pos,action_label_neg=gen_action_pos_neg_labels(opts['num_actions'], opts, np.array(pos_neg_box), gt_bbox)
                             action_label_pos = np.transpose(action_label_pos).tolist()
                             action_label_neg = np.transpose(action_label_neg).tolist()

@@ -64,7 +64,7 @@ def gen_action_pos_neg_labels(num_actions, opts, bb_samples, gt_bbox):
     action_labels_neg = np.zeros([num_actions, num_samples])
     m = opts['action_move']
 
-    for j in range(len(bb_samples)):
+    for j in range(num_samples):
         # bbox = bb_samples[j, :]
         bbox = bb_samples
 
