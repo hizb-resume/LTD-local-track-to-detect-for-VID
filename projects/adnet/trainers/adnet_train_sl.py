@@ -42,7 +42,7 @@ def adnet_train_sl(args, opts):
         os.makedirs(args.save_folder)
 
     if args.visualize:
-        writer = SummaryWriter(log_dir=os.path.join('tensorboardx_log', args.save_file))
+        writer = SummaryWriter(log_dir=os.path.join(args.tensorlogdir, args.save_file))
 
 
     print('generating Supervised Learning dataset..')
@@ -54,12 +54,12 @@ def adnet_train_sl(args, opts):
         mean = np.array(opts['means'], dtype=np.float32)
         mean = torch.from_numpy(mean).cuda()
         # datasets_pos, datasets_neg = initialize_pos_neg_dataset(train_videos,opts, transform=ADNet_Augmentation(opts),multidomain=args.multidomain)
-        datasets_pos_neg = initialize_pos_neg_dataset(train_videos, opts, transform=ADNet_Augmentation2(opts,mean),multidomain=args.multidomain)
+        datasets_pos_neg = initialize_pos_neg_dataset(train_videos, opts,args, transform=ADNet_Augmentation2(opts,mean),multidomain=args.multidomain)
     else:
         opts['num_videos'] = len(train_videos['video_names'])
         number_domain = opts['num_videos']
         # datasets_pos, datasets_neg = initialize_pos_neg_dataset(train_videos, opts, transform=ADNet_Augmentation(opts),multidomain=args.multidomain)
-        datasets_pos_neg = initialize_pos_neg_dataset(train_videos, opts, transform=ADNet_Augmentation(opts),multidomain=args.multidomain)
+        datasets_pos_neg = initialize_pos_neg_dataset(train_videos, opts, args,transform=ADNet_Augmentation(opts),multidomain=args.multidomain)
 
         # dataset = SLDataset(train_videos, opts, transform=
 

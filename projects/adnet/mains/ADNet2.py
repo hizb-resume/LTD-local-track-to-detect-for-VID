@@ -28,7 +28,9 @@ parser.add_argument('--cuda', default=True, type=str2bool, help='Use cuda to tra
 parser.add_argument('--gamma', default=0.1, type=float, help='Gamma update for SGD')
 parser.add_argument('--visualize', default=True, type=str2bool, help='Use tensorboardx to for loss visualization')
 parser.add_argument('--send_images_to_visualization', type=str2bool, default=False, help='Sample a random image from each 10th batch, send it to visdom after augmentations step')
-parser.add_argument('--save_folder', default='weights2', help='Location to save checkpoint models')
+parser.add_argument('--save_folder', default='weights_del', help='Location to save checkpoint models')
+parser.add_argument('--tensorlogdir', default='tensorboardx_log_del', help='Location to save tensorboardx_log')
+parser.add_argument('--train_consecutive', default=False, type=str2bool, help='Whether to train consecutive frames')
 
 parser.add_argument('--save_file', default='ADNet_SL_', type=str, help='save file part of file name for SL')
 parser.add_argument('--save_file_RL', default='ADNet_RL_', type=str, help='save file part of file name for RL')

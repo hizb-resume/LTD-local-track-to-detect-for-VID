@@ -11,6 +11,7 @@ import torch
 import torch.utils.data as data
 from datasets.get_train_dbs import get_train_dbs
 from datasets.get_train_dbs import get_train_dbs_ILSVR
+from datasets.get_train_dbs import get_train_dbs_ILSVR_consecutive_frame
 from utils.get_video_infos import get_video_infos
 
 
@@ -68,7 +69,7 @@ class SLDataset(data.Dataset):
         return action_label, score_label
 
 
-def initialize_pos_neg_dataset(train_videos, opts, transform=None, multidomain=True):
+def initialize_pos_neg_dataset(train_videos, opts,args, transform=None, multidomain=True):
     """
     Return list of pos and list of neg dataset for each domain.
     Args:
@@ -109,7 +110,10 @@ def initialize_pos_neg_dataset(train_videos, opts, transform=None, multidomain=T
         if train_videos == None:
             print("generating dataset from ILSVR dataset...")
             # train_db_pos_, train_db_neg_ = get_train_dbs_ILSVR(opts)
-            train_db_pos_neg_ = get_train_dbs_ILSVR(opts)
+            if args.train_consecutive:
+                train_db_pos_neg_ = get_train_dbs_ILSVR_consecutive_frame(opts)
+            else:
+                train_db_pos_neg_ = get_train_dbs_ILSVR(opts)
         else:
             # print("generating dataset from video " + str(vid_idx + 1) + "/" + str(num_videos) +
             #   "(current total data (pos-neg): " + str(len(train_db_pos['labels'])) +
