@@ -12,6 +12,7 @@ import argparse
 from utils.gen_samples import gen_samples
 from utils.overlap_ratio import overlap_ratio
 from utils.gen_action_labels import gen_action_labels
+from utils.gen_action_labels import gen_action_pos_neg_labels
 from utils.my_util import get_xml_box_label
 from utils.my_util import get_xml_img_size
 from utils.my_util import get_xml_img_info
@@ -379,96 +380,35 @@ def get_train_dbs_ILSVR(opts):
 def process_data_ILSVR_consecutive_frame(img_paths, opt, train_db_pos_neg_all, lock):
     opts=opt.copy()
     train_db_pos_neg_gpu = []
-    # train_db_neg_gpu = []
     for train_i in img_paths:
-        train_db_pos_ = {
-            'img_path': '',
-            'bboxes': [],
-            'labels': [],
-            'score_labels': []
-        }
-        train_db_neg_ = {
-            'img_path': '',
-            'bboxes': [],
-            'labels': [],
-            'score_labels': []
-        }
-        # train_i['gt']=[ti for ti in train_i['gt'] if len(ti)>0]
         n_frames=len(train_i['gt'])
         max_dis=10
-        pos_examples = []
-        neg_examples = []
         for i in range(n_frames-1,-1,-1):
             train_db_pos_neg = {
-                'img_path': '',
+                'img_path': train_i['img_files'][i],
                 'bboxes': [],
                 'labels': [],
                 'score_labels': []
             }
-            pos =[]
             for j in range(i-1,i-max_dis-1,-1):
                 if j<0:
                     break
+                for k in range(len(train_i['trackid'][j])):
+                    for l in range(len(train_i['trackid'][i])):
+                        if train_i['trackid'][j][k]==train_i['trackid'][i][l]:
+                            pos_neg_box=train_i['gt'][j][k]
+                            gt_bbox=train_i['gt'][i][l]
+                            train_db_pos_neg['bboxes'].extend(pos_neg_box)
+                            train_db_pos_neg['bboxes'].extend(pos_neg_box)
+                            action_label_pos,action_label_neg=gen_action_pos_neg_labels(opts['num_actions'], opts, np.array(pos_neg_box), gt_bbox)
+                            action_label_pos = np.transpose(action_label_pos).tolist()
+                            action_label_neg = np.transpose(action_label_neg).tolist()
+                            train_db_pos_neg['labels'].extend(action_label_pos)
+                            train_db_pos_neg['labels'].extend(action_label_neg)
+                            train_db_pos_neg['score_labels'].extend(list(np.ones(1, dtype=int)))
+                            train_db_pos_neg['score_labels'].extend(list(np.zeros(1, dtype=int)))
 
-                pos.append(train_i['gt'][j][trackid])
-                action_labels_pos = gen_action_labels(opts['num_actions'], opts, np.array(pos_examples), gt_bbox)
-
-        gt_file_path='../datasets/data/ILSVRC/Annotations/VID/train/'+train_i+'.xml'
-        imginfo=get_xml_img_info(gt_file_path)
-        gt_bboxs=imginfo['gts']
-        opts['imgSize'] =imginfo['imgsize']
-        img_path = '../datasets/data/ILSVRC/Data/VID/train/' + train_i + '.JPEG'
-        for gt_bbox in gt_bboxs:
-            train_db_pos_neg = {
-                'img_path': '',
-                'bboxes': [],
-                'labels': [],
-                'score_labels': []
-            }
-            pos_examples = []
-            while len(pos_examples) < opts['nPos_train']:
-                pos = gen_samples('gaussian', gt_bbox, opts['nPos_train']*5, opts, 0.1, 5)
-                r = overlap_ratio(pos, np.matlib.repmat(gt_bbox, len(pos), 1))
-                pos = pos[np.array(r) > opts['posThre_train']]
-                if len(pos) == 0:
-                    #continue
-                    break
-                pos = pos[np.random.randint(low=0, high=len(pos),
-                                            size=min(len(pos), opts['nPos_train']-len(pos_examples))), :]
-                pos_examples.extend(pos)
-
-            neg_examples = []
-            while len(neg_examples) < opts['nNeg_train']:
-                # in original code, this 1 line below use opts['nPos_train'] instead of opts['nNeg_train']
-                neg = gen_samples('gaussian', gt_bbox, opts['nNeg_train']*5, opts, 2, 10)
-                r = overlap_ratio(neg, np.matlib.repmat(gt_bbox, len(neg), 1))
-                neg = neg[np.array(r) < opts['negThre_train']]
-                if len(neg) == 0:
-                    #continue
-                    break
-                neg = neg[np.random.randint(low=0, high=len(neg),
-                                            size=min(len(neg), opts['nNeg_train']-len(neg_examples))), :]
-                neg_examples.extend(neg)
-
-            action_labels_pos = gen_action_labels(opts['num_actions'], opts, np.array(pos_examples), gt_bbox)
-            action_labels_neg = np.full((opts['num_actions'], len(neg_examples)), fill_value=-1)
-
-            action_labels_pos = np.transpose(action_labels_pos).tolist()
-            action_labels_neg = np.transpose(action_labels_neg).tolist()
-
-            train_db_pos_neg['bboxes'].extend(pos_examples)
-            train_db_pos_neg['labels'].extend(action_labels_pos)
-            # score labels: 1 is positive. 0 is negative
-            train_db_pos_neg['score_labels'].extend(list(np.ones(len(pos_examples), dtype=int)))
-
-            train_db_pos_neg['bboxes'].extend(neg_examples)
-            train_db_pos_neg['labels'].extend(action_labels_neg)
-            # score labels: 1 is positive. 0 is negative
-            train_db_pos_neg['score_labels'].extend(list(np.zeros(len(neg_examples), dtype=int)))
-
-            train_db_pos_neg['img_path'] = img_path
-
-            if len(train_db_pos_neg['bboxes']) == (opts['nPos_train']+ opts['nNeg_train']):
+            if len(train_db_pos_neg['bboxes']) >0:
                 train_db_pos_neg_gpu.append(train_db_pos_neg)
     try:
         lock.acquire()
