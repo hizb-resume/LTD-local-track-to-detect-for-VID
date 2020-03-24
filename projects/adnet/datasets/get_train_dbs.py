@@ -433,9 +433,9 @@ def get_train_dbs_ILSVR_consecutive_frame(opts):
     parser.add_argument('--eval_imgs', default=0, type=int,
                         help='the num of imgs that picked from val.txt, 0 represent all imgs')
     parser.add_argument('--gt_skip', default=1, type=int, help='frame sampling frequency')
-    args = parser.parse_args()
+    args2 = parser.parse_args(['--eval_imgs','0','--gt_skip','1'])
 
-    videos_infos, _ = get_ILSVRC_eval_infos(args)
+    videos_infos, _ = get_ILSVRC_eval_infos(args2)
 
     #train_sequences = list(range(0, vid_info['nframes'], gt_skip))
 
