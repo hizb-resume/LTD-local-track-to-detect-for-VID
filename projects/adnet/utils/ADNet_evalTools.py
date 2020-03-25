@@ -17,12 +17,12 @@ def str2bool(v):
 
 parser = argparse.ArgumentParser(
     description='gen_gt_file')
-parser.add_argument('--gengt', default=False, type=str2bool, help='generate gt results and save to file')
+parser.add_argument('--gengt', default=True, type=str2bool, help='generate gt results and save to file')
 parser.add_argument('--eval_imgs', default=0, type=int,
                     help='the num of imgs that picked from val.txt, 0 represent all imgs')
 parser.add_argument('--gt_skip', default=5, type=int, help='frame sampling frequency')
 parser.add_argument('--dataset_year', default=2015, type=int, help='dataset version, like ILSVRC2015, ILSVRC2017')
-parser.add_argument('--doprecision', default=True, type=str2bool, help='run do precision function')
+parser.add_argument('--doprecision', default=False, type=str2bool, help='run do precision function')
 parser.add_argument('--iou_thred', default=0.7, type=float, help='iou thred')
 parser.add_argument('--evalgtpath', default='../datasets/data/ILSVRC-vid-eval-gt-skip5.txt', type=str,
                     help='The eval gt file')
@@ -44,23 +44,23 @@ def gen_gt_file(path, args):
         # for tj in range(10):
         for ti in range(len(videos_infos[tj]['gt'])):
             for tk in range(len(videos_infos[tj]['gt'][ti])):
-                # if tj==31 and ti==66:
+                # if tj==1 and ti==63:
                 #     print("debug")
                 if ti==0:
-                    cls_motion_iou=0
-                elif no_previous(videos_infos[tj]['trackid'][ti-1],tk):
-                    cls_motion_iou = 0
+                    motion_iou=1
+                elif no_previous(videos_infos[tj]['trackid'][ti-1],videos_infos[tj]['trackid'][ti][tk]):
+                    motion_iou = 1
                 else:
-                    motion_IoU=cal_iou(videos_infos[tj]['gt'][ti-1][tk],videos_infos[tj]['gt'][ti][tk])
-                    if motion_IoU>0.9:
-                        #slow
-                        cls_motion_iou = 0
-                    elif motion_IoU<0.7:
-                        #fast
-                        cls_motion_iou = 2
-                    else:
-                        #medium
-                        cls_motion_iou = 1
+                    motion_iou=cal_iou(videos_infos[tj]['gt'][ti-1][tk],videos_infos[tj]['gt'][ti][tk])
+                    # if motion_IoU>0.9:
+                    #     #slow
+                    #     cls_motion_iou = 0
+                    # elif motion_IoU<0.7:
+                    #     #fast
+                    #     cls_motion_iou = 2
+                    # else:
+                    #     #medium
+                    #     cls_motion_iou = 1
 
                 out_file.write(str(tj) + ',' +
                                str(ti) + ',' +
@@ -71,7 +71,7 @@ def gen_gt_file(path, args):
                                str(videos_infos[tj]['gt'][ti][tk][1]) + ',' +
                                str(videos_infos[tj]['gt'][ti][tk][2]) + ',' +
                                str(videos_infos[tj]['gt'][ti][tk][3]) + ',' +
-                               str(cls_motion_iou) +'\n')
+                               '%.2f' % (motion_iou) +'\n')
     out_file.close()
 
 
