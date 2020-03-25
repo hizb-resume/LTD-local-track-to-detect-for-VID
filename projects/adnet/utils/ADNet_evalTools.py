@@ -28,6 +28,13 @@ parser.add_argument('--evalgtpath', default='../datasets/data/ILSVRC-vid-eval-gt
 parser.add_argument('--evalfilepath', default='../datasets/data/ILSVRC-vid-eval-delete-pred.txt', type=str,
                     help='The eval results file')
 
+def no_previous(frame_inf,tk):
+    if len(frame_inf)==0:
+        return True
+    for pre_tk in frame_inf:
+        if pre_tk==tk:
+            return False
+    return True
 
 def gen_gt_file(path, args):
     videos_infos, train_videos = get_ILSVRC_eval_infos(args)
@@ -38,6 +45,22 @@ def gen_gt_file(path, args):
             for tk in range(len(videos_infos[tj]['gt'][ti])):
                 # if tj==31 and ti==66:
                 #     print("debug")
+                if ti==0:
+                    cls_motion_iou=0
+                elif no_previous(videos_infos[tj]['trackid'][ti-1],tk):
+                    cls_motion_iou = 0
+                else:
+                    motion_IoU=cal_iou(videos_infos[tj]['gt'][ti-1][tk],videos_infos[tj]['gt'][ti][tk])
+                    if motion_IoU>0.9:
+                        #slow
+                        cls_motion_iou = 0
+                    elif motion_IoU<0.7:
+                        #fast
+                        cls_motion_iou = 2
+                    else:
+                        #medium
+                        cls_motion_iou = 1
+
                 out_file.write(str(tj) + ',' +
                                str(ti) + ',' +
                                str(videos_infos[tj]['trackid'][ti][tk]) + ',' +
@@ -46,7 +69,8 @@ def gen_gt_file(path, args):
                                str(videos_infos[tj]['gt'][ti][tk][0]) + ',' +
                                str(videos_infos[tj]['gt'][ti][tk][1]) + ',' +
                                str(videos_infos[tj]['gt'][ti][tk][2]) + ',' +
-                               str(videos_infos[tj]['gt'][ti][tk][3]) + '\n')
+                               str(videos_infos[tj]['gt'][ti][tk][3]) + ',' +
+                               str(cls_motion_iou) +'\n')
     out_file.close()
 
 
@@ -87,13 +111,15 @@ def read_results_info(path_pred):
         'track_id': [],
         'obj_name': [],
         'score_cls': [],
-        'bbox': []
+        'bbox': [],
+        'motion_iou_cls': []
     }
     img_pred = {
         'track_id': [],
         'obj_name': [],
         'score_cls': [],
-        'bbox': []
+        'bbox': [],
+        'motion_iou_cls':[]
     }
     pred_file = open(path_pred, 'r')
     list1 = pred_file.readlines()
@@ -109,22 +135,27 @@ def read_results_info(path_pred):
         box_inf.append(tsp[3])
         for ti in range(4, 9):
             box_inf.append(float(tsp[ti]))
+        box_inf.append(int(tsp[9])) #motion_iou_cls
         if id_vid == -1 and id_frame == -1 and id_track == -1:
+            #first video, first frame, first object
             id_vid = box_inf[0]
             id_frame = box_inf[1]
             # id_track = box_inf[2]
             img_pred['track_id'].append(box_inf[2])
             img_pred['obj_name'].append(box_inf[3])
             img_pred['score_cls'].append(box_inf[4])
-            img_pred['bbox'].append(box_inf[5:])
+            img_pred['bbox'].append(box_inf[5:9])
+            img_pred['motion_iou_cls'].append(box_inf[9])
             vid_pred['vid_id'] = box_inf[0]
         else:
             if id_vid != box_inf[0]:
+                #just finish a video
                 vid_pred['frame_id'].append(id_frame)
                 vid_pred['track_id'].append(img_pred['track_id'])
                 vid_pred['obj_name'].append(img_pred['obj_name'])
                 vid_pred['score_cls'].append(img_pred['score_cls'])
                 vid_pred['bbox'].append(img_pred['bbox'])
+                vid_pred['motion_iou_cls'].append(img_pred['motion_iou_cls'])
                 vids_pred.append(vid_pred)
                 vid_pred = {
                     'vid_id': 0,
@@ -132,7 +163,8 @@ def read_results_info(path_pred):
                     'track_id': [],
                     'obj_name': [],
                     'score_cls': [],
-                    'bbox': []
+                    'bbox': [],
+                    'motion_iou_cls': []
                 }
                 vid_pred['vid_id'] = box_inf[0]
                 id_vid = box_inf[0]
@@ -141,40 +173,49 @@ def read_results_info(path_pred):
                     'track_id': [],
                     'obj_name': [],
                     'score_cls': [],
-                    'bbox': []
+                    'bbox': [],
+                    'motion_iou_cls': []
                 }
                 img_pred['track_id'].append(box_inf[2])
                 img_pred['obj_name'].append(box_inf[3])
                 img_pred['score_cls'].append(box_inf[4])
-                img_pred['bbox'].append(box_inf[5:])
+                img_pred['bbox'].append(box_inf[5:9])
+                img_pred['motion_iou_cls'].append(box_inf[9])
             else:
                 if id_frame != box_inf[1]:
+                    #just finish a frame
                     vid_pred['frame_id'].append(id_frame)
                     vid_pred['track_id'].append(img_pred['track_id'])
                     vid_pred['obj_name'].append(img_pred['obj_name'])
                     vid_pred['score_cls'].append(img_pred['score_cls'])
                     vid_pred['bbox'].append(img_pred['bbox'])
+                    vid_pred['motion_iou_cls'].append(img_pred['motion_iou_cls'])
                     id_frame = box_inf[1]
                     img_pred = {
                         'track_id': [],
                         'obj_name': [],
                         'score_cls': [],
-                        'bbox': []
+                        'bbox': [],
+                        'motion_iou_cls': []
                     }
                     img_pred['track_id'].append(box_inf[2])
                     img_pred['obj_name'].append(box_inf[3])
                     img_pred['score_cls'].append(box_inf[4])
-                    img_pred['bbox'].append(box_inf[5:])
+                    img_pred['bbox'].append(box_inf[5:9])
+                    img_pred['motion_iou_cls'].append(box_inf[9])
                 else:
+                    #same video, same frame, diffenert object
                     img_pred['track_id'].append(box_inf[2])
                     img_pred['obj_name'].append(box_inf[3])
                     img_pred['score_cls'].append(box_inf[4])
-                    img_pred['bbox'].append(box_inf[5:])
+                    img_pred['bbox'].append(box_inf[5:9])
+                    img_pred['motion_iou_cls'].append(box_inf[9])
     vid_pred['frame_id'].append(id_frame)
     vid_pred['track_id'].append(img_pred['track_id'])
     vid_pred['obj_name'].append(img_pred['obj_name'])
     vid_pred['score_cls'].append(img_pred['score_cls'])
     vid_pred['bbox'].append(img_pred['bbox'])
+    vid_pred['motion_iou_cls'].append(img_pred['motion_iou_cls'])
     vids_pred.append(vid_pred)
     # img_paths.append(box_inf)
     # img_paths=np.asarray(img_paths)
