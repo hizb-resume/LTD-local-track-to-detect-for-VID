@@ -51,6 +51,7 @@ parser.add_argument('--track', default=True, type=str2bool, help='track between 
 parser.add_argument('--siam_thred', default=0.9, type=float, help='similarity thred between frames')
 parser.add_argument('--eval_imgs', default=1000, type=int, help='the num of imgs that picked from val.txt, 0 represent all imgs')
 parser.add_argument('--gt_skip', default=5, type=int, help='frame sampling frequency')
+parser.add_argument('--dataset_year', default=2015, type=int, help='dataset version, like ILSVRC2015, ILSVRC2017')
 parser.add_argument('--test1vid', default=False, type=str2bool, help='only test 1 video')
 parser.add_argument('--useSiamese', default=True, type=str2bool, help='use siamese or not')
 parser.add_argument('--checktrackid', default=False, type=str2bool, help='if objects in different frames are the same instance, trackid should be same too')

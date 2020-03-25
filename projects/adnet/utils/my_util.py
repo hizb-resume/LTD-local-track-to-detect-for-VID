@@ -186,7 +186,15 @@ def get_ILSVRC_eval_infos(args):
         'nframes':0
     }
     # last_video_full=True
-    train_img_info_file = os.path.join('../datasets/data/ILSVRC/ImageSets/VID/val2015.txt')
+    if args.dataset_year==2015:
+        train_img_info_file = os.path.join('../datasets/data/ILSVRC/ImageSets/VID/val2015.txt')
+    elif args.dataset_year==2017:
+        train_img_info_file = os.path.join('../datasets/data/ILSVRC/ImageSets/VID/val2017.txt')
+    elif args.dataset_year==2222:
+        #get train dataset info
+        train_img_info_file = os.path.join('../datasets/data/ILSVRC/ImageSets/VID/train.txt')
+    else:
+        print("val dataset not set yet.")
     train_img_info = open(train_img_info_file, "r")
     img_paths = train_img_info.readlines()
     gt_skip=args.gt_skip

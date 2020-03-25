@@ -17,10 +17,11 @@ def str2bool(v):
 
 parser = argparse.ArgumentParser(
     description='gen_gt_file')
+parser.add_argument('--gengt', default=False, type=str2bool, help='generate gt results and save to file')
 parser.add_argument('--eval_imgs', default=0, type=int,
                     help='the num of imgs that picked from val.txt, 0 represent all imgs')
 parser.add_argument('--gt_skip', default=5, type=int, help='frame sampling frequency')
-parser.add_argument('--gengt', default=False, type=str2bool, help='generate gt results and save to file')
+parser.add_argument('--dataset_year', default=2015, type=int, help='dataset version, like ILSVRC2015, ILSVRC2017')
 parser.add_argument('--doprecision', default=True, type=str2bool, help='run do precision function')
 parser.add_argument('--iou_thred', default=0.7, type=float, help='iou thred')
 parser.add_argument('--evalgtpath', default='../datasets/data/ILSVRC-vid-eval-gt-skip5.txt', type=str,
@@ -38,7 +39,7 @@ def no_previous(frame_inf,tk):
 
 def gen_gt_file(path, args):
     videos_infos, train_videos = get_ILSVRC_eval_infos(args)
-    out_file = open('%s-gt-skip%d.txt' % (path,args.gt_skip), 'w')
+    out_file = open('%s-gt-skip%d-%d.txt' % (path,args.gt_skip,args.dataset_year), 'w')
     for tj in range(len(videos_infos)):
         # for tj in range(10):
         for ti in range(len(videos_infos[tj]['gt'])):
