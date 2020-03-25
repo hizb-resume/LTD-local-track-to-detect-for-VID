@@ -31,11 +31,11 @@ parser.add_argument('--evalfilepath', default='../datasets/data/ILSVRC-vid-eval-
 
 def no_previous(frame_inf,tk):
     if len(frame_inf)==0:
-        return True
-    for pre_tk in frame_inf:
+        return -1
+    for indx,pre_tk in enumerate(frame_inf):
         if pre_tk==tk:
-            return False
-    return True
+            return indx
+    return -1
 
 def gen_gt_file(path, args):
     videos_infos, train_videos = get_ILSVRC_eval_infos(args)
@@ -44,14 +44,16 @@ def gen_gt_file(path, args):
         # for tj in range(10):
         for ti in range(len(videos_infos[tj]['gt'])):
             for tk in range(len(videos_infos[tj]['gt'][ti])):
-                # if tj==1 and ti==63:
-                #     print("debug")
+                if tj==4 and ti==157:
+                    print("debug")
+                # print(tj,ti,tk)
+                indx=no_previous(videos_infos[tj]['trackid'][ti-1],videos_infos[tj]['trackid'][ti][tk])
                 if ti==0:
                     motion_iou=1
-                elif no_previous(videos_infos[tj]['trackid'][ti-1],videos_infos[tj]['trackid'][ti][tk]):
+                elif indx==-1:
                     motion_iou = 1
                 else:
-                    motion_iou=cal_iou(videos_infos[tj]['gt'][ti-1][tk],videos_infos[tj]['gt'][ti][tk])
+                    motion_iou=cal_iou(videos_infos[tj]['gt'][ti-1][indx],videos_infos[tj]['gt'][ti][tk])
                     # if motion_IoU>0.9:
                     #     #slow
                     #     cls_motion_iou = 0
