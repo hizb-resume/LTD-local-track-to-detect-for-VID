@@ -535,7 +535,7 @@ def get_xml_img_info(xmlpath):
     imgsize[0] = int(siz.find('height').text)
     gts = []
     for obj in root.iter('object'):
-        tckid=obj.find('trackid').text
+        tckid=int(obj.find('trackid').text)
         nm=obj.find('name')
         nm=vid_classes.code_to_class_string(str(nm.text))
         bb = obj.find('bndbox')
