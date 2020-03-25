@@ -186,17 +186,21 @@ def get_ILSVRC_eval_infos(args):
         'nframes':0
     }
     # last_video_full=True
-    path_root=''
+    path_root_data=''
+    path_root_gt = ''
     if args.dataset_year==2015:
         train_img_info_file = os.path.join('../datasets/data/ILSVRC/ImageSets/VID/val2015.txt')
-        path_root='../datasets/data/ILSVRC/Data/VID/val/'
+        path_root_data='../datasets/data/ILSVRC/Data/VID/val/'
+        path_root_gt='../datasets/data/ILSVRC/Annotations/VID/val/'
     elif args.dataset_year==2017:
         train_img_info_file = os.path.join('../datasets/data/ILSVRC/ImageSets/VID/val2017.txt')
-        path_root = '../datasets/data/ILSVRC/Data/VID/val/'
+        path_root_data = '../datasets/data/ILSVRC/Data/VID/val/'
+        path_root_gt = '../datasets/data/ILSVRC/Annotations/VID/val/'
     elif args.dataset_year==2222:
         #get train dataset info
         train_img_info_file = os.path.join('../datasets/data/ILSVRC/ImageSets/VID/train.txt')
-        path_root = '../datasets/data/ILSVRC/Data/VID/train/'
+        path_root_data = '../datasets/data/ILSVRC/Data/VID/train/'
+        path_root_gt = '../datasets/data/ILSVRC/Annotations/VID/train/'
     else:
         print("val dataset not set yet.")
     train_img_info = open(train_img_info_file, "r")
@@ -218,7 +222,7 @@ def get_ILSVRC_eval_infos(args):
                 video_infos['nframes']=int(img_paths[train_i-1][-6:])+1
                 videos_infos.append(video_infos)
                 train_videos['video_names'].append(img_paths[train_i-1][-32:-7])
-                train_videos['video_paths'].append(path_root + img_paths[train_i-1][:-32])
+                train_videos['video_paths'].append(path_root_data + img_paths[train_i-1][:-32])
                 #train_videos['bench_names'] =
 
                 video_infos = {
@@ -231,7 +235,7 @@ def get_ILSVRC_eval_infos(args):
                 }
         # elif last_video_full==False:
         #     continue
-        gt_file_path = path_root + img_paths[train_i] + '.xml'
+        gt_file_path = path_root_gt + img_paths[train_i] + '.xml'
         # gt_bbox=get_xml_box_label(gt_file_path)
         # opts['imgSize'] = get_xml_img_size(gt_file_path)
         imginfo = get_xml_img_info(gt_file_path)
@@ -258,12 +262,12 @@ def get_ILSVRC_eval_infos(args):
         video_infos['gt'].append(imginfo['gts'])
         video_infos['trackid'].append(imginfo['trackid'])
         video_infos['name'].append(imginfo['name'])
-        img_path = path_root + img_paths[train_i] + '.JPEG'
+        img_path = path_root_data + img_paths[train_i] + '.JPEG'
         video_infos['img_files'].append(img_path)
     video_infos['nframes'] = int(img_paths[-1][-6:]) + 1
     videos_infos.append(video_infos)
     train_videos['video_names'].append(img_paths[-1][-32:-7])
-    train_videos['video_paths'].append(path_root + img_paths[-1][:-32])
+    train_videos['video_paths'].append(path_root_data + img_paths[-1][:-32])
     for jk in range(len(videos_infos)):
         # tem_vid_info=videos_infos[jk]
         videos_infos[jk]['gt']=videos_infos[jk]['gt'][::gt_skip]
