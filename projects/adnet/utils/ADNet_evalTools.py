@@ -46,8 +46,8 @@ def gen_gt_file(path, args):
         # for tj in range(10):
         for ti in range(len(videos_infos[tj]['gt'])):
             for tk in range(len(videos_infos[tj]['gt'][ti])):
-                if tj==4 and ti==157:
-                    print("debug")
+                # if tj==4 and ti==157:
+                #     print("debug")
                 # print(tj,ti,tk)
                 indx=no_previous(videos_infos[tj]['trackid'][ti-1],videos_infos[tj]['trackid'][ti][tk])
                 if ti==0:
@@ -75,21 +75,26 @@ def gen_gt_file(path, args):
                                str(videos_infos[tj]['gt'][ti][tk][1]) + ',' +
                                str(videos_infos[tj]['gt'][ti][tk][2]) + ',' +
                                str(videos_infos[tj]['gt'][ti][tk][3]) + ',' +
-                               '%.2f' % (motion_iou) +'\n')
+                               '%.1f' % (motion_iou) +'\n')
                 ioulist.append(motion_iou)
     out_file.close()
     out_file_motion_iou_data = open('%s-gt-skip%d-%d-motion_iou_data.txt' % (path, args.gt_skip, args.dataset_year), 'w')
-    # for item_iou in ioulist:
-    #     out_file_motion_iou_data.write(
-    #         str(item_iou)+','
-    #     )
-    out_file_motion_iou_data.write(str(ioulist))
+    for item_iou in ioulist:
+        out_file_motion_iou_data.write(
+            '%.2f' % (item_iou)+','
+        )
+    # out_file_motion_iou_data.write(str(ioulist))
     out_file_motion_iou_data.close()
 
-def gen_motion_iou_plot():
-
-    # pyplot.hist(ioulist, bins=10)
-    # pyplot.show()
+def gen_motion_iou_plot(path_iou):
+    iou_file = open(path_iou, 'r')
+    list1 = iou_file.readlines()
+    for line in list1:
+        ioulist = line.split(',')
+        pyplot.hist(ioulist, bins=10)
+        # pyplot.show()
+        pyplot.savefig(path_iou[:-3]+'png')
+    iou_file.close()
 
 def gen_pred_file(path, vid_pred, isstart):
     # out_file = open('%s-pred.txt' % path, 'w')
@@ -781,6 +786,7 @@ def do_precison3(path_pred, path_gt):
 
 if __name__ == "__main__":
     args = parser.parse_args()
+    # gen_motion_iou_plot('../datasets/data/ILSVRC-vid-eval-gt-skip5-2015-motion_iou_data.txt')
     if args.gengt:
         gen_gt_file('../datasets/data/ILSVRC-vid-eval', args)
     if args.doprecision:
