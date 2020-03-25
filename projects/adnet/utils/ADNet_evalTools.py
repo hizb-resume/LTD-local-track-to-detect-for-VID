@@ -1,6 +1,7 @@
 import _init_paths
 import tensorflow as tf
 
+from matplotlib import pyplot
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 import numpy as np
 from utils.my_util import get_ILSVRC_eval_infos, cal_iou, cal_success
@@ -40,6 +41,7 @@ def no_previous(frame_inf,tk):
 def gen_gt_file(path, args):
     videos_infos, train_videos = get_ILSVRC_eval_infos(args)
     out_file = open('%s-gt-skip%d-%d.txt' % (path,args.gt_skip,args.dataset_year), 'w')
+    ioulist=[]
     for tj in range(len(videos_infos)):
         # for tj in range(10):
         for ti in range(len(videos_infos[tj]['gt'])):
@@ -74,8 +76,20 @@ def gen_gt_file(path, args):
                                str(videos_infos[tj]['gt'][ti][tk][2]) + ',' +
                                str(videos_infos[tj]['gt'][ti][tk][3]) + ',' +
                                '%.2f' % (motion_iou) +'\n')
+                ioulist.append(motion_iou)
     out_file.close()
+    out_file_motion_iou_data = open('%s-gt-skip%d-%d-motion_iou_data.txt' % (path, args.gt_skip, args.dataset_year), 'w')
+    # for item_iou in ioulist:
+    #     out_file_motion_iou_data.write(
+    #         str(item_iou)+','
+    #     )
+    out_file_motion_iou_data.write(str(ioulist))
+    out_file_motion_iou_data.close()
 
+def gen_motion_iou_plot():
+
+    # pyplot.hist(ioulist, bins=10)
+    # pyplot.show()
 
 def gen_pred_file(path, vid_pred, isstart):
     # out_file = open('%s-pred.txt' % path, 'w')
