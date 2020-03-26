@@ -56,6 +56,9 @@ def gen_gt_file(path, args):
                     motion_iou = 0.99
                 else:
                     motion_iou=cal_iou(videos_infos[tj]['gt'][ti-1][indx],videos_infos[tj]['gt'][ti][tk])
+                    if motion_iou>0.99:
+                        #if the iou is 1, change to 0.99, for gen_motion_iou_plot convenience
+                        motion_iou=0.99
                     # if motion_IoU>0.9:
                     #     #slow
                     #     cls_motion_iou = 0
@@ -95,14 +98,15 @@ def gen_motion_iou_plot(path_iou):
         probability_distribution_n=[0]*10
         probability_distribution = [0] * 10
         for itm in ioulist:
-            probability_distribution_n[int(itm*10//1)]+=1
-        sum=len(ioulist)
-        sum2=0
+            if itm!='':
+                probability_distribution_n[int(float(itm)*10//1)]+=1
+        sum=len(ioulist)-1
+        # sum2=0
         for jtm in range(len(probability_distribution_n)):
-            probability_distribution[jtm]=probability_distribution_n[jtm]/sum
-            sum2+=probability_distribution_n[jtm]
+            probability_distribution[jtm]=round(probability_distribution_n[9-jtm]/sum*100,1)
+            # sum2+=probability_distribution_n[jtm]
         print(sum)
-        print(sum2)
+        # print(sum2)
 
         pyplot.hist(ioulist, bins=10)
         # pyplot.show()
