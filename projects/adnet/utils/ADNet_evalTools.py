@@ -697,6 +697,8 @@ def do_precison3(path_pred, path_gt):
     # total_inf = []
 
     gt_counter_per_class = [0] * len(CLASS_NAMES)
+    recall_cls=[0] * len(CLASS_NAMES)
+    n_tp_cls=0
     tpfp_info = []
     for ito in range(len(CLASS_NAMES)):
         # total_inf.append(copy.deepcopy(cls_info))
@@ -706,6 +708,8 @@ def do_precison3(path_pred, path_gt):
     # gt_counter_per_class=[]
     tpfp_info_motion_iou = [[],[],[]] #slow, medium, fast
     gt_counter_per_motion = [0] * 3
+    recall_motion = [0] * 3
+    n_tp_motion=0
     for ti in range(len(vids_gt)):
         #count objects number of every class
         for tj in range(len(vids_gt[ti]['obj_name'])):
@@ -797,6 +801,8 @@ def do_precison3(path_pred, path_gt):
         for idx, val in enumerate(tp):
             rec[idx] = float(tp[idx]) / gt_counter_per_class[ito]
         # print(rec)
+        recall_cls[ito]=rec[-1]
+        n_tp_cls+=tp[-1]
         prec = tp[:]
         for idx, val in enumerate(tp):
             prec[idx] = float(tp[idx]) / (fp[idx] + tp[idx])
@@ -830,6 +836,8 @@ def do_precison3(path_pred, path_gt):
         for idx, val in enumerate(tp):
             rec[idx] = float(tp[idx]) / gt_counter_per_motion[ito]
         # print(rec)
+        recall_motion[ito] = rec[-1]
+        n_tp_motion += tp[-1]
         prec = tp[:]
         for idx, val in enumerate(tp):
             prec[idx] = float(tp[idx]) / (fp[idx] + tp[idx])
@@ -838,27 +846,27 @@ def do_precison3(path_pred, path_gt):
         sum_AP_motion += apt
     mAP_motion = sum_AP_motion / 3
 
-    rltTable = PrettyTable(["category", "n_gtbox", "AP"])
+    rltTable = PrettyTable(["category", "n_gtbox", "AP","recall"])
     # totalRow = copy.deepcopy(cls_info)
     n_all_gt = 0
     for ito in range(len(CLASS_NAMES)):
-        rltTable.add_row([CLASS_NAMES[ito], gt_counter_per_class[ito], ap[ito], ])
+        rltTable.add_row([CLASS_NAMES[ito], gt_counter_per_class[ito], ap[ito], recall_cls[ito]])
         n_all_gt += gt_counter_per_class[ito]
-    rltTable.add_row(["----------", "------", "--------------", ])
+    rltTable.add_row(["----------", "------", "--------------", "-------",])
 
-    rltTable.add_row(["Total_cls", n_all_gt, mAP, ])
+    rltTable.add_row(["Total_cls", n_all_gt, mAP,(n_tp_cls//n_all_gt) ])
 
-    rltTable.add_row(["----------", "------", "--------------", ])
-    rltTable.add_row(["----------", "------", "--------------", ])
+    rltTable.add_row(["----------", "------", "--------------", "-------",])
+    rltTable.add_row(["----------", "------", "--------------", "-------",])
 
     n_all_gt = 0
     motion_name=['slow','medium','fast']
     for ito in range(3):
-        rltTable.add_row([motion_name[ito], gt_counter_per_motion[ito], ap_motion[ito], ])
+        rltTable.add_row([motion_name[ito], gt_counter_per_motion[ito], ap_motion[ito], recall_motion[ito]])
         n_all_gt += gt_counter_per_motion[ito]
-    rltTable.add_row(["----------", "------", "--------------", ])
+    rltTable.add_row(["----------", "------", "--------------", "-------",])
 
-    rltTable.add_row(["Total_motion", n_all_gt, mAP_motion, ])
+    rltTable.add_row(["Total_motion", n_all_gt, mAP_motion, (n_tp_motion//n_all_gt)])
 
     rltTable.align["n_gtbox"] = "l"
     print(rltTable)
