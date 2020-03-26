@@ -705,7 +705,7 @@ def do_precison3(path_pred, path_gt):
         # gt_counter_per_class.append([0])
     # gt_counter_per_class=[]
     tpfp_info_motion_iou = [[],[],[]] #slow, medium, fast
-    gt_counter_per_motion = [0] * len(3)
+    gt_counter_per_motion = [0] * 3
     for ti in range(len(vids_gt)):
         #count objects number of every class
         for tj in range(len(vids_gt[ti]['obj_name'])):
@@ -761,7 +761,7 @@ def do_precison3(path_pred, path_gt):
                 cls_id = int(vid_classes.class_string_to_comp_code(str(cls_name))) - 1
                 if vids_gt[j]['motion_iou_cls'][l][id_iou] > 0.9:  # slow
                     motion_id = 0
-                elif vids_gt[ti]['motion_iou_cls'][tj][tk] < 0.7:  # fast
+                elif vids_gt[j]['motion_iou_cls'][l][id_iou] < 0.7:  # fast
                     motion_id = 2
                 else:  # medium
                     motion_id = 1
