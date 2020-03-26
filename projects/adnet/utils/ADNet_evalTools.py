@@ -675,26 +675,26 @@ def do_precison3(path_pred, path_gt):
         'rabbit', 'red_panda', 'sheep', 'snake', 'squirrel', 'tiger',
         'train', 'turtle', 'watercraft', 'whale', 'zebra'
     ]
-    ious = []
-    ious_cls = []
+    # ious = []
+    # ious_cls = []
     # vids_pred =read_results_info(path_pred)
     vids_pred = read_pred_results_info(path_pred)
     vids_gt = read_results_info(path_gt)
-    n_all_boxes = 0
-    n_miss_boxes = 0
-    n_all_pics = 0
-    n_miss_pics = 0
-    cls_info = {
-        "name": "",
-        "n_instances": 0,
-        "n_missed": 0,
-        "n_track": 0,
-        "ious": [],
-        "ious_cls": [],
-        "iou_success_all": [],
-        "cls_success_all": []
-    }
-    total_inf = []
+    # n_all_boxes = 0
+    # n_miss_boxes = 0
+    # n_all_pics = 0
+    # n_miss_pics = 0
+    # cls_info = {
+    #     "name": "",
+    #     "n_instances": 0,
+    #     "n_missed": 0,
+    #     "n_track": 0,
+    #     "ious": [],
+    #     "ious_cls": [],
+    #     "iou_success_all": [],
+    #     "cls_success_all": []
+    # }
+    # total_inf = []
 
     gt_counter_per_class = [0] * len(CLASS_NAMES)
     tpfp_info = []
@@ -704,12 +704,21 @@ def do_precison3(path_pred, path_gt):
         tpfp_info.append([])
         # gt_counter_per_class.append([0])
     # gt_counter_per_class=[]
+    tpfp_info_motion_iou = [[],[],[]] #slow, medium, fast
+    gt_counter_per_motion = [0] * len(3)
     for ti in range(len(vids_gt)):
+        #count objects number of every class
         for tj in range(len(vids_gt[ti]['obj_name'])):
             for tk in range(len(vids_gt[ti]['obj_name'][tj])):
                 cls_name = vids_gt[ti]['obj_name'][tj][tk]
                 cls_id = int(vid_classes.class_string_to_comp_code(str(cls_name))) - 1
                 gt_counter_per_class[cls_id] += 1
+                if vids_gt[ti]['motion_iou_cls'][tj][tk]>0.9:#slow
+                    gt_counter_per_motion[0]+=1
+                elif vids_gt[ti]['motion_iou_cls'][tj][tk]<0.7:#fast
+                    gt_counter_per_motion[2] += 1
+                else:#medium
+                    gt_counter_per_motion[1] += 1
     j = 0
     for i in range(len(vids_pred)):
         idv = vids_pred[i]['vid_id']
@@ -750,11 +759,19 @@ def do_precison3(path_pred, path_gt):
                 # cls_name = vids_gt[j]['obj_name'][l][id_iou]
                 cls_name = vids_pred[i]['obj_name'][k][id_bpre]
                 cls_id = int(vid_classes.class_string_to_comp_code(str(cls_name))) - 1
+                if vids_gt[j]['motion_iou_cls'][l][id_iou] > 0.9:  # slow
+                    motion_id = 0
+                elif vids_gt[ti]['motion_iou_cls'][tj][tk] < 0.7:  # fast
+                    motion_id = 2
+                else:  # medium
+                    motion_id = 1
                 if iou > args.iou_thred and vids_pred[i]['obj_name'][k][id_bpre] == vids_gt[j]['obj_name'][l][id_iou]:
                     tpfp_info[cls_id].append({"confidence": vids_pred[i]['score_cls'][k][id_bpre], "tp": 1, "fp": 0})
+                    tpfp_info_motion_iou[motion_id].append({"confidence": vids_pred[i]['score_cls'][k][id_bpre], "tp": 1, "fp": 0})
                     bboxs_gt.remove(bboxs_gt[id_iou])
                 else:
                     tpfp_info[cls_id].append({"confidence": vids_pred[i]['score_cls'][k][id_bpre], "tp": 0, "fp": 1})
+                    tpfp_info_motion_iou[motion_id].append({"confidence": vids_pred[i]['score_cls'][k][id_bpre], "tp": 0, "fp": 1})
     sum_AP = 0.0
     ap = []
     for ito in range(len(CLASS_NAMES)):
@@ -788,15 +805,61 @@ def do_precison3(path_pred, path_gt):
         sum_AP += apt
     mAP = sum_AP / len(CLASS_NAMES)
 
+    sum_AP_motion = 0.0
+    ap_motion = []
+    for ito in range(3):
+        tpfp_info_motion_iou[ito].sort(key=lambda x: float(x['confidence']), reverse=True)
+        # compute precision/recall
+        tp = []
+        fp = []
+        cumsum1 = 0
+        cumsum2 = 0
+        for idx in range(len(tpfp_info_motion_iou[ito])):
+            # temval=tpfp_info_motion_iou[ito][idx]
+            # val1=temval["tp"]
+            # val2=temval["fp"]
+            val1 = tpfp_info_motion_iou[ito][idx]["tp"]
+            val2 = tpfp_info_motion_iou[ito][idx]["fp"]
+            tpfp_info_motion_iou[ito][idx]["tp"] += cumsum1
+            tp.append(tpfp_info_motion_iou[ito][idx]["tp"])
+            tpfp_info_motion_iou[ito][idx]["fp"] += cumsum2
+            fp.append(tpfp_info_motion_iou[ito][idx]["fp"])
+            cumsum1 += val1
+            cumsum2 += val2
+        rec = tp[:]
+        for idx, val in enumerate(tp):
+            rec[idx] = float(tp[idx]) / gt_counter_per_motion[ito]
+        # print(rec)
+        prec = tp[:]
+        for idx, val in enumerate(tp):
+            prec[idx] = float(tp[idx]) / (fp[idx] + tp[idx])
+        apt, mrec, mprec = voc_ap(rec[:], prec[:])
+        ap_motion.append(apt)
+        sum_AP_motion += apt
+    mAP_motion = sum_AP_motion / 3
+
     rltTable = PrettyTable(["category", "n_gtbox", "AP"])
-    totalRow = copy.deepcopy(cls_info)
+    # totalRow = copy.deepcopy(cls_info)
     n_all_gt = 0
     for ito in range(len(CLASS_NAMES)):
         rltTable.add_row([CLASS_NAMES[ito], gt_counter_per_class[ito], ap[ito], ])
         n_all_gt += gt_counter_per_class[ito]
     rltTable.add_row(["----------", "------", "--------------", ])
 
-    rltTable.add_row(["Total", n_all_gt, mAP, ])
+    rltTable.add_row(["Total_cls", n_all_gt, mAP, ])
+
+    rltTable.add_row(["----------", "------", "--------------", ])
+    rltTable.add_row(["----------", "------", "--------------", ])
+
+    n_all_gt = 0
+    motion_name=['slow','medium','fast']
+    for ito in range(3):
+        rltTable.add_row([motion_name[ito], gt_counter_per_motion[ito], ap_motion[ito], ])
+        n_all_gt += gt_counter_per_motion[ito]
+    rltTable.add_row(["----------", "------", "--------------", ])
+
+    rltTable.add_row(["Total_motion", n_all_gt, mAP_motion, ])
+
     rltTable.align["n_gtbox"] = "l"
     print(rltTable)
 
