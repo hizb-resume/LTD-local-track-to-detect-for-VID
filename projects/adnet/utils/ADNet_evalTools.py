@@ -802,7 +802,7 @@ def do_precison3(path_pred, path_gt):
             rec[idx] = float(tp[idx]) / gt_counter_per_class[ito]
         # print(rec)
         recall_cls[ito]=rec[-1]
-        n_tp_cls+=tp[-1]
+        n_tp_cls+=float(tp[-1])
         prec = tp[:]
         for idx, val in enumerate(tp):
             prec[idx] = float(tp[idx]) / (fp[idx] + tp[idx])
@@ -837,7 +837,7 @@ def do_precison3(path_pred, path_gt):
             rec[idx] = float(tp[idx]) / gt_counter_per_motion[ito]
         # print(rec)
         recall_motion[ito] = rec[-1]
-        n_tp_motion += tp[-1]
+        n_tp_motion += float(tp[-1])
         prec = tp[:]
         for idx, val in enumerate(tp):
             prec[idx] = float(tp[idx]) / (fp[idx] + tp[idx])
@@ -854,7 +854,7 @@ def do_precison3(path_pred, path_gt):
         n_all_gt += gt_counter_per_class[ito]
     rltTable.add_row(["----------", "------", "--------------", "-------",])
 
-    rltTable.add_row(["Total_cls", n_all_gt, mAP,(n_tp_cls//n_all_gt) ])
+    rltTable.add_row(["Total_cls", n_all_gt, mAP,(n_tp_cls/n_all_gt) ])
 
     rltTable.add_row(["----------", "------", "--------------", "-------",])
     rltTable.add_row(["----------", "------", "--------------", "-------",])
@@ -866,7 +866,7 @@ def do_precison3(path_pred, path_gt):
         n_all_gt += gt_counter_per_motion[ito]
     rltTable.add_row(["----------", "------", "--------------", "-------",])
 
-    rltTable.add_row(["Total_motion", n_all_gt, mAP_motion, (n_tp_motion//n_all_gt)])
+    rltTable.add_row(["Total_motion", n_all_gt, mAP_motion, (n_tp_motion/n_all_gt)])
 
     rltTable.align["n_gtbox"] = "l"
     print(rltTable)
