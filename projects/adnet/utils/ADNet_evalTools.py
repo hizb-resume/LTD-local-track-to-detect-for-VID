@@ -18,16 +18,16 @@ def str2bool(v):
 
 parser = argparse.ArgumentParser(
     description='gen_gt_file')
-parser.add_argument('--gengt', default=True, type=str2bool, help='generate gt results and save to file')
+parser.add_argument('--gengt', default=False, type=str2bool, help='generate gt results and save to file')
 parser.add_argument('--eval_imgs', default=0, type=int,
                     help='the num of imgs that picked from val.txt, 0 represent all imgs')
 parser.add_argument('--gt_skip', default=5, type=int, help='frame sampling frequency')
 parser.add_argument('--dataset_year', default=2015, type=int, help='dataset version, like ILSVRC2015, ILSVRC2017')
-parser.add_argument('--doprecision', default=False, type=str2bool, help='run do precision function')
+parser.add_argument('--doprecision', default=True, type=str2bool, help='run do precision function')
 parser.add_argument('--iou_thred', default=0.7, type=float, help='iou thred')
-parser.add_argument('--evalgtpath', default='../datasets/data/ILSVRC-vid-eval-gt-skip5.txt', type=str,
+parser.add_argument('--evalgtpath', default='../datasets/data/ILSVRC-vid-eval-gt-skip5-2015.txt', type=str,
                     help='The eval gt file')
-parser.add_argument('--evalfilepath', default='../datasets/data/ILSVRC-vid-eval-delete-pred.txt', type=str,
+parser.add_argument('--evalfilepath', default='../datasets/data/ILSVRC-vid-eval-tem23-pred.txt', type=str,
                     help='The eval results file')
 
 def no_previous(frame_inf,tk):
@@ -174,7 +174,7 @@ def read_results_info(path_pred):
         box_inf.append(tsp[3])
         for ti in range(4, 9):
             box_inf.append(float(tsp[ti]))
-        box_inf.append(int(tsp[9])) #motion_iou_cls
+        box_inf.append(float(tsp[9].strip('\n'))) #motion_iou_cls
         if id_vid == -1 and id_frame == -1 and id_track == -1:
             #first video, first frame, first object
             id_vid = box_inf[0]
