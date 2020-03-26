@@ -51,9 +51,9 @@ def gen_gt_file(path, args):
                 # print(tj,ti,tk)
                 indx=no_previous(videos_infos[tj]['trackid'][ti-1],videos_infos[tj]['trackid'][ti][tk])
                 if ti==0:
-                    motion_iou=1
+                    motion_iou=0.99
                 elif indx==-1:
-                    motion_iou = 1
+                    motion_iou = 0.99
                 else:
                     motion_iou=cal_iou(videos_infos[tj]['gt'][ti-1][indx],videos_infos[tj]['gt'][ti][tk])
                     # if motion_IoU>0.9:
@@ -75,7 +75,7 @@ def gen_gt_file(path, args):
                                str(videos_infos[tj]['gt'][ti][tk][1]) + ',' +
                                str(videos_infos[tj]['gt'][ti][tk][2]) + ',' +
                                str(videos_infos[tj]['gt'][ti][tk][3]) + ',' +
-                               '%.1f' % (motion_iou) +'\n')
+                               '%.2f' % (motion_iou) +'\n')
                 ioulist.append(motion_iou)
     out_file.close()
     out_file_motion_iou_data = open('%s-gt-skip%d-%d-motion_iou_data.txt' % (path, args.gt_skip, args.dataset_year), 'w')
@@ -91,6 +91,19 @@ def gen_motion_iou_plot(path_iou):
     list1 = iou_file.readlines()
     for line in list1:
         ioulist = line.split(',')
+
+        probability_distribution_n=[0]*10
+        probability_distribution = [0] * 10
+        for itm in ioulist:
+            probability_distribution_n[int(itm*10//1)]+=1
+        sum=len(ioulist)
+        sum2=0
+        for jtm in range(len(probability_distribution_n)):
+            probability_distribution[jtm]=probability_distribution_n[jtm]/sum
+            sum2+=probability_distribution_n[jtm]
+        print(sum)
+        print(sum2)
+
         pyplot.hist(ioulist, bins=10)
         # pyplot.show()
         pyplot.savefig(path_iou[:-3]+'png')
