@@ -53,7 +53,8 @@ def gen_gt_file(path, args):
                 if ti==0:
                     motion_iou=0.99
                 elif indx==-1:
-                    motion_iou = 0.99
+                    # motion_iou = 0.99
+                    motion_iou = 0
                 else:
                     motion_iou=cal_iou(videos_infos[tj]['gt'][ti-1][indx],videos_infos[tj]['gt'][ti][tk])
                     if motion_iou>0.99:
