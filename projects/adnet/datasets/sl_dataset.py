@@ -27,8 +27,9 @@ class SLDataset(data.Dataset):
         self.train_db = train_db
 
     def __getitem__(self, index):
-        image = cv2.imread(self.train_db['img_path'][index])
-        frame2 = image.copy()
+        # image = cv2.imread(self.train_db['img_path'][index])
+        # frame2 = image.copy()
+        frame2 = cv2.imread(self.train_db['img_path'][index])
         frame2 = frame2.astype(np.float32)
         frame2 = torch.from_numpy(frame2).cuda()
         bboxes = self.train_db['bboxes'][index]
