@@ -96,20 +96,23 @@ def gen_motion_iou_plot(path_iou):
     for line in list1:
         ioulist = line.split(',')
 
-        probability_distribution_n=[0]*10
-        probability_distribution = [0] * 10
+        probability_distribution_n=[0]*11
+        probability_distribution = [0] * 11
         for itm in ioulist:
             if itm!='':
+                if float(itm)>0.95:
+                    probability_distribution_n[10] += 1
+                    continue
                 probability_distribution_n[int(float(itm)*10//1)]+=1
         sum=len(ioulist)-1
         # sum2=0
         for jtm in range(len(probability_distribution_n)):
-            probability_distribution[jtm]=round(probability_distribution_n[9-jtm]/sum*100,1)
+            probability_distribution[jtm]=round(probability_distribution_n[10-jtm]/sum*100,1)
             # sum2+=probability_distribution_n[jtm]
         print(sum)
         # print(sum2)
 
-        pyplot.hist(ioulist, bins=10)
+        pyplot.hist(ioulist, bins=11)
         # pyplot.show()
         pyplot.savefig(path_iou[:-3]+'png')
     iou_file.close()
@@ -718,9 +721,9 @@ def do_precison3(path_pred, path_gt):
                 cls_name = vids_gt[ti]['obj_name'][tj][tk]
                 cls_id = int(vid_classes.class_string_to_comp_code(str(cls_name))) - 1
                 gt_counter_per_class[cls_id] += 1
-                if vids_gt[ti]['motion_iou_cls'][tj][tk]>0.9:#slow
+                if vids_gt[ti]['motion_iou_cls'][tj][tk]>0.95:#slow
                     gt_counter_per_motion[0]+=1
-                elif vids_gt[ti]['motion_iou_cls'][tj][tk]<0.7:#fast
+                elif vids_gt[ti]['motion_iou_cls'][tj][tk]<0.8:#fast
                     gt_counter_per_motion[2] += 1
                 else:#medium
                     gt_counter_per_motion[1] += 1
@@ -764,9 +767,9 @@ def do_precison3(path_pred, path_gt):
                 # cls_name = vids_gt[j]['obj_name'][l][id_iou]
                 cls_name = vids_pred[i]['obj_name'][k][id_bpre]
                 cls_id = int(vid_classes.class_string_to_comp_code(str(cls_name))) - 1
-                if vids_gt[j]['motion_iou_cls'][l][id_iou] > 0.9:  # slow
+                if vids_gt[j]['motion_iou_cls'][l][id_iou] > 0.95:  # slow
                     motion_id = 0
-                elif vids_gt[j]['motion_iou_cls'][l][id_iou] < 0.7:  # fast
+                elif vids_gt[j]['motion_iou_cls'][l][id_iou] < 0.8:  # fast
                     motion_id = 2
                 else:  # medium
                     motion_id = 1
@@ -875,7 +878,7 @@ def do_precison3(path_pred, path_gt):
 
 if __name__ == "__main__":
     args = parser.parse_args()
-    # gen_motion_iou_plot('../datasets/data/ILSVRC-vid-eval-gt-skip5-2015-motion_iou_data.txt')
+    # gen_motion_iou_plot('../datasets/data/ILSVRC-vid-eval-gt-skip1-2015-motion_iou_data.txt')
     if args.gengt:
         gen_gt_file('../datasets/data/ILSVRC-vid-eval', args)
     if args.doprecision:
