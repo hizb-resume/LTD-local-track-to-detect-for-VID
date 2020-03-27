@@ -4,7 +4,7 @@ import torch.nn as nn
 from torch.autograd import Variable
 #from torch.legacy import nn as nnl
 import torch.utils.model_zoo as model_zoo
-
+from torchsummary import summary
 # source: https://github.com/Cadene/pretrained-models.pytorch/blob/master/pretrainedmodels/models/vggm.py
 
 __all__ = ['vggm']
@@ -109,3 +109,9 @@ def vggm(num_classes=1000, pretrained='imagenet'):
     else:
         model = VGGM(num_classes=num_classes)
     return model
+
+if __name__ == "__main__":
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = VGGM(num_classes=10).to(device)
+
+    summary(model, (3, 221, 221))

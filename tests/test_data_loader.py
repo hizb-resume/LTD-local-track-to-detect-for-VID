@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-
+# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved.
 
 import copy
 import numpy as np
@@ -82,3 +81,36 @@ class TestTransformAnnotations(unittest.TestCase):
             [output, output], (400, 400), mask_format="bitmask"
         )
         self.assertTrue(isinstance(inst.gt_masks, BitMasks))
+
+    def test_transform_RLE_resize(self):
+        transforms = T.TransformList(
+            [T.HFlipTransform(400), T.ScaleTransform(300, 400, 400, 400, "bilinear")]
+        )
+        mask = np.zeros((300, 400), order="F").astype("uint8")
+        mask[:, :200] = 1
+
+        anno = {
+            "bbox": np.asarray([10, 10, 200, 300]),
+            "bbox_mode": BoxMode.XYXY_ABS,
+            "segmentation": mask_util.encode(mask[:, :, None])[0],
+            "category_id": 3,
+        }
+        output = detection_utils.transform_instance_annotations(
+            copy.deepcopy(anno), transforms, (400, 400)
+        )
+
+        inst = detection_utils.annotations_to_instances(
+            [output, output], (400, 400), mask_format="bitmask"
+        )
+        self.assertTrue(isinstance(inst.gt_masks, BitMasks))
+
+    def test_gen_crop(self):
+        instance = {"bbox": [10, 10, 100, 100], "bbox_mode": BoxMode.XYXY_ABS}
+        t = detection_utils.gen_crop_transform_with_instance((10, 10), (150, 150), instance)
+        # the box center must fall into the cropped region
+        self.assertTrue(t.x0 <= 55 <= t.x0 + t.w)
+
+    def test_gen_crop_outside_boxes(self):
+        instance = {"bbox": [10, 10, 100, 100], "bbox_mode": BoxMode.XYXY_ABS}
+        with self.assertRaises(AssertionError):
+            detection_utils.gen_crop_transform_with_instance((10, 10), (15, 15), instance)

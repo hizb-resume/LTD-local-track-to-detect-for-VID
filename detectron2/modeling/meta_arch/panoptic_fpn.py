@@ -19,7 +19,7 @@ __all__ = ["PanopticFPN"]
 @META_ARCH_REGISTRY.register()
 class PanopticFPN(nn.Module):
     """
-    Main class for Panoptic FPN architectures (see https://arxiv.org/abd/1901.02446).
+    Main class for Panoptic FPN architectures (see https://arxiv.org/abs/1901.02446).
     """
 
     def __init__(self, cfg):
@@ -53,22 +53,24 @@ class PanopticFPN(nn.Module):
             batched_inputs: a list, batched outputs of :class:`DatasetMapper`.
                 Each item in the list contains the inputs for one image.
 
-        For now, each item in the list is a dict that contains:
-            image: Tensor, image in (C, H, W) format.
-            instances: Instances
-            sem_seg: semantic segmentation ground truth.
-            Other information that's included in the original dicts, such as:
-                "height", "width" (int): the output resolution of the model, used in inference.
-                    See :meth:`postprocess` for details.
+                For now, each item in the list is a dict that contains:
+
+                * "image": Tensor, image in (C, H, W) format.
+                * "instances": Instances
+                * "sem_seg": semantic segmentation ground truth.
+                * Other information that's included in the original dicts, such as:
+                  "height", "width" (int): the output resolution of the model, used in inference.
+                  See :meth:`postprocess` for details.
 
         Returns:
-            list[dict]: each dict is the results for one image. The dict
-                contains the following keys:
-                "instances": see :meth:`GeneralizedRCNN.forward` for its format.
-                "sem_seg": see :meth:`SemanticSegmentor.forward` for its format.
-                "panoptic_seg": available when `PANOPTIC_FPN.COMBINE.ENABLED`.
-                    See the return value of
-                    :func:`combine_semantic_and_instance_outputs` for its format.
+            list[dict]:
+                each dict is the results for one image. The dict contains the following keys:
+
+                * "instances": see :meth:`GeneralizedRCNN.forward` for its format.
+                * "sem_seg": see :meth:`SemanticSegmentor.forward` for its format.
+                * "panoptic_seg": available when `PANOPTIC_FPN.COMBINE.ENABLED`.
+                  See the return value of
+                  :func:`combine_semantic_and_instance_outputs` for its format.
         """
         images = [x["image"].to(self.device) for x in batched_inputs]
         images = [self.normalizer(x) for x in images]
@@ -109,8 +111,8 @@ class PanopticFPN(nn.Module):
         for sem_seg_result, detector_result, input_per_image, image_size in zip(
             sem_seg_results, detector_results, batched_inputs, images.image_sizes
         ):
-            height = input_per_image.get("height")
-            width = input_per_image.get("width")
+            height = input_per_image.get("height", image_size[0])
+            width = input_per_image.get("width", image_size[1])
             sem_seg_r = sem_seg_postprocess(sem_seg_result, image_size, height, width)
             detector_r = detector_postprocess(detector_result, height, width)
 

@@ -53,6 +53,7 @@ except ImportError:
         "torch.nn.modules.utils",
         "torch.utils",
         "torch.utils.data",
+        "torch.onnx",
         "torchvision",
         "torchvision.ops",
     ]:
@@ -67,6 +68,16 @@ for m in [
     "pycocotools.mask",
     "pycocotools.coco",
     "pycocotools.cocoeval",
+    "google",
+    "google.protobuf",
+    "google.protobuf.internal",
+    "onnx",
+    "caffe2",
+    "caffe2.proto",
+    "caffe2.python",
+    "caffe2.python.utils",
+    "caffe2.python.onnx",
+    "caffe2.python.onnx.backend",
 ]:
     sys.modules[m] = mock.Mock(name=m)
 sys.modules["cv2"].__version__ = "3.4"
@@ -75,7 +86,7 @@ import detectron2  # isort: skip
 
 
 project = "detectron2"
-copyright = "2019, detectron2 contributors"
+copyright = "2019-2020, detectron2 contributors"
 author = "detectron2 contributors"
 
 # The short X.Y version
@@ -241,7 +252,7 @@ texinfo_documents = [
 todo_include_todos = True
 
 
-_DEPRECATED_NAMES = set(["out_feature_channels", "out_feature_strides", "out_features"])
+_DEPRECATED_NAMES = set()
 
 
 def autodoc_skip_member(app, what, name, obj, skip, options):
@@ -274,7 +285,6 @@ def setup(app):
         "recommonmark_config",
         {
             "url_resolver": url_resolver,
-            "auto_toc_tree_section": "Contents",
             "enable_math": True,
             "enable_inline_math": True,
             "enable_eval_rst": True,

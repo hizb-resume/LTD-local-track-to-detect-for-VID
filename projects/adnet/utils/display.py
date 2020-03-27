@@ -26,12 +26,12 @@ def draw_boxes(image, boxes):
     return im_with_bb
 
 def display_result(image, boxes):
-    if len(boxes[0])==1:
-        im_with_bb = draw_box(image, boxes)
-    else:
+    if isinstance(boxes,list):
         im_with_bb =image
         for i in range(len(boxes)):
             im_with_bb = draw_box(im_with_bb, boxes[i])
+    else:
+        im_with_bb = draw_box(image, boxes)
     cv2.imshow("result", im_with_bb)
     cv2.waitKey(1)
 

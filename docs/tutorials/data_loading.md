@@ -49,11 +49,11 @@ def mapper(dataset_dict):
 	dataset_dict["image"] = torch.as_tensor(image.transpose(2, 0, 1).astype("float32"))
 
 	annos = [
-		utils.transform_instance_annotations(obj, transforms, image.shape[1:])
+		utils.transform_instance_annotations(obj, transforms, image.shape[:2])
 		for obj in dataset_dict.pop("annotations")
 		if obj.get("iscrowd", 0) == 0
 	]
-	instances = utils.annotations_to_instances(annos, image.shape[1:])
+	instances = utils.annotations_to_instances(annos, image.shape[:2])
 	dataset_dict["instances"] = utils.filter_empty_instances(instances)
 	return dataset_dict
 
@@ -71,7 +71,7 @@ You can implement it using any tools you like.
 
 If you use [DefaultTrainer](../modules/engine.html#detectron2.engine.defaults.DefaultTrainer),
 you can overwrite its `build_{train,test}__loader` method to use your own dataloader.
-See the [densepose dataloader](/projects/DensePose/train_net.py)
+See the [densepose dataloader](../../projects/DensePose/train_net.py)
 for an example.
 
 If you write your own training loop, you can plug in your data loader easily.

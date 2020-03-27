@@ -5,21 +5,26 @@ if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
 import cv2
 import os
 import numpy as np
+from PIL import Image #use PIL to processs img
 import torch
 import torchsnooper
 import torch.optim as optim
 from models.ADNet import adnet
 from options.general import opts
 from torch import nn
+import torch.nn.functional as F
 import torch.utils.data as data
+from torch.autograd import Variable
+import torchvision.transforms as transforms
 import glob
 from datasets.online_adaptation_dataset import OnlineAdaptationDataset, OnlineAdaptationDatasetStorage
-from utils.augmentations import ADNet_Augmentation
+from utils.augmentations import ADNet_Augmentation,ADNet_Augmentation2,ADNet_Augmentation3
 from utils.do_action import do_action
 import time
 from utils.display import display_result, draw_boxes
 from utils.gen_samples import gen_samples
 from utils.precision_plot import distance_precision_plot, iou_precision_plot
+from utils.my_util import aHash,Hamming_distance,cal_iou
 from random import shuffle
 from tensorboardX import SummaryWriter
 from detectron2.structures import Boxes,RotatedBoxes
@@ -70,7 +75,7 @@ def pred(predictor,class_names,frame):
 #     return labels
 
 # @torchsnooper.snoop()
-def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
+def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts, args):
 
     if torch.cuda.is_available():
         if args.cuda:
@@ -82,7 +87,16 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
     else:
         torch.set_default_tensor_type('torch.FloatTensor')
 
-    transform = ADNet_Augmentation(opts)
+    # transform = ADNet_Augmentation(opts)
+
+    mean = np.array(opts['means'], dtype=np.float32)
+    mean = torch.from_numpy(mean).cuda()
+    transform = ADNet_Augmentation2(opts,mean)
+
+    transform3_adition = transforms.Compose([transforms.Resize((100, 100)),
+                                    transforms.ToTensor()
+                                    ])
+    transform3 = ADNet_Augmentation3(transform3_adition)
 
     if isinstance(vid_path,list):
         print('Testing sequences in ' + str(vid_path[0][-43:-12]) + '...')
@@ -115,6 +129,7 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
         'vid_id':vidx,
         'frame_id':[],
         'track_id':[],
+        'detortrack':[],
         'obj_name':[],
         'score_cls':[],
         'bbox':[]
@@ -128,13 +143,39 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
         'bbox': []
     }
 
+    pre_aera=[]
+    curr_aera=[]
+
+    spend_time={
+        'predict':0,
+        'n_predict_frames':0,
+        'track':0,
+        'n_track_frames':0,
+        'readframe':0,
+        'n_readframe':0,
+        'append':0,
+        'n_append':0,
+        'transform':0,
+        'n_transform':0,
+        # 'cuda':0,
+        # 'n_cuda':0,
+        'argmax_after_forward':0,
+        'n_argmax_after_forward':0,
+        'do_action':0,
+        'n_do_action':0
+    }
+
     #vid_info['img_files'] = glob.glob(os.path.join(vid_path, 'img', '*.jpg'))
     #vid_info['img_files'] = glob.glob(os.path.join(vid_path, '*.jpg'))
+    isVidFile=False
     if isinstance(vid_path,list):
         vid_info['img_files'] =vid_path
     else:
-        vid_info['img_files'] = glob.glob(os.path.join(vid_path, '*.JPEG'))
-        vid_info['img_files'].sort(key=str.lower)
+        if '.' in vid_path[-5:]:
+            isVidFile = True
+        else:
+            vid_info['img_files'] = glob.glob(os.path.join(vid_path, '*.JPEG'))
+            vid_info['img_files'].sort(key=str.lower)
 
     #gt_path = os.path.join(vid_path, 'groundtruth_rect.txt')
     # gt_path = os.path.join(vid_path, 'groundtruth.txt')
@@ -179,7 +220,14 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
     # if vid_info['gt'][-1] == '':  # small hack
     #     vid_info['gt'] = vid_info['gt'][:-1]
     # vid_info['nframes'] = min(len(vid_info['img_files']), len(vid_info['gt']))
-    vid_info['nframes'] =len(vid_info['img_files'])
+    cap=None
+    if isVidFile == True:
+        cap = cv2.VideoCapture(vid_path)
+        vid_info['nframes'] =int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        # vid_info['nframes'] = 15
+    else:
+        # vid_info['nframes'] =48
+        vid_info['nframes'] = len(vid_info['img_files'])
     # catch the first box
     # curr_bbox = vid_info['gt'][0]
     # curr_bbox = [114,158,88,100]
@@ -221,74 +269,183 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
     # cap = cv2.VideoCapture(vidpath)
     # length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     # for frame_idx in range(length):
-
+    sign_redet=False
+    dis_redet=0
+    n_trackid=-1
+    obj_area=[]
+    obj_box=[]
     for frame_idx in range(vid_info['nframes']):
     ## for frame_idx, frame_path in enumerate(vid_info['img_files']):
         # frame_idx = idx
-        frame_path = vid_info['img_files'][frame_idx]
+        ts1=time.time()
+        if isVidFile == True:
+            cap.set(cv2.CAP_PROP_POS_FRAMES, float(frame_idx))
+            success, frame = cap.read()
+        else:
+            frame_path = vid_info['img_files'][frame_idx]
+            frame = cv2.imread(frame_path)
+            try:
+                frame.shape
+            except:
+                print(frame_path)
+        ts2=time.time()
+        spend_time['readframe'] += ts2 - ts1
+        spend_time['n_readframe'] += 1
+
         t0_wholetracking = time.time()
-        frame = cv2.imread(frame_path)
 
         # cap.set(cv2.CAP_PROP_POS_FRAMES, float(frame_idx))
         # success, frame = cap.read()
-
-        if frame_idx==0:
+        if len(frame_pred['bbox']) == 0:
+            sign_redet = True
+            # print('the num of pred boxes is 0! pre frame: %d, now frame: %d .'%(frame_idx-1,frame_idx))
+        if frame_idx==0 or sign_redet==True or dis_redet==20:
+        # if frame_idx == 0 or sign_redet == True:
+            # print('redetection: frame %d'%frame_idx)
+            ts1=time.time()
             boxes,classes,scores = pred(predictor,class_names, frame)
+            ts2=time.time()
+            spend_time['predict']+=ts2-ts1
+            spend_time['n_predict_frames']+=1
             frame_pred['frame_id'] = frame_idx
+            frame_pred['track_id'] = []
+            frame_pred['obj_name'] = []
+            frame_pred['bbox'] = []
+            frame_pred['score_cls'] = []
+            pre_aera=[]
+            pre_aera_crop = []
+            ts1=time.time()
             n_bbox=len(boxes)
-            for i_d in range(n_bbox):
-                frame_pred['track_id'].append(i_d)
-                frame_pred['obj_name'].append(classes[i_d])
-                frame_pred['bbox'].append(boxes[i_d])
-                frame_pred['score_cls'].append(scores[i_d])
+            # if frame_idx==0:
+            if n_trackid==-1:
+                for i_d in range(n_bbox):
+                    n_trackid+=1
+                    frame_pred['track_id'].append(n_trackid)
+                    frame_pred['obj_name'].append(classes[i_d])
+                    frame_pred['bbox'].append(boxes[i_d])
+                    frame_pred['score_cls'].append(scores[i_d])
+                    if args.useSiamese or args.checktrackid:
+                        t_aera, t_aera_crop,_ = transform3(frame, boxes[i_d])
+                        if args.useSiamese:
+                            pre_aera.append(t_aera)
+                            pre_aera_crop.append(t_aera_crop)
+                        if args.checktrackid:
+                            obj_area.append(t_aera)
+                            obj_box.append(boxes[i_d])
+            else:
+                for i_d in range(n_bbox):
+                    if args.useSiamese or args.checktrackid:
+                        t_aera, t_aera_crop,_ = transform3(frame, boxes[i_d])
+                        if args.useSiamese:
+                            pre_aera.append(t_aera)
+                            pre_aera_crop.append(t_aera_crop)
+                        if args.checktrackid:
+                            # calculate the id of the box with the highest similarity
+                            # if thred of the highest similarity is higher than 0.9,
+                            # n_trackid +1
+                            maxid=0
+                            maxdistance=9999
+                            for nt in range(len(obj_area)):
+                                output1, output2 = siamesenet(Variable(t_aera).cuda(), Variable(obj_area[nt]).cuda())
+                                euclidean_distance = F.pairwise_distance(output1, output2)
+                                if euclidean_distance<maxdistance:
+                                    maxdistance=euclidean_distance
+                                    maxid=nt
+                            # print(maxid,len(obj_box))
+                            if maxdistance>args.siam_thred and cal_iou(boxes[i_d],obj_box[maxid])<0.6:
+                                n_trackid += 1
+                                obj_area.append(t_aera)
+                                obj_box.append(boxes[i_d])
+                                frame_pred['track_id'].append(n_trackid)
+                            else:
+                                frame_pred['track_id'].append(maxid)
+                                obj_box[maxid]=boxes[i_d]
+                        else:
+                            # n_trackid_t=i_d
+                            frame_pred['track_id'].append(i_d)
+                            # obj_area.append(t_aera)
+                    else:
+                        frame_pred['track_id'].append(i_d)
+                    # n_trackid+=1
+                    # frame_pred['track_id'].append(n_trackid_t)
+                    frame_pred['obj_name'].append(classes[i_d])
+                    frame_pred['bbox'].append(boxes[i_d])
+                    frame_pred['score_cls'].append(scores[i_d])
+
             vid_pred['frame_id'].extend(np.full(n_bbox, frame_pred['frame_id']))
             vid_pred['track_id'].extend(frame_pred['track_id'])
+            vid_pred['detortrack'].extend(np.full(n_bbox,0))
             vid_pred['obj_name'].extend(frame_pred['obj_name'])
             vid_pred['bbox'].extend(frame_pred['bbox'])
             vid_pred['score_cls'].extend(frame_pred['score_cls'])
+            if args.track:
+                sign_redet = False
+            dis_redet = 0
+            ts2=time.time()
+            spend_time['append'] += ts2 - ts1
+            spend_time['n_append'] += 1
 
             # curr_bbox = boxes[2]
 
         # draw box or with display, then save
-        if args.display_images:
-            im_with_bb = display_result(frame, frame_pred['bbox'])  # draw box and display
-        else:
-            im_with_bb = draw_boxes(frame, frame_pred['bbox'])
+        # if args.display_images:
+        #     im_with_bb = display_result(frame, frame_pred['bbox'])  # draw box and display
+        # else:
+        #     im_with_bb = draw_boxes(frame, frame_pred['bbox'])
 
         # if args.save_result_images:
         #     filename = os.path.join(args.save_result_images, str(frame_idx).rjust(4,'0')+'-00-00-patch_initial.jpg')
         #     cv2.imwrite(filename, im_with_bb)
 
         # curr_bbox_old = curr_bbox
-        cont_negatives = 0
+        # cont_negatives = 0
 
-        if frame_idx > 0:
+        # if frame_idx > 0:
+        else:
+            dis_redet += 1
             # tracking
-            if args.cuda:
-                net.module.set_phase('test')
-            else:
-                net.set_phase('test')
+            # if args.cuda:
+            #     net.module.set_phase('test')
+            # else:
+            #     net.set_phase('test')
             frame_pred['frame_id'] = frame_idx
-            if len(frame_pred['bbox'])==0:
-                print('the num of pred boxes is 0!')
+            # if len(frame_pred['bbox'])==0:
+            #     sign_redet=True
+            #     continue
+            #     print('the num of pred boxes is 0!')
+
+            ts_all = 0
+            frame2=frame.copy()
+            frame2=frame2.astype(np.float32)
+            frame2=torch.from_numpy(frame2).cuda()
             for t_id,curr_bbox in enumerate(frame_pred['bbox']):
                 t = 0
                 while True:
-                    curr_patch, curr_bbox, _, _ = transform(frame, curr_bbox, None, None)
-                    if args.cuda:
-                        curr_patch = curr_patch.cuda()
-
-                    curr_patch = curr_patch.unsqueeze(0)  # 1 batch input [1, curr_patch.shape]
-
+                    ts1=time.time()
+                    # curr_patch, curr_bbox, _, _ = transform(frame, curr_bbox, None, None)
+                    curr_patch, curr_bbox, _, _ = transform(frame2, curr_bbox, None, None)
+                    ts2=time.time()
+                    spend_time['transform'] += ts2 - ts1
+                    spend_time['n_transform'] += 1
+                    # ts1 = time.time()
+                    # if args.cuda:
+                    #     curr_patch = curr_patch.cuda()  #this step need most of the time
+                    # ts2 = time.time()
+                    # spend_time['cuda'] += ts2 - ts1
+                    # spend_time['n_cuda'] += 1
+                    # curr_patch = curr_patch.unsqueeze(0)  # 1 batch input [1, curr_patch.shape]
+                    ts1 = time.time()
                     fc6_out, fc7_out = net.forward(curr_patch)
-
+                    ts2 = time.time()
+                    ts_all+=ts2-ts1
+                    ts1=time.time()
                     curr_score = fc7_out.detach().cpu().numpy()[0][1]
 
                     # print(curr_score)
 
-                    if ntraining > args.believe_score_result:
-                        if curr_score < opts['failedThre']:
-                            cont_negatives += 1
+                    # if ntraining > args.believe_score_result:
+                    #     if curr_score < opts['failedThre']:
+                    #         cont_negatives += 1
 
                     if args.cuda:
                         action = np.argmax(fc6_out.detach().cpu().numpy())  # TODO: really okay to detach?
@@ -296,8 +453,11 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
                     else:
                         action = np.argmax(fc6_out.detach().numpy())  # TODO: really okay to detach?
                         action_prob = fc6_out.detach().numpy()[0][action]
-
+                    ts2=time.time()
+                    spend_time['argmax_after_forward'] += ts2 - ts1
+                    spend_time['n_argmax_after_forward'] += 1
                     # do action
+                    ts1 = time.time()
                     curr_bbox = do_action(curr_bbox, opts, action, frame.shape)
 
                     # bound the curr_bbox size
@@ -307,19 +467,22 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
                     if curr_bbox[3] < 10:
                         curr_bbox[1] = min(0, curr_bbox[1] + curr_bbox[3] / 2 - 10 / 2)
                         curr_bbox[3] = 10
+                    ts2 = time.time()
+                    spend_time['do_action'] += ts2 - ts1
+                    spend_time['n_do_action'] += 1
 
                     t += 1
 
                     # draw box or with display, then save
-                    if args.display_images:
+                    if args.display_images_t:
                         im_with_bb = display_result(frame, curr_bbox)  # draw box and display
                     else:
                         im_with_bb = draw_boxes(frame, curr_bbox)
 
-                    # if args.save_result_images:
-                    #     filename = os.path.join(args.save_result_images, str(frame_idx).rjust(4,'0')+'-'+str(t_id).rjust(2,'0')+'-' + str(t).rjust(2,'0') + '.jpg')
-                    #     cv2.imwrite(filename, im_with_bb)
-                    #     pass
+                    if args.save_result_images_t:
+                        filename = os.path.join(args.save_result_images, str(frame_idx).rjust(4,'0')+'-'+str(t_id).rjust(2,'0')+'-' + str(t).rjust(2,'0') + '.jpg')
+                        cv2.imwrite(filename, im_with_bb)
+                        pass
 
                     if action == opts['stop_action'] or t >= opts['num_action_step_max']:
                         break
@@ -330,21 +493,62 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
                 # if ntraining > args.believe_score_result:
 
                 if curr_score < 0.5:
-                    print('redetection')
+                    # print('redetection: frame %d' % frame_idx)
                     is_negative = True
-
+                    dis_redet = 0
+                    ts1=time.time()
                     boxes, classes, scores = pred(predictor, class_names,frame)
+                    ts2=time.time()
+                    spend_time['predict'] += ts2 - ts1
+                    spend_time['n_predict_frames'] += 1
                     # frame_pred['frame_id'] = frame_idx
                     frame_pred['track_id']=[]
                     frame_pred['obj_name']=[]
                     frame_pred['bbox']=[]
                     frame_pred['score_cls']=[]
+                    pre_aera=[]
+                    pre_aera_crop=[]
+                    ts1=time.time()
                     n_bbox = len(boxes)
                     for i_d in range(n_bbox):
-                        frame_pred['track_id'].append(i_d)
+                        if args.useSiamese or args.checktrackid:
+                            t_aera, t_aera_crop, _ = transform3(frame, boxes[i_d])
+                            if args.useSiamese:
+                                pre_aera.append(t_aera)
+                                pre_aera_crop.append(t_aera_crop)
+                            if args.checktrackid:
+                                # calculate the id of the box with the highest similarity
+                                # if thred of the highest similarity is higher than 0.9,
+                                # n_trackid +1
+                                maxid = 0
+                                maxdistance = 9999
+                                for nt in range(len(obj_area)):
+                                    output1, output2 = siamesenet(Variable(t_aera).cuda(),
+                                                                  Variable(obj_area[nt]).cuda())
+                                    euclidean_distance = F.pairwise_distance(output1, output2)
+                                    if euclidean_distance < maxdistance:
+                                        maxdistance = euclidean_distance
+                                        maxid = nt
+                                if maxdistance > args.siam_thred and cal_iou(boxes[i_d], obj_box[maxid]) < 0.6:
+                                    n_trackid += 1
+                                    obj_area.append(t_aera)
+                                    obj_box.append(boxes[i_d])
+                                    frame_pred['track_id'].append(n_trackid)
+                                else:
+                                    frame_pred['track_id'].append(maxid)
+                                    obj_box[maxid] = boxes[i_d]
+                            else:
+                                # n_trackid_t=i_d
+                                frame_pred['track_id'].append(i_d)
+                                # obj_area.append(t_aera)
+                        else:
+                            frame_pred['track_id'].append(i_d)
                         frame_pred['obj_name'].append(classes[i_d])
                         frame_pred['bbox'].append(boxes[i_d])
                         frame_pred['score_cls'].append(scores[i_d])
+
+                    ts2=time.time()
+                    spend_time['append'] += ts2 - ts1
                     # vid_pred['frame_id'].extend(np.full(n_bbox, frame_pred['frame_id']))
                     # vid_pred['track_id'].extend(frame_pred['track_id'])
                     # vid_pred['obj_name'].extend(frame_pred['obj_name'])
@@ -373,10 +577,10 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
                     # curr_bbox = redet_samples[max_score_samples_idx]
                     #
                     # update the final result image
-                    if args.display_images:
-                        im_with_bb = display_result(frame, frame_pred['bbox'])  # draw box and display
-                    else:
-                        im_with_bb = draw_boxes(frame, frame_pred['bbox'])
+                    # if args.display_images:
+                    #     im_with_bb = display_result(frame, frame_pred['bbox'])  # draw box and display
+                    # else:
+                    #     im_with_bb = draw_boxes(frame, frame_pred['bbox'])
                     #
                     # if args.save_result_images:
                     #     filename = os.path.join(args.save_result_images, str(frame_idx).rjust(4,'0') + '-98-20-redet.jpg')
@@ -389,31 +593,139 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
                     # frame_pred['obj_name'] = []
                     frame_pred['bbox'][t_id] = curr_bbox
                     frame_pred['score_cls'][t_id] = curr_score
+
+                    if args.useSiamese:
+                        curr_aera, curr_aera_crop, _ = transform3(frame, curr_bbox)
+                        x0=pre_aera[t_id]
+                        x0_crop=pre_aera_crop[t_id]
+                        output1, output2 = siamesenet(Variable(x0).cuda(), Variable(curr_aera).cuda())
+                        euclidean_distance = F.pairwise_distance(output1, output2)
+                        # print('Dissimilarity is %.2f\n ' % (euclidean_distance.item()))
+                        # if euclidean_distance.item()<0.5:
+                        #     filename1="temimg/v%d-f%d-t%d-siam%.2f-pre.JPEG"%(vidx,frame_idx,t,euclidean_distance.item())
+                        #     # cv2.imwrite(filename1, x0.numpy())
+                        #     cv2.imwrite(filename1, x0_crop)
+                        #     filename2 = "temimg/v%d-f%d-t%d-siam%.2f-cur.JPEG"%(vidx,frame_idx,t,euclidean_distance.item())
+                        #     cv2.imwrite(filename2, curr_aera_crop)
+                        pre_aera[t_id] = curr_aera
+                        pre_aera_crop[t_id] = curr_aera_crop
+
+                        if euclidean_distance.item() > args.siam_thred:
+                            #redect:
+                            is_negative = True
+                            dis_redet = 0
+                            ts1 = time.time()
+                            boxes, classes, scores = pred(predictor, class_names, frame)
+                            ts2 = time.time()
+                            spend_time['predict'] += ts2 - ts1
+                            spend_time['n_predict_frames'] += 1
+                            # frame_pred['frame_id'] = frame_idx
+                            frame_pred['track_id'] = []
+                            frame_pred['obj_name'] = []
+                            frame_pred['bbox'] = []
+                            frame_pred['score_cls'] = []
+                            pre_aera = []
+                            pre_aera_crop = []
+                            ts1 = time.time()
+                            n_bbox = len(boxes)
+                            for i_d in range(n_bbox):
+                                t_aera, t_aera_crop, _ = transform3(frame, boxes[i_d])
+                                pre_aera.append(t_aera)
+                                pre_aera_crop.append(t_aera_crop)
+                                if args.checktrackid:
+                                    # calculate the id of the box with the highest similarity
+                                    # if thred of the highest similarity is higher than 0.9,
+                                    # n_trackid +1
+                                    maxid = 0
+                                    maxdistance = 9999
+                                    for nt in range(len(obj_area)):
+                                        output1, output2 = siamesenet(Variable(t_aera).cuda(),
+                                                                      Variable(obj_area[nt]).cuda())
+                                        euclidean_distance = F.pairwise_distance(output1, output2)
+                                        if euclidean_distance < maxdistance:
+                                            maxdistance = euclidean_distance
+                                            maxid = nt
+                                    # print("maxdistance: %.2f, iou: %.2f."%(maxdistance,cal_iou(boxes[i_d], obj_box[maxid])))
+                                    if maxdistance > args.siam_thred and cal_iou(boxes[i_d], obj_box[maxid]) < 0.6:
+                                        n_trackid += 1
+                                        obj_area.append(t_aera)
+                                        obj_box.append(boxes[i_d])
+                                        frame_pred['track_id'].append(n_trackid)
+                                    else:
+                                        frame_pred['track_id'].append(maxid)
+                                        obj_box[maxid] = boxes[i_d]
+                                else:
+                                    # n_trackid_t=i_d
+                                    frame_pred['track_id'].append(i_d)
+                                # frame_pred['track_id'].append(i_d)
+                                frame_pred['obj_name'].append(classes[i_d])
+                                frame_pred['bbox'].append(boxes[i_d])
+                                frame_pred['score_cls'].append(scores[i_d])
+
+                            ts2 = time.time()
+                            spend_time['append'] += ts2 - ts1
+                            break
+                        else:
+                            if args.checktrackid:
+                                obj_box[frame_pred['track_id'][t_id]] = curr_bbox
+            n_bbox=len(frame_pred['bbox'])
             if is_negative==False:
-                if args.display_images:
-                    im_with_bb = display_result(frame, frame_pred['bbox'])  # draw box and display
-                else:
-                    im_with_bb = draw_boxes(frame, frame_pred['bbox'])
+                spend_time['track'] += ts_all
+                spend_time['n_track_frames'] += 1
+                vid_pred['detortrack'].extend(np.full(n_bbox, 1))
+                # if args.display_images:
+                #     im_with_bb = display_result(frame, frame_pred['bbox'])  # draw box and display
+                # else:
+                #     im_with_bb = draw_boxes(frame, frame_pred['bbox'])
+            else:
+                vid_pred['detortrack'].extend(np.full(n_bbox, 0))
+            ts1=time.time()
             vid_pred['frame_id'].extend(np.full(n_bbox, frame_pred['frame_id']))
             vid_pred['track_id'].extend(frame_pred['track_id'])
             vid_pred['obj_name'].extend(frame_pred['obj_name'])
             vid_pred['bbox'].extend(frame_pred['bbox'])
             vid_pred['score_cls'].extend(frame_pred['score_cls'])
+            ts2=time.time()
+            spend_time['append'] += ts2 - ts1
+            spend_time['n_append'] += 1
 
-        if args.save_result_images:
+        if args.display_images:
+            if len(frame_pred['bbox']) == 0:
+                cv2.imshow("result",frame)
+                cv2.waitKey(1)
+            else:
+                boxes=np.asarray(frame_pred['bbox'])
+                boxes[:, 2] = boxes[:, 2] + boxes[:, 0]
+                boxes[:, 3] = boxes[:, 3] + boxes[:, 1]
+                outputs={
+                    "pred_boxes":boxes,
+                    "scores":frame_pred['score_cls'],
+                    "trackids":frame_pred['track_id'],
+                    "pred_classes":frame_pred['obj_name']
+                }
+                v = Visualizer(frame[:, :, ::-1], metalog, scale=1.2)
+                v = v.draw_instance_predictions2(outputs)
+                cv2.imshow("result",v.get_image())
+                cv2.waitKey(1)
+
+        if args.save_result_images_bool:
             filename = os.path.join(args.save_result_images, str(frame_idx).rjust(4,'0')+'-99-21-final' + '.jpg')
             # cv2.imwrite(filename, im_with_bb)
-            boxes=np.asarray(frame_pred['bbox'])
-            boxes[:, 2] = boxes[:, 2] + boxes[:, 0]
-            boxes[:, 3] = boxes[:, 3] + boxes[:, 1]
-            outputs={
-                "pred_boxes":boxes,
-                "scores":frame_pred['score_cls'],
-                "pred_classes":frame_pred['obj_name']
-            }
-            v = Visualizer(frame[:, :, ::-1], metalog, scale=1.2)
-            v = v.draw_instance_predictions2(outputs)
-            cv2.imwrite(filename, v.get_image(), [int(cv2.IMWRITE_JPEG_QUALITY), 70])
+            if len(frame_pred['bbox']) == 0:
+                cv2.imwrite(filename, frame, [int(cv2.IMWRITE_JPEG_QUALITY), 70])
+            else:
+                boxes=np.asarray(frame_pred['bbox'])
+                boxes[:, 2] = boxes[:, 2] + boxes[:, 0]
+                boxes[:, 3] = boxes[:, 3] + boxes[:, 1]
+                outputs={
+                    "pred_boxes":boxes,
+                    "scores":frame_pred['score_cls'],
+                    "trackids": frame_pred['track_id'],
+                    "pred_classes":frame_pred['obj_name']
+                }
+                v = Visualizer(frame[:, :, ::-1], metalog, scale=1.2)
+                v = v.draw_instance_predictions2(outputs)
+                cv2.imwrite(filename, v.get_image(), [int(cv2.IMWRITE_JPEG_QUALITY), 70])
 
         # record the curr_bbox result
         # bboxes[frame_idx] = curr_bbox
@@ -553,4 +865,38 @@ def adnet_test(net, predictor,metalog,class_names,vidx,vid_path, opts, args):
 
     # return bboxes, t_sum, precisions
     print('vid %d : %d frames, whole tracking time : %.4f sec.' % (vidx,vid_info['nframes'],t_sum))
-    return vid_pred
+    if spend_time['n_predict_frames']!=0:
+        print("predict time: %.2fs, predict frames: %d, average time: %.2fms."%(
+            spend_time['predict'],spend_time['n_predict_frames'],
+            (spend_time['predict']/spend_time['n_predict_frames'])*1000))
+    if spend_time['n_track_frames']!=0:
+        print("track time: %.2fs, track frames: %d, average time: %.2fms." % (
+            spend_time['track'], spend_time['n_track_frames'],
+            (spend_time['track'] / spend_time['n_track_frames']) * 1000))
+    # if spend_time['n_readframe']!=0:
+    #     print("readframe time: %.2fs, readframes: %d, average time: %.2fms." % (
+    #         spend_time['readframe'], spend_time['n_readframe'],
+    #         (spend_time['readframe'] / spend_time['n_readframe']) * 1000))
+    # if spend_time['n_append']!=0:
+    #     print("append time: %.2fs, n_append: %d, average time: %.2fms." % (
+    #         spend_time['append'], spend_time['n_append'],
+    #         (spend_time['append'] / spend_time['n_append']) * 1000))
+    # if spend_time['n_transform']!=0:
+    #     print("transform time: %.2fs, n_transform: %d, average time: %.2fms." % (
+    #         spend_time['transform'], spend_time['n_transform'],
+    #         (spend_time['transform'] / spend_time['n_transform']) * 1000))
+    # if spend_time['n_cuda'] != 0:
+    #     print(".cuda time: %.2fs, n_transform call: %d, average time: %.2fms." % (
+    #         spend_time['cuda'], spend_time['n_cuda'],
+    #         (spend_time['cuda'] / spend_time['n_cuda']) * 1000))
+
+    # if spend_time['n_argmax_after_forward']!=0:
+    #     print("argmax_after_forward time: %.2fs, n_argmax_after_forward: %d, average time: %.2fms." % (
+    #         spend_time['argmax_after_forward'], spend_time['n_argmax_after_forward'],
+    #         (spend_time['argmax_after_forward'] / spend_time['n_argmax_after_forward']) * 1000))
+    # if spend_time['n_do_action']!=0:
+    #     print("do_action time: %.2fs, n_do_action: %d, average time: %.2fms." % (
+    #         spend_time['do_action'], spend_time['n_do_action'],
+    #         (spend_time['do_action'] / spend_time['n_do_action']) * 1000))
+    print('\n')
+    return vid_pred,spend_time

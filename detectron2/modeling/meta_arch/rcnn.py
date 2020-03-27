@@ -7,7 +7,6 @@ from torch import nn
 from detectron2.structures import ImageList
 from detectron2.utils.events import get_event_storage
 from detectron2.utils.logger import log_first_n
-from detectron2.utils.visualizer import Visualizer
 
 from ..backbone import build_backbone
 from ..postprocessing import detector_postprocess
@@ -56,13 +55,12 @@ class GeneralizedRCNN(nn.Module):
             proposals (list): a list that contains predicted proposals. Both
                 batched_inputs and proposals should have the same length.
         """
+        from detectron2.utils.visualizer import Visualizer
 
-        inputs = [x for x in batched_inputs]
-        prop_boxes = [p for p in proposals]
         storage = get_event_storage()
         max_vis_prop = 20
 
-        for input, prop in zip(inputs, prop_boxes):
+        for input, prop in zip(batched_inputs, proposals):
             img = input["image"].cpu().numpy()
             assert img.shape[0] == 3, "Images should have 3 channels."
             if self.input_format == "BGR":
@@ -79,8 +77,9 @@ class GeneralizedRCNN(nn.Module):
             prop_img = v_pred.get_image()
             vis_img = np.concatenate((anno_img, prop_img), axis=1)
             vis_img = vis_img.transpose(2, 0, 1)
-            vis_name = " 1. GT bounding boxes  2. Predicted proposals"
+            vis_name = "Left: GT bounding boxes;  Right: Predicted proposals"
             storage.put_image(vis_name, vis_img)
+            break  # only visualize one image in a batch
 
     def forward(self, batched_inputs):
         """
@@ -96,14 +95,14 @@ class GeneralizedRCNN(nn.Module):
                 Other information that's included in the original dicts, such as:
 
                 * "height", "width" (int): the output resolution of the model, used in inference.
-                    See :meth:`postprocess` for details.
+                  See :meth:`postprocess` for details.
 
         Returns:
             list[dict]:
                 Each dict is the output for one input image.
                 The dict contains one key "instances" whose value is a :class:`Instances`.
                 The :class:`Instances` object has the following keys:
-                    "pred_boxes", "pred_classes", "scores", "pred_masks", "pred_keypoints"
+                "pred_boxes", "pred_classes", "scores", "pred_masks", "pred_keypoints"
         """
         if not self.training:
             return self.inference(batched_inputs)
@@ -174,15 +173,7 @@ class GeneralizedRCNN(nn.Module):
             results = self.roi_heads.forward_with_given_boxes(features, detected_instances)
 
         if do_postprocess:
-            processed_results = []
-            for results_per_image, input_per_image, image_size in zip(
-                results, batched_inputs, images.image_sizes
-            ):
-                height = input_per_image.get("height", image_size[0])
-                width = input_per_image.get("width", image_size[1])
-                r = detector_postprocess(results_per_image, height, width)
-                processed_results.append({"instances": r})
-            return processed_results
+            return GeneralizedRCNN._postprocess(results, batched_inputs, images.image_sizes)
         else:
             return results
 
@@ -194,6 +185,22 @@ class GeneralizedRCNN(nn.Module):
         images = [self.normalizer(x) for x in images]
         images = ImageList.from_tensors(images, self.backbone.size_divisibility)
         return images
+
+    @staticmethod
+    def _postprocess(instances, batched_inputs, image_sizes):
+        """
+        Rescale the output instances to the target size.
+        """
+        # note: private function; subject to changes
+        processed_results = []
+        for results_per_image, input_per_image, image_size in zip(
+            instances, batched_inputs, image_sizes
+        ):
+            height = input_per_image.get("height", image_size[0])
+            width = input_per_image.get("width", image_size[1])
+            r = detector_postprocess(results_per_image, height, width)
+            processed_results.append({"instances": r})
+        return processed_results
 
 
 @META_ARCH_REGISTRY.register()
@@ -216,7 +223,8 @@ class ProposalNetwork(nn.Module):
             Same as in :class:`GeneralizedRCNN.forward`
 
         Returns:
-            list[dict]: Each dict is the output for one input image.
+            list[dict]:
+                Each dict is the output for one input image.
                 The dict contains one key "proposals" whose value is a
                 :class:`Instances` with keys "proposal_boxes" and "objectness_logits".
         """

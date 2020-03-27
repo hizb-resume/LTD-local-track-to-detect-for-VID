@@ -206,7 +206,7 @@ def _create_text_labels(classes, scores, class_names):
             labels = ["{} {:.0f}%".format(l, s * 100) for l, s in zip(labels, scores)]
     return labels
 
-def _create_text_labels2(classes, scores, class_names):
+def _create_text_labels2(classes, scores,trackids, class_names):
     """
     Args:
         classes (list[int] or None):
@@ -221,9 +221,15 @@ def _create_text_labels2(classes, scores, class_names):
         labels = classes
     if scores is not None:
         if labels is None:
-            labels = ["{:.0f}%".format(s * 100) for s in scores]
+            if trackids is not None:
+                labels = ["objectid:{} {:.0f}%".format(t,s * 100) for t,s in zip(trackids,scores)]
+            else:
+                labels = ["{:.0f}%".format(s * 100) for s in scores]
         else:
-            labels = ["{} {:.0f}%".format(l, s * 100) for l, s in zip(labels, scores)]
+            if trackids is not None:
+                labels = ["{},objectid:{},{:.0f}%".format(l,t, s * 100) for l,t, s in zip(labels,trackids, scores)]
+            else:
+                labels = ["{} {:.0f}%".format(l, s * 100) for l, s in zip(labels, scores)]
     return labels
 
 
@@ -404,7 +410,8 @@ class Visualizer:
         boxes = predictions['pred_boxes'] if 'pred_boxes' in predictions else None
         scores = predictions['scores'] if 'scores' in predictions else None
         classes = predictions['pred_classes'] if 'pred_classes' in predictions else None
-        labels = _create_text_labels2(classes, scores, self.metadata.get("thing_classes", None))
+        trackids = predictions['trackids'] if 'trackids' in predictions else None
+        labels = _create_text_labels2(classes, scores,trackids, self.metadata.get("thing_classes", None))
         keypoints = predictions['pred_keypoints'] if 'pred_keypoints' in predictions else None
 
         masks = None

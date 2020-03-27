@@ -7,6 +7,7 @@ from detectron2.structures import BoxMode
 from fvcore.common.file_io import PathManager
 from detectron2.data import DatasetCatalog, MetadataCatalog
 
+from .builtin_meta import _get_coco_instances_meta
 from .lvis_v0_5_categories import LVIS_CATEGORIES
 
 """
@@ -68,7 +69,7 @@ def load_lvis_json(json_file, image_root, dataset_name=None):
         MetadataCatalog.get(dataset_name).set(**meta)
 
     # sort indices for reproducible results
-    img_ids = sorted(list(lvis_api.imgs.keys()))
+    img_ids = sorted(lvis_api.imgs.keys())
     # imgs is a list of dicts, each looks something like:
     # {'license': 4,
     #  'url': 'http://farm6.staticflickr.com/5454/9413846304_881d5e5c3b_z.jpg',
@@ -154,6 +155,8 @@ def get_lvis_instances_meta(dataset_name):
     Returns:
         dict: LVIS metadata with keys: thing_classes
     """
+    if "cocofied" in dataset_name:
+        return _get_coco_instances_meta()
     if "v0.5" in dataset_name:
         return _get_lvis_instances_meta_v0_5()
     # There will be a v1 in the future
@@ -169,7 +172,7 @@ def _get_lvis_instances_meta_v0_5():
         cat_ids
     ), "Category ids are not in [1, #categories], as expected"
     # Ensure that the category list is sorted by id
-    lvis_categories = [k for k in sorted(LVIS_CATEGORIES, key=lambda x: x["id"])]
+    lvis_categories = sorted(LVIS_CATEGORIES, key=lambda x: x["id"])
     thing_classes = [k["synonyms"][0] for k in lvis_categories]
     meta = {"thing_classes": thing_classes}
     return meta

@@ -9,7 +9,7 @@ if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
 from models.ADNet import adnet
 from utils.get_train_videos import get_train_videos
 from datasets.sl_dataset import initialize_pos_neg_dataset
-from utils.augmentations import ADNet_Augmentation
+from utils.augmentations import ADNet_Augmentation,ADNet_Augmentation2
 
 import torch
 import torch.utils.data as data
@@ -42,7 +42,7 @@ def adnet_train_sl(args, opts):
         os.makedirs(args.save_folder)
 
     if args.visualize:
-        writer = SummaryWriter(log_dir=os.path.join('tensorboardx_log', args.save_file))
+        writer = SummaryWriter(log_dir=os.path.join(args.tensorlogdir, args.save_file))
 
 
     print('generating Supervised Learning dataset..')
@@ -51,13 +51,15 @@ def adnet_train_sl(args, opts):
     if train_videos==None:
         opts['num_videos'] =1
         number_domain = opts['num_videos']
+        mean = np.array(opts['means'], dtype=np.float32)
+        mean = torch.from_numpy(mean).cuda()
         # datasets_pos, datasets_neg = initialize_pos_neg_dataset(train_videos,opts, transform=ADNet_Augmentation(opts),multidomain=args.multidomain)
-        datasets_pos_neg = initialize_pos_neg_dataset(train_videos, opts, transform=ADNet_Augmentation(opts),multidomain=args.multidomain)
+        datasets_pos_neg = initialize_pos_neg_dataset(train_videos, opts,args, transform=ADNet_Augmentation2(opts,mean),multidomain=args.multidomain)
     else:
         opts['num_videos'] = len(train_videos['video_names'])
         number_domain = opts['num_videos']
         # datasets_pos, datasets_neg = initialize_pos_neg_dataset(train_videos, opts, transform=ADNet_Augmentation(opts),multidomain=args.multidomain)
-        datasets_pos_neg = initialize_pos_neg_dataset(train_videos, opts, transform=ADNet_Augmentation(opts),multidomain=args.multidomain)
+        datasets_pos_neg = initialize_pos_neg_dataset(train_videos, opts, args,transform=ADNet_Augmentation(opts),multidomain=args.multidomain)
 
         # dataset = SLDataset(train_videos, opts, transform=
 
@@ -164,7 +166,7 @@ def adnet_train_sl(args, opts):
     print("before  data_loaders.append(data.DataLoader(dataset_pos_neg", end=' : ')
     print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
     for dataset_pos_neg in datasets_pos_neg:
-        data_loaders.append(data.DataLoader(dataset_pos_neg, opts['minibatch_size'], num_workers=args.num_workers, shuffle=True, pin_memory=True))
+        data_loaders.append(data.DataLoader(dataset_pos_neg, opts['minibatch_size'], num_workers=args.num_workers, shuffle=True, pin_memory=False))
     # for dataset_neg in datasets_neg:
     #     data_loaders_neg.append(data.DataLoader(dataset_neg, opts['minibatch_size'], num_workers=args.num_workers, shuffle=True, pin_memory=True))
     print("after  data_loaders.append(data.DataLoader(dataset_pos_neg", end=' : ')
@@ -190,6 +192,7 @@ def adnet_train_sl(args, opts):
     # iteration=0
     # curr_domain = 0
     for epoch in range(args.start_epoch, opts['numEpoch']):
+        ave_loss=0
         if epoch == args.start_epoch:
             t1 = time.time()
             t4 = time.time()
@@ -210,7 +213,7 @@ def adnet_train_sl(args, opts):
                 'adnet_domain_specific_state_dict': domain_specific_nets,
                 'optimizer_state_dict': optimizer.state_dict(),
             }, os.path.join(args.save_folder, args.save_file) +
-                       'epoch' + repr(epoch-1) + '.pth')
+                       'epoch' + repr(epoch-1) + '_final.pth')
 
             if args.visualize:
                 writer.add_scalars('data/epoch_loss', {'action_loss': action_loss / epoch_size,
@@ -276,10 +279,19 @@ def adnet_train_sl(args, opts):
                 curr_domain = 0
             try:
                 images, bbox, action_label, score_label, vid_idx = next(batch_iterators[curr_domain])
+                images=images.reshape(-1,3,112,112)
+                bbox=bbox.reshape(-1,4)
+                action_label=action_label.reshape(-1,11)
+                score_label=score_label.reshape(-1)
+                vid_idx=vid_idx.reshape(-1)
             except StopIteration:
                 batch_iterators[curr_domain] = iter(data_loader[curr_domain])
                 images, bbox, action_label, score_label, vid_idx = next(batch_iterators[curr_domain])
-
+                images = images.reshape(-1, 3, 112, 112)
+                bbox = bbox.reshape(-1, 4)
+                action_label = action_label.reshape(-1, 11)
+                score_label = score_label.reshape(-1)
+                vid_idx = vid_idx.reshape(-1)
         # for images, bbox, action_label, score_label, vid_idx in data_loaders[curr_domain]:
             # TODO: check if this requires grad is really false like in Variable
             pos_idx=torch.where(score_label>0.3)
@@ -287,17 +299,17 @@ def adnet_train_sl(args, opts):
             # pos_idx=ids.nonzero()
             # neg_idx=torch.where(score_label<=0.3)
             # neg_idx=neg_idx[0].tolist()
-            if args.cuda:
-                images = torch.Tensor(images.cuda())
-                bbox = torch.Tensor(bbox.cuda())
-                action_label = torch.Tensor(action_label.cuda())
-                score_label = torch.Tensor(score_label.float().cuda())
-
-            else:
-                images = torch.Tensor(images)
-                bbox = torch.Tensor(bbox)
-                action_label = torch.Tensor(action_label)
-                score_label = torch.Tensor(score_label)
+            # if args.cuda:
+            #     images = torch.Tensor(images.cuda())
+            #     bbox = torch.Tensor(bbox.cuda())
+            #     action_label = torch.Tensor(action_label.cuda())
+            #     score_label = torch.Tensor(score_label.float().cuda())
+            #
+            # else:
+            #     images = torch.Tensor(images)
+            #     bbox = torch.Tensor(bbox)
+            #     action_label = torch.Tensor(action_label)
+            #     score_label = torch.Tensor(score_label)
 
             t0 = time.time()
 
@@ -328,6 +340,7 @@ def adnet_train_sl(args, opts):
 
             action_loss += action_l.item()
             score_loss += score_l.item()
+            ave_loss+=loss.data.item()
 
             # save the ADNetDomainSpecific back to their module
             if args.cuda:
@@ -354,8 +367,10 @@ def adnet_train_sl(args, opts):
                 all_m = all_time % 3600 // 60
                 all_s = all_time % 60
                 t4=time.time()
-                print('epoch '+repr(epoch)+' || iter ' + repr(iteration) + ' || Loss: %.4f || Timer-iter: %d m %d s || Timer-all: %d d %d h %d m %d s || Timer-now: ' % (loss.data.item(),t3_m,t3_s,all_d,all_h,all_m,all_s),end='')
+                ave_loss=ave_loss/2000
+                print('epoch '+repr(epoch)+' | iter ' + repr(iteration) + ' | L-now: %.4f | L-ave: %.4f | T-iter: %d m %d s | T-all: %d d %d h %d m %d s | T-now: ' % (loss.data.item(),ave_loss,t3_m,t3_s,all_d,all_h,all_m,all_s),end='')
                 print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+                ave_loss=0
 
                 if args.visualize and args.send_images_to_visualization:
                     random_batch_index = np.random.randint(images.size(0))
@@ -384,7 +399,7 @@ def adnet_train_sl(args, opts):
                     'adnet_domain_specific_state_dict': domain_specific_nets,
                     'optimizer_state_dict': optimizer.state_dict(),
                 }, os.path.join(args.save_folder, args.save_file) +
-                           repr(iteration) + '_epoch' + repr(epoch) +'.pth')
+                           'epoch' + repr(epoch) +"_"+ repr(iteration) +'.pth')
             # iteration = iteration + 1
             # if args.multidomain:
             #     curr_domain = which_domain[iteration % len(which_domain)]

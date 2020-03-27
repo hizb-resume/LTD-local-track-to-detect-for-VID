@@ -38,7 +38,7 @@ def adnet_train_rl(net, domain_specific_nets, train_videos, opts, args):
         os.makedirs(args.save_folder)
 
     if args.visualize:
-        writer = SummaryWriter(log_dir=os.path.join('tensorboardx_log', args.save_file_RL))
+        writer = SummaryWriter(log_dir=os.path.join(args.tensorlogdir, args.save_file_RL))
 
     if args.cuda:
         net.module.set_phase('test')

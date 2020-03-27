@@ -79,18 +79,18 @@ class ImageList(object):
             max_size[-1] = int(math.ceil(max_size[-1] / stride) * stride)  # type: ignore
             max_size = tuple(max_size)
 
-        image_sizes = [im.shape[-2:] for im in tensors]
+        image_sizes = [tuple(im.shape[-2:]) for im in tensors]
 
         if len(tensors) == 1:
             # This seems slightly (2%) faster.
             # TODO: check whether it's faster for multiple images as well
             image_size = image_sizes[0]
-            padded = F.pad(
-                tensors[0],
-                [0, max_size[-1] - image_size[1], 0, max_size[-2] - image_size[0]],
-                value=pad_value,
-            )
-            batched_imgs = padded.unsqueeze_(0)
+            padding_size = [0, max_size[-1] - image_size[1], 0, max_size[-2] - image_size[0]]
+            if all(x == 0 for x in padding_size):  # https://github.com/pytorch/pytorch/issues/31734
+                batched_imgs = tensors[0].unsqueeze(0)
+            else:
+                padded = F.pad(tensors[0], padding_size, value=pad_value)
+                batched_imgs = padded.unsqueeze_(0)
         else:
             batch_shape = (len(tensors),) + max_size
             batched_imgs = tensors[0].new_full(batch_shape, pad_value)
