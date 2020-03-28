@@ -52,9 +52,13 @@ parser.add_argument('--siam_thred', default=0.9, type=float, help='similarity th
 parser.add_argument('--eval_imgs', default=1000, type=int, help='the num of imgs that picked from val.txt, 0 represent all imgs')
 parser.add_argument('--gt_skip', default=5, type=int, help='frame sampling frequency')
 parser.add_argument('--dataset_year', default=2015, type=int, help='dataset version, like ILSVRC2015, ILSVRC2017')
-parser.add_argument('--test1vid', default=False, type=str2bool, help='only test 1 video')
 parser.add_argument('--useSiamese', default=True, type=str2bool, help='use siamese or not')
 parser.add_argument('--checktrackid', default=False, type=str2bool, help='if objects in different frames are the same instance, trackid should be same too')
+
+
+parser.add_argument('--test1vid', default=False, type=str2bool, help='only test 1 video')
+parser.add_argument('--testVidPath', default='../datasets/data/ILSVRC/Data/VID/train/ILSVRC2015_VID_train_0001/ILSVRC2015_train_00165005/',
+                    type=str, help='test video path, only turn on when --test1vid is True')
 
 parser.add_argument('--num_workers', default=6, type=int, help='Number of workers used in dataloading')
 parser.add_argument('--cuda', default=True, type=str2bool, help='Use cuda to train model')
@@ -62,7 +66,7 @@ parser.add_argument('--visualize', default=False, type=str2bool, help='Use tenso
 # parser.add_argument('--send_images_to_visualization', type=str2bool, default=False, help='Sample a random image from each 10th batch, send it to visdom after augmentations step')
 parser.add_argument('--display_images', default=False, type=str2bool, help='Whether to display images or not')
 parser.add_argument('--save_result_images_bool', default=False, type=str2bool, help='save results folder')
-parser.add_argument('--save_result_images', default='save_result_images2', type=str, help='save results folder')
+parser.add_argument('--save_result_images', default='save_result_images', type=str, help='save results folder')
 parser.add_argument('--display_images_t', default=False, type=str2bool, help='display t patches between frames')
 parser.add_argument('--save_result_images_t', default=False, type=str2bool, help='save t patches between frames')
 # parser.add_argument('--save_result_npy', default='results_on_test_images_part2', type=str, help='save results folder')
@@ -214,7 +218,7 @@ if __name__ == "__main__":
         net.set_phase('test')
 
     if args.test1vid:
-        vid_path = '../datasets/data/ILSVRC/Data/VID/train/ILSVRC2015_VID_train_0001/ILSVRC2015_train_00165005/'
+        vid_path = args.testVidPath
         vid_folder = vid_path.split('/')[-2]
         # vid_path = "../../../demo/examples/jiaotong2.avi"
         # vid_folder=vid_path.split('/')[-1]
