@@ -850,15 +850,15 @@ def do_precison3(path_pred, path_gt):
         sum_AP_motion += apt
     mAP_motion = sum_AP_motion / 3
 
-    rltTable = PrettyTable(["category", "n_gtbox", "AP","recall"])
+    rltTable = PrettyTable(["category", "n_gtbox", "AP (%)","recall (%)"])
     # totalRow = copy.deepcopy(cls_info)
     n_all_gt = 0
     for ito in range(len(CLASS_NAMES)):
-        rltTable.add_row([CLASS_NAMES[ito], gt_counter_per_class[ito], ap[ito], recall_cls[ito]])
+        rltTable.add_row([CLASS_NAMES[ito], gt_counter_per_class[ito], round(ap[ito]*100,1), round(recall_cls[ito]*100,1)])
         n_all_gt += gt_counter_per_class[ito]
     rltTable.add_row(["----------", "------", "--------------", "-------",])
 
-    rltTable.add_row(["Total_cls", n_all_gt, mAP,(n_tp_cls/n_all_gt) ])
+    rltTable.add_row(["Total_cls", n_all_gt, round(mAP*100,1),round((n_tp_cls/n_all_gt)*100,1) ])
 
     rltTable.add_row(["----------", "------", "--------------", "-------",])
     rltTable.add_row(["----------", "------", "--------------", "-------",])
@@ -866,11 +866,11 @@ def do_precison3(path_pred, path_gt):
     n_all_gt = 0
     motion_name=['slow','medium','fast']
     for ito in range(3):
-        rltTable.add_row([motion_name[ito], gt_counter_per_motion[ito], ap_motion[ito], recall_motion[ito]])
+        rltTable.add_row([motion_name[ito], gt_counter_per_motion[ito], round(ap_motion[ito]*100,1), round(recall_motion[ito]*100,1)])
         n_all_gt += gt_counter_per_motion[ito]
     rltTable.add_row(["----------", "------", "--------------", "-------",])
 
-    rltTable.add_row(["Total_motion", n_all_gt, mAP_motion, (n_tp_motion/n_all_gt)])
+    rltTable.add_row(["Total_motion", n_all_gt, round(mAP_motion*100,1), round((n_tp_motion/n_all_gt)*100,1)])
 
     rltTable.align["n_gtbox"] = "l"
     print(rltTable)
