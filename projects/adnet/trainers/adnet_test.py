@@ -129,7 +129,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
         'vid_id':vidx,
         'frame_id':[],
         'track_id':[],
-        'detortrack':[],
+        'detortrack':[],    #0 means det, 1 means track
         'obj_name':[],
         'score_cls':[],
         'bbox':[]
@@ -274,6 +274,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
     n_trackid=-1
     obj_area=[]
     obj_box=[]
+    siam_thred_inf=[]
     for frame_idx in range(vid_info['nframes']):
     ## for frame_idx, frame_path in enumerate(vid_info['img_files']):
         # frame_idx = idx
@@ -325,6 +326,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                     frame_pred['bbox'].append(boxes[i_d])
                     frame_pred['score_cls'].append(scores[i_d])
                     if args.useSiamese or args.checktrackid:
+                        siam_thred_inf.append(0)
                         t_aera, t_aera_crop,_ = transform3(frame, boxes[i_d])
                         if args.useSiamese:
                             pre_aera.append(t_aera)
@@ -333,6 +335,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                             obj_area.append(t_aera)
                             obj_box.append(boxes[i_d])
             else:
+                siam_thred_inf = []
                 for i_d in range(n_bbox):
                     if args.useSiamese or args.checktrackid:
                         t_aera, t_aera_crop,_ = transform3(frame, boxes[i_d])
@@ -348,10 +351,11 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                             for nt in range(len(obj_area)):
                                 output1, output2 = siamesenet(Variable(t_aera).cuda(), Variable(obj_area[nt]).cuda())
                                 euclidean_distance = F.pairwise_distance(output1, output2)
-                                if euclidean_distance<maxdistance:
-                                    maxdistance=euclidean_distance
+                                if euclidean_distance.item()<maxdistance:
+                                    maxdistance=euclidean_distance.item()
                                     maxid=nt
                             # print(maxid,len(obj_box))
+                            siam_thred_inf.append(maxdistance)
                             if maxdistance>args.siam_thred and cal_iou(boxes[i_d],obj_box[maxid])<0.6:
                                 n_trackid += 1
                                 obj_area.append(t_aera)
@@ -363,6 +367,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                         else:
                             # n_trackid_t=i_d
                             frame_pred['track_id'].append(i_d)
+                            siam_thred_inf.append(0)
                             # obj_area.append(t_aera)
                     else:
                         frame_pred['track_id'].append(i_d)
@@ -418,6 +423,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
             frame2=frame.copy()
             frame2=frame2.astype(np.float32)
             frame2=torch.from_numpy(frame2).cuda()
+            siam_thred_inf = []
             for t_id,curr_bbox in enumerate(frame_pred['bbox']):
                 t = 0
                 while True:
@@ -510,6 +516,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                     pre_aera_crop=[]
                     ts1=time.time()
                     n_bbox = len(boxes)
+                    siam_thred_inf=[]
                     for i_d in range(n_bbox):
                         if args.useSiamese or args.checktrackid:
                             t_aera, t_aera_crop, _ = transform3(frame, boxes[i_d])
@@ -526,9 +533,10 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                                     output1, output2 = siamesenet(Variable(t_aera).cuda(),
                                                                   Variable(obj_area[nt]).cuda())
                                     euclidean_distance = F.pairwise_distance(output1, output2)
-                                    if euclidean_distance < maxdistance:
-                                        maxdistance = euclidean_distance
+                                    if euclidean_distance.item() < maxdistance:
+                                        maxdistance = euclidean_distance.item()
                                         maxid = nt
+                                siam_thred_inf.append(maxdistance)
                                 if maxdistance > args.siam_thred and cal_iou(boxes[i_d], obj_box[maxid]) < 0.6:
                                     n_trackid += 1
                                     obj_area.append(t_aera)
@@ -540,6 +548,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                             else:
                                 # n_trackid_t=i_d
                                 frame_pred['track_id'].append(i_d)
+                                siam_thred_inf.append(0)
                                 # obj_area.append(t_aera)
                         else:
                             frame_pred['track_id'].append(i_d)
@@ -628,6 +637,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                             pre_aera_crop = []
                             ts1 = time.time()
                             n_bbox = len(boxes)
+                            siam_thred_inf = []
                             for i_d in range(n_bbox):
                                 t_aera, t_aera_crop, _ = transform3(frame, boxes[i_d])
                                 pre_aera.append(t_aera)
@@ -642,10 +652,11 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                                         output1, output2 = siamesenet(Variable(t_aera).cuda(),
                                                                       Variable(obj_area[nt]).cuda())
                                         euclidean_distance = F.pairwise_distance(output1, output2)
-                                        if euclidean_distance < maxdistance:
-                                            maxdistance = euclidean_distance
+                                        if euclidean_distance.item() < maxdistance:
+                                            maxdistance = euclidean_distance.item()
                                             maxid = nt
                                     # print("maxdistance: %.2f, iou: %.2f."%(maxdistance,cal_iou(boxes[i_d], obj_box[maxid])))
+                                    siam_thred_inf.append(maxdistance)
                                     if maxdistance > args.siam_thred and cal_iou(boxes[i_d], obj_box[maxid]) < 0.6:
                                         n_trackid += 1
                                         obj_area.append(t_aera)
@@ -657,6 +668,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                                 else:
                                     # n_trackid_t=i_d
                                     frame_pred['track_id'].append(i_d)
+                                    siam_thred_inf.append(0)
                                 # frame_pred['track_id'].append(i_d)
                                 frame_pred['obj_name'].append(classes[i_d])
                                 frame_pred['bbox'].append(boxes[i_d])
@@ -666,6 +678,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                             spend_time['append'] += ts2 - ts1
                             break
                         else:
+                            siam_thred_inf.append(euclidean_distance.item())
                             if args.checktrackid:
                                 obj_box[frame_pred['track_id'][t_id]] = curr_bbox
             n_bbox=len(frame_pred['bbox'])
@@ -701,10 +714,12 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                     "pred_boxes":boxes,
                     "scores":frame_pred['score_cls'],
                     "trackids":frame_pred['track_id'],
-                    "pred_classes":frame_pred['obj_name']
+                    "pred_classes":frame_pred['obj_name'],
+                    "detortrack":[vid_pred['detortrack'][-1]]*len(frame_pred['obj_name']),
+                    "siam_inf":siam_thred_inf
                 }
                 v = Visualizer(frame[:, :, ::-1], metalog, scale=1.2)
-                v = v.draw_instance_predictions2(outputs)
+                v = v.draw_instance_predictions2(outputs,args)
                 cv2.imshow("result",v.get_image())
                 cv2.waitKey(1)
 
@@ -721,10 +736,12 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                     "pred_boxes":boxes,
                     "scores":frame_pred['score_cls'],
                     "trackids": frame_pred['track_id'],
-                    "pred_classes":frame_pred['obj_name']
+                    "pred_classes":frame_pred['obj_name'],
+                    "detortrack":[vid_pred['detortrack'][-1]]*len(frame_pred['obj_name']),
+                    "siam_inf":siam_thred_inf
                 }
                 v = Visualizer(frame[:, :, ::-1], metalog, scale=1.2)
-                v = v.draw_instance_predictions2(outputs)
+                v = v.draw_instance_predictions2(outputs,args)
                 cv2.imwrite(filename, v.get_image(), [int(cv2.IMWRITE_JPEG_QUALITY), 70])
 
         # record the curr_bbox result

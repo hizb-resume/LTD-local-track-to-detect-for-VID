@@ -59,6 +59,7 @@ parser.add_argument('--checktrackid', default=False, type=str2bool, help='if obj
 parser.add_argument('--test1vid', default=False, type=str2bool, help='only test 1 video')
 parser.add_argument('--testVidPath', default='../datasets/data/ILSVRC/Data/VID/val/ILSVRC2015_val_00136000/',
                     type=str, help='test video path, only turn on when --test1vid is True')
+parser.add_argument('--label_more', default=False, type=str2bool, help='show tack_det/siamese thred in labels or not')
 
 parser.add_argument('--num_workers', default=6, type=int, help='Number of workers used in dataloading')
 parser.add_argument('--cuda', default=True, type=str2bool, help='Use cuda to train model')
