@@ -384,33 +384,51 @@ def process_data_ILSVR_consecutive_frame(img_paths, opt, train_db_pos_neg_all, l
         n_frames=len(train_i['gt'])
         max_dis=10
         for i in range(n_frames-1,0,-1):
-            train_db_pos_neg = {
-                'img_path': train_i['img_files'][i],
-                'bboxes': [],
-                'labels': [],
-                'score_labels': []
-            }
+            # train_db_pos_neg = {
+            #     'img_path': train_i['img_files'][i],
+            #     'bboxes': [],
+            #     'labels': [],
+            #     'score_labels': []
+            # }
             for j in range(i-1,i-max_dis-1,-1):
                 if j<0:
                     break
                 for k in range(len(train_i['trackid'][j])):
                     for l in range(len(train_i['trackid'][i])):
                         if train_i['trackid'][j][k]==train_i['trackid'][i][l]:
+                            train_db_pos_neg = {
+                                'img_path': train_i['img_files'][i],
+                                'bboxes': [],
+                                'labels': [],
+                                'score_labels': []
+                            }
                             pos_neg_box=train_i['gt'][j][k]
-                            gt_bbox=train_i['gt'][i][l]
+                            gt_bbox = train_i['gt'][i][l]
+                            action_label_pos, action_label_neg = gen_action_pos_neg_labels(opts['num_actions'], opts,
+                                                                                           np.array(pos_neg_box),
+                                                                                           gt_bbox)
+
                             train_db_pos_neg['bboxes'].append(pos_neg_box)
-                            train_db_pos_neg['bboxes'].append(pos_neg_box)
-                            action_label_pos,action_label_neg=gen_action_pos_neg_labels(opts['num_actions'], opts, np.array(pos_neg_box), gt_bbox)
                             action_label_pos = np.transpose(action_label_pos).tolist()
-                            action_label_neg = np.transpose(action_label_neg).tolist()
                             train_db_pos_neg['labels'].extend(action_label_pos)
-                            train_db_pos_neg['labels'].extend(action_label_neg)
                             train_db_pos_neg['score_labels'].extend(list(np.ones(1, dtype=int)))
+                            train_db_pos_neg_gpu.append(train_db_pos_neg)
+
+                            train_db_pos_neg = {
+                                'img_path': train_i['img_files'][i],
+                                'bboxes': [],
+                                'labels': [],
+                                'score_labels': []
+                            }
+                            train_db_pos_neg['bboxes'].append(pos_neg_box)
+                            action_label_neg = np.transpose(action_label_neg).tolist()
+                            train_db_pos_neg['labels'].extend(action_label_neg)
                             train_db_pos_neg['score_labels'].extend(list(np.zeros(1, dtype=int)))
+                            train_db_pos_neg_gpu.append(train_db_pos_neg)
 
             # if len(train_db_pos_neg['bboxes']) >0:
-            if len(train_db_pos_neg['bboxes']) == 2*max_dis:
-                train_db_pos_neg_gpu.append(train_db_pos_neg)
+            # if len(train_db_pos_neg['bboxes']) == 2*max_dis:
+            #     train_db_pos_neg_gpu.append(train_db_pos_neg)
     try:
         lock.acquire()
         train_db_pos_neg_all.extend(train_db_pos_neg_gpu)
