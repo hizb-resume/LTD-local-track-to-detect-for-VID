@@ -703,6 +703,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
             spend_time['n_append'] += 1
 
         if args.display_images:
+            cv2.namedWindow("frame: %d"%frame_idx, 0)
             cv2.resizeWindow("frame: %d"%frame_idx, 800, 800)
             if len(frame_pred['bbox']) == 0:
                 cv2.imshow("result",frame)
