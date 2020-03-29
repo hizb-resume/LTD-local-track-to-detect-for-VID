@@ -366,8 +366,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                                 frame_pred['track_id'].append(n_trackid)
                             else:
                                 frame_pred['track_id'].append(maxid)
-                                if maxdistance<args.update_siam_thred:
-                                    obj_box[maxid]=boxes[i_d]
+                                obj_box[maxid]=boxes[i_d]
                         else:
                             # n_trackid_t=i_d
                             frame_pred['track_id'].append(i_d)
@@ -548,8 +547,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                                     frame_pred['track_id'].append(n_trackid)
                                 else:
                                     frame_pred['track_id'].append(maxid)
-                                    if maxdistance < args.update_siam_thred:
-                                        obj_box[maxid] = boxes[i_d]
+                                    obj_box[maxid] = boxes[i_d]
                             else:
                                 # n_trackid_t=i_d
                                 frame_pred['track_id'].append(i_d)
@@ -669,8 +667,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                                         frame_pred['track_id'].append(n_trackid)
                                     else:
                                         frame_pred['track_id'].append(maxid)
-                                        if maxdistance < args.update_siam_thred:
-                                            obj_box[maxid] = boxes[i_d]
+                                        obj_box[maxid] = boxes[i_d]
                                 else:
                                     # n_trackid_t=i_d
                                     frame_pred['track_id'].append(i_d)
