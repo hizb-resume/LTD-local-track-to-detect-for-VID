@@ -724,6 +724,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                 v = v.draw_instance_predictions2(outputs,args)
                 cv2.imshow("result",v.get_image())
                 cv2.waitKey(1)
+            cv2.destroyAllWindows()
 
         if args.save_result_images_bool:
             filename = os.path.join(args.save_result_images, str(frame_idx).rjust(4,'0')+'-99-21-final' + '.jpg')
