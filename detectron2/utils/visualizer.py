@@ -428,12 +428,13 @@ class Visualizer:
 
         masks = None
 
-        if self._instance_mode == ColorMode.SEGMENTATION and self.metadata.get("thing_colors"):
+        if self._instance_mode == 1 and self.metadata.get("thing_colors"):
             # colors = [
             #     self._jitter([x / 255 for x in self.metadata.thing_colors[c]]) for c in classes
             #     ]
+
             colors = [
-                self._jitter([x / 255 for x in self.metadata.thing_colors[c]]) for c in trackids
+                tuple([x / 255 for x in self.metadata.thing_colors[c*5]]) for c in trackids
             ]
             alpha = 0.8
         else:
