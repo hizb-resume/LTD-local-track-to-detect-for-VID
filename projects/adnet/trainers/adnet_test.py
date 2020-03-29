@@ -619,8 +619,9 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                         #     cv2.imwrite(filename1, x0_crop)
                         #     filename2 = "temimg/v%d-f%d-t%d-siam%.2f-cur.JPEG"%(vidx,frame_idx,t,euclidean_distance.item())
                         #     cv2.imwrite(filename2, curr_aera_crop)
-                        pre_aera[t_id] = curr_aera
-                        pre_aera_crop[t_id] = curr_aera_crop
+
+                        # pre_aera[t_id] = curr_aera
+                        # pre_aera_crop[t_id] = curr_aera_crop
 
                         if euclidean_distance.item() > args.siam_thred:
                             #redect:
