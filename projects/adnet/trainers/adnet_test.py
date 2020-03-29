@@ -721,7 +721,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                     "detortrack":[vid_pred['detortrack'][-1]]*len(frame_pred['obj_name']),
                     "siam_inf":siam_thred_inf
                 }
-                v = Visualizer(frame[:, :, ::-1], metalog, scale=1.2)
+                v = Visualizer(frame[:, :, ::-1], metalog, scale=1.2,instance_mode=1)
                 v = v.draw_instance_predictions2(outputs,args)
                 cv2.imshow("result",v.get_image())
                 cv2.waitKey(1)
@@ -743,7 +743,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                     "detortrack":[vid_pred['detortrack'][-1]]*len(frame_pred['obj_name']),
                     "siam_inf":siam_thred_inf
                 }
-                v = Visualizer(frame[:, :, ::-1], metalog, scale=1.2)
+                v = Visualizer(frame[:, :, ::-1], metalog, scale=1.2,instance_mode=1)
                 v = v.draw_instance_predictions2(outputs,args)
                 cv2.imwrite(filename, v.get_image(), [int(cv2.IMWRITE_JPEG_QUALITY), 70])
 
