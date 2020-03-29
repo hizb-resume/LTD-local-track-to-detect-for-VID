@@ -49,6 +49,7 @@ parser.add_argument('--v_start_id', default=0, type=int, help='The start no of e
 parser.add_argument('--v_end_id', default=0, type=int, help='The end no of eval videos')
 parser.add_argument('--track', default=True, type=str2bool, help='track between detect')
 parser.add_argument('--siam_thred', default=0.9, type=float, help='similarity thred between frames')
+parser.add_argument('--update_siam_thred', default=0.4, type=float, help='update obj area when thred< the value')
 parser.add_argument('--eval_imgs', default=1000, type=int, help='the num of imgs that picked from val.txt, 0 represent all imgs')
 parser.add_argument('--gt_skip', default=5, type=int, help='frame sampling frequency')
 parser.add_argument('--dataset_year', default=2015, type=int, help='dataset version, like ILSVRC2015, ILSVRC2017')

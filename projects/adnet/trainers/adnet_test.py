@@ -366,7 +366,8 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                                 frame_pred['track_id'].append(n_trackid)
                             else:
                                 frame_pred['track_id'].append(maxid)
-                                obj_box[maxid]=boxes[i_d]
+                                if maxdistance<args.update_siam_thred:
+                                    obj_box[maxid]=boxes[i_d]
                         else:
                             # n_trackid_t=i_d
                             frame_pred['track_id'].append(i_d)
@@ -547,7 +548,8 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                                     frame_pred['track_id'].append(n_trackid)
                                 else:
                                     frame_pred['track_id'].append(maxid)
-                                    obj_box[maxid] = boxes[i_d]
+                                    if maxdistance < args.update_siam_thred:
+                                        obj_box[maxid] = boxes[i_d]
                             else:
                                 # n_trackid_t=i_d
                                 frame_pred['track_id'].append(i_d)
@@ -667,7 +669,8 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                                         frame_pred['track_id'].append(n_trackid)
                                     else:
                                         frame_pred['track_id'].append(maxid)
-                                        obj_box[maxid] = boxes[i_d]
+                                        if maxdistance < args.update_siam_thred:
+                                            obj_box[maxid] = boxes[i_d]
                                 else:
                                     # n_trackid_t=i_d
                                     frame_pred['track_id'].append(i_d)
@@ -683,7 +686,8 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                         else:
                             siam_thred_inf.append(euclidean_distance.item())
                             if args.checktrackid:
-                                obj_box[frame_pred['track_id'][t_id]] = curr_bbox
+                                if euclidean_distance.item()<args.update_siam_thred:
+                                    obj_box[frame_pred['track_id'][t_id]] = curr_bbox
             n_bbox=len(frame_pred['bbox'])
             if is_negative==False:
                 spend_time['track'] += ts_all
