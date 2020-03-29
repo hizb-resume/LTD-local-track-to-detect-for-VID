@@ -422,7 +422,6 @@ class Visualizer:
         classes = predictions['pred_classes'] if 'pred_classes' in predictions else None
         trackids = predictions['trackids'] if 'trackids' in predictions else None
         detortrack= predictions['detortrack'] if 'detortrack' in predictions else None
-        detortrack= predictions['detortrack'] if 'detortrack' in predictions else None
         siam_inf=predictions['siam_inf'] if 'siam_inf' in predictions else None
         labels = _create_text_labels2(classes, scores,trackids,detortrack, siam_inf,args,self.metadata.get("thing_classes", None))
         keypoints = predictions['pred_keypoints'] if 'pred_keypoints' in predictions else None
@@ -430,8 +429,11 @@ class Visualizer:
         masks = None
 
         if self._instance_mode == ColorMode.SEGMENTATION and self.metadata.get("thing_colors"):
+            # colors = [
+            #     self._jitter([x / 255 for x in self.metadata.thing_colors[c]]) for c in classes
+            #     ]
             colors = [
-                self._jitter([x / 255 for x in self.metadata.thing_colors[c]]) for c in classes
+                self._jitter([x / 255 for x in self.metadata.thing_colors[c]]) for c in trackids
             ]
             alpha = 0.8
         else:
