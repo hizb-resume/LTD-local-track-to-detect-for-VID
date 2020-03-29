@@ -228,14 +228,13 @@ def _create_text_labels2(classes, scores,trackids,detortrack,siam_inf,args, clas
         else:
             if trackids is not None:
                 if args.label_more:
+                    dt = ["det" if d == 0 else "track" for d in detortrack]
                     if args.useSiamese:
-                        dt=["det" if d ==0 else "track" for d in detortrack]
-
                         labels = ["{}, objectid:{}, {}, siamese:{}, {:.0f}%".format(l,t,d,round(si,2),  s * 100) for l, d,si,t, s in
                                   zip(labels, dt,siam_inf,trackids, scores)]
                     else:
                         labels = ["{}, objectid:{}, {}, {:.0f}%".format(l, t,d, s * 100) for l, d,t, s in
-                                  zip(labels, detortrack,trackids, scores)]
+                                  zip(labels, dt,trackids, scores)]
                 else:
                     labels = ["{}, objectid:{}, {:.0f}%".format(l,t, s * 100) for l,t, s in zip(labels,trackids, scores)]
             else:
