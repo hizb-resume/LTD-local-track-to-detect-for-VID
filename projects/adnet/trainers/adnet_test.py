@@ -275,9 +275,9 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
     obj_area=[]
     obj_box=[]
     siam_thred_inf=[]
-
-    cv2.namedWindow("result", 0)
-    cv2.resizeWindow("result", 1120, 640)
+    if args.display_images:
+        cv2.namedWindow("result", 0)
+        cv2.resizeWindow("result", 1120, 640)
     for frame_idx in range(vid_info['nframes']):
     ## for frame_idx, frame_path in enumerate(vid_info['img_files']):
         # frame_idx = idx
