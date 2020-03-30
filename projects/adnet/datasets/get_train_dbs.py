@@ -383,6 +383,10 @@ def process_data_ILSVR_consecutive_frame(img_paths, opt, train_db_pos_neg_all, l
     for train_i in img_paths:
         n_frames=len(train_i['gt'])
         max_dis=10
+        gt_file_path = '../datasets/data/ILSVRC/Annotations/VID/train/' + train_i['img_files'][0][39:-5] + '.xml'
+        imginfo = get_xml_img_info(gt_file_path)
+        opts['imgSize'] = imginfo['imgsize']
+
         for i in range(n_frames-1,0,-1):
             # train_db_pos_neg = {
             #     'img_path': train_i['img_files'][i],
@@ -438,8 +442,8 @@ def process_data_ILSVR_consecutive_frame(img_paths, opt, train_db_pos_neg_all, l
                                     # break
                                 else:
                                     pos_neg_box = neg[0]
-                                    print("neg[0]", end=": ")
-                                    print(neg[0])
+                                    # print("neg[0]", end=": ")
+                                    # print(neg[0])
                                     break
                             train_db_pos_neg['bboxes'].append(pos_neg_box)
                             action_label_neg = np.full((opts['num_actions'], 1), fill_value=-1)
