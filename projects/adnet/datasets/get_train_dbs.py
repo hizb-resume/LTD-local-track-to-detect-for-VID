@@ -436,7 +436,7 @@ def process_data_ILSVR_consecutive_frame(img_paths, opt, train_db_pos_neg_all, l
                                     break
                                 neg = gen_samples('gaussian', gt_bbox, 5, opts, 2, 10)
                                 r = overlap_ratio(neg, np.matlib.repmat(gt_bbox, len(neg), 1))
-                                neg = neg[np.array(r) < opts['negThre_train']]
+                                neg = neg[np.array(r) < opts['consecutive_negThre_train']]
                                 if len(neg) == 0:
                                     continue
                                     # break
@@ -471,7 +471,7 @@ def get_train_dbs_ILSVR_consecutive_frame(opts):
     #opts['imgSize'] = list(img.shape)
     gt_skip = opts['train']['gt_skip']
 
-    print('before get_train_dbs_ILSVR', end=' : ')
+    print('before get_train_dbs_ILSVR_consecutive_frame', end=' : ')
     print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
 
     parser = argparse.ArgumentParser()
@@ -482,6 +482,8 @@ def get_train_dbs_ILSVR_consecutive_frame(opts):
     args2 = parser.parse_args(['--eval_imgs','0','--gt_skip','1','--dataset_year','2222'])
 
     videos_infos, _ = get_ILSVRC_eval_infos(args2)
+    print('before process_data_ILSVR_consecutive_frame', end=' : ')
+    print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
 
     #train_sequences = list(range(0, vid_info['nframes'], gt_skip))
 

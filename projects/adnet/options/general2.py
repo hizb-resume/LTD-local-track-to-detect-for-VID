@@ -72,6 +72,7 @@ opts = {
     'nNeg_train': 5,
     'posThre_train' : 0.5,
     'negThre_train' : 0.3,
+    'consecutive_negThre_train' : 0.5,
 
     'random_perturb' : {
         'x' : 0.15,
