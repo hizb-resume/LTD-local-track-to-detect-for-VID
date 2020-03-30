@@ -404,9 +404,12 @@ def process_data_ILSVR_consecutive_frame(img_paths, opt, train_db_pos_neg_all, l
                             }
                             pos_neg_box=train_i['gt'][j][k]
                             gt_bbox = train_i['gt'][i][l]
-                            action_label_pos, action_label_neg = gen_action_pos_neg_labels(opts['num_actions'], opts,
+                            action_label_pos, _ = gen_action_pos_neg_labels(opts['num_actions'], opts,
                                                                                            np.array(pos_neg_box),
                                                                                            gt_bbox)
+
+
+
 
                             train_db_pos_neg['bboxes'].append(pos_neg_box)
                             action_label_pos = np.transpose(action_label_pos).tolist()
@@ -420,7 +423,26 @@ def process_data_ILSVR_consecutive_frame(img_paths, opt, train_db_pos_neg_all, l
                                 'labels': [],
                                 'score_labels': []
                             }
+
+                            nct = -1
+                            while True:
+                                # in original code, this 1 line below use opts['nPos_train'] instead of opts['nNeg_train']
+                                nct += 1
+                                if nct == 20:
+                                    break
+                                neg = gen_samples('gaussian', gt_bbox, 5, opts, 2, 10)
+                                r = overlap_ratio(neg, np.matlib.repmat(gt_bbox, len(neg), 1))
+                                neg = neg[np.array(r) < opts['negThre_train']]
+                                if len(neg) == 0:
+                                    continue
+                                    # break
+                                else:
+                                    pos_neg_box = neg[0]
+                                    print("neg[0]", end=": ")
+                                    print(neg[0])
+                                    break
                             train_db_pos_neg['bboxes'].append(pos_neg_box)
+                            action_label_neg = np.full((opts['num_actions'], 1), fill_value=-1)
                             action_label_neg = np.transpose(action_label_neg).tolist()
                             train_db_pos_neg['labels'].extend(action_label_neg)
                             train_db_pos_neg['score_labels'].extend(list(np.zeros(1, dtype=int)))
