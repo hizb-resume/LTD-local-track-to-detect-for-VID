@@ -15,9 +15,9 @@ from prettytable import PrettyTable
 def str2bool(v):
     return v.lower() in ("yes", "true", "t", "1")
 
-
 parser = argparse.ArgumentParser(
     description='gen_gt_file')
+parser.add_argument('--gen_vid_cls', default=False, type=str2bool, help='generate vid_cls and save to file')
 parser.add_argument('--gengt', default=False, type=str2bool, help='generate gt results and save to file')
 parser.add_argument('--eval_imgs', default=0, type=int,
                     help='the num of imgs that picked from val.txt, 0 represent all imgs')
@@ -875,10 +875,26 @@ def do_precison3(path_pred, path_gt):
     rltTable.align["n_gtbox"] = "l"
     print(rltTable)
 
+def gen_vid_class_file(args):
+    videos_infos, train_videos = get_ILSVRC_eval_infos(args)
+    out_file = open('vid-cls-skip%d-%d.txt' % (args.gt_skip, args.dataset_year), 'w')
+    for i,v in enumerate(videos_infos):
+        nams=[]
+        for j,na in v['name']:
+            for k in na:
+                if k not in nams:
+                    nams.append(k)
+        out_file.write(str(train_videos['video_paths'][i]) + ':')
+        for ni in nams:
+            out_file.write(str(ni)+ ',')
+        out_file.write('\n')
+
 
 if __name__ == "__main__":
     args = parser.parse_args()
     # gen_motion_iou_plot('../datasets/data/ILSVRC-vid-eval-gt-skip1-2015-motion_iou_data.txt')
+    if args.gen_vid_cls:
+        gen_vid_class_file()
     if args.gengt:
         gen_gt_file('../datasets/data/ILSVRC-vid-eval', args)
     if args.doprecision:
