@@ -501,6 +501,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                 # redetection when confidence < threshold 0.5. But when fc7 is already reliable. Else, just trust the ADNet
                 # if ntraining > args.believe_score_result:
 
+                print(fc7_out)
                 if curr_score < 0.5:
                     # print('redetection: frame %d' % frame_idx)
                     is_negative = True
