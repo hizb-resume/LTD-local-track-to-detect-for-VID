@@ -875,26 +875,27 @@ def do_precison3(path_pred, path_gt):
     rltTable.align["n_gtbox"] = "l"
     print(rltTable)
 
-def gen_vid_class_file(args):
+def gen_vid_class_file(path,args):
     videos_infos, train_videos = get_ILSVRC_eval_infos(args)
-    out_file = open('vid-cls-skip%d-%d.txt' % (args.gt_skip, args.dataset_year), 'w')
+    out_file = open('%s-skip%d-%d.txt' % (path,args.gt_skip, args.dataset_year), 'w')
     for i,v in enumerate(videos_infos):
         nams=[]
-        for j,na in v['name']:
+        for j,na in enumerate(v['name']):
             for k in na:
                 if k not in nams:
                     nams.append(k)
-        out_file.write(str(train_videos['video_paths'][i]) + ':')
+        out_file.write(str(train_videos['video_names'][i]) + ':')
         for ni in nams:
             out_file.write(str(ni)+ ',')
         out_file.write('\n')
+    out_file.close()
 
 
 if __name__ == "__main__":
     args = parser.parse_args()
     # gen_motion_iou_plot('../datasets/data/ILSVRC-vid-eval-gt-skip1-2015-motion_iou_data.txt')
     if args.gen_vid_cls:
-        gen_vid_class_file()
+        gen_vid_class_file('../datasets/data/vid-cls',args)
     if args.gengt:
         gen_gt_file('../datasets/data/ILSVRC-vid-eval', args)
     if args.doprecision:
