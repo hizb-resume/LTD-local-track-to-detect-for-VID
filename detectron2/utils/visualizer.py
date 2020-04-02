@@ -206,7 +206,7 @@ def _create_text_labels(classes, scores, class_names):
             labels = ["{} {:.0f}%".format(l, s * 100) for l, s in zip(labels, scores)]
     return labels
 
-def _create_text_labels2(classes, scores,trackids, class_names):
+def _create_text_labels2(classes, scores,trackids,detortrack,siam_inf,args, class_names):
     """
     Args:
         classes (list[int] or None):
@@ -227,7 +227,16 @@ def _create_text_labels2(classes, scores,trackids, class_names):
                 labels = ["{:.0f}%".format(s * 100) for s in scores]
         else:
             if trackids is not None:
-                labels = ["{},objectid:{},{:.0f}%".format(l,t, s * 100) for l,t, s in zip(labels,trackids, scores)]
+                if args.label_more:
+                    dt = ["det" if d == 0 else "track" for d in detortrack]
+                    if args.useSiamese:
+                        labels = ["{}, objectid:{}, {}, siamese:{}, {:.0f}%".format(l,t,d,round(si,2),  s * 100) for l, d,si,t, s in
+                                  zip(labels, dt,siam_inf,trackids, scores)]
+                    else:
+                        labels = ["{}, objectid:{}, {}, {:.0f}%".format(l, t,d, s * 100) for l, d,t, s in
+                                  zip(labels, dt,trackids, scores)]
+                else:
+                    labels = ["{}, objectid:{}, {:.0f}%".format(l,t, s * 100) for l,t, s in zip(labels,trackids, scores)]
             else:
                 labels = ["{} {:.0f}%".format(l, s * 100) for l, s in zip(labels, scores)]
     return labels
@@ -395,7 +404,7 @@ class Visualizer:
         )
         return self.output
 
-    def draw_instance_predictions2(self, predictions):
+    def draw_instance_predictions2(self, predictions,args):
         """
         Draw instance-level prediction results on an image.
 
@@ -411,14 +420,20 @@ class Visualizer:
         scores = predictions['scores'] if 'scores' in predictions else None
         classes = predictions['pred_classes'] if 'pred_classes' in predictions else None
         trackids = predictions['trackids'] if 'trackids' in predictions else None
-        labels = _create_text_labels2(classes, scores,trackids, self.metadata.get("thing_classes", None))
+        detortrack= predictions['detortrack'] if 'detortrack' in predictions else None
+        siam_inf=predictions['siam_inf'] if 'siam_inf' in predictions else None
+        labels = _create_text_labels2(classes, scores,trackids,detortrack, siam_inf,args,self.metadata.get("thing_classes", None))
         keypoints = predictions['pred_keypoints'] if 'pred_keypoints' in predictions else None
 
         masks = None
 
-        if self._instance_mode == ColorMode.SEGMENTATION and self.metadata.get("thing_colors"):
+        if self._instance_mode == 1 and self.metadata.get("thing_colors"):
+            # colors = [
+            #     self._jitter([x / 255 for x in self.metadata.thing_colors[c]]) for c in classes
+            #     ]
+
             colors = [
-                self._jitter([x / 255 for x in self.metadata.thing_colors[c]]) for c in classes
+                tuple([x / 255 for x in self.metadata.thing_colors[c*5]]) for c in trackids
             ]
             alpha = 0.8
         else:

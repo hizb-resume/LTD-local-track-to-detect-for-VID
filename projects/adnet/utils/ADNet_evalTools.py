@@ -15,9 +15,9 @@ from prettytable import PrettyTable
 def str2bool(v):
     return v.lower() in ("yes", "true", "t", "1")
 
-
 parser = argparse.ArgumentParser(
     description='gen_gt_file')
+parser.add_argument('--gen_vid_cls', default=False, type=str2bool, help='generate vid_cls and save to file')
 parser.add_argument('--gengt', default=False, type=str2bool, help='generate gt results and save to file')
 parser.add_argument('--eval_imgs', default=0, type=int,
                     help='the num of imgs that picked from val.txt, 0 represent all imgs')
@@ -53,7 +53,8 @@ def gen_gt_file(path, args):
                 if ti==0:
                     motion_iou=0.99
                 elif indx==-1:
-                    motion_iou = 0.99
+                    # motion_iou = 0.99
+                    motion_iou = 0
                 else:
                     motion_iou=cal_iou(videos_infos[tj]['gt'][ti-1][indx],videos_infos[tj]['gt'][ti][tk])
                     if motion_iou>0.99:
@@ -95,20 +96,23 @@ def gen_motion_iou_plot(path_iou):
     for line in list1:
         ioulist = line.split(',')
 
-        probability_distribution_n=[0]*10
-        probability_distribution = [0] * 10
+        probability_distribution_n=[0]*11
+        probability_distribution = [0] * 11
         for itm in ioulist:
             if itm!='':
+                if float(itm)>0.95:
+                    probability_distribution_n[10] += 1
+                    continue
                 probability_distribution_n[int(float(itm)*10//1)]+=1
         sum=len(ioulist)-1
         # sum2=0
         for jtm in range(len(probability_distribution_n)):
-            probability_distribution[jtm]=round(probability_distribution_n[9-jtm]/sum*100,1)
+            probability_distribution[jtm]=round(probability_distribution_n[10-jtm]/sum*100,1)
             # sum2+=probability_distribution_n[jtm]
         print(sum)
         # print(sum2)
 
-        pyplot.hist(ioulist, bins=10)
+        pyplot.hist(ioulist, bins=11)
         # pyplot.show()
         pyplot.savefig(path_iou[:-3]+'png')
     iou_file.close()
@@ -717,9 +721,9 @@ def do_precison3(path_pred, path_gt):
                 cls_name = vids_gt[ti]['obj_name'][tj][tk]
                 cls_id = int(vid_classes.class_string_to_comp_code(str(cls_name))) - 1
                 gt_counter_per_class[cls_id] += 1
-                if vids_gt[ti]['motion_iou_cls'][tj][tk]>0.9:#slow
+                if vids_gt[ti]['motion_iou_cls'][tj][tk]>0.95:#slow
                     gt_counter_per_motion[0]+=1
-                elif vids_gt[ti]['motion_iou_cls'][tj][tk]<0.7:#fast
+                elif vids_gt[ti]['motion_iou_cls'][tj][tk]<0.8:#fast
                     gt_counter_per_motion[2] += 1
                 else:#medium
                     gt_counter_per_motion[1] += 1
@@ -763,9 +767,9 @@ def do_precison3(path_pred, path_gt):
                 # cls_name = vids_gt[j]['obj_name'][l][id_iou]
                 cls_name = vids_pred[i]['obj_name'][k][id_bpre]
                 cls_id = int(vid_classes.class_string_to_comp_code(str(cls_name))) - 1
-                if vids_gt[j]['motion_iou_cls'][l][id_iou] > 0.9:  # slow
+                if vids_gt[j]['motion_iou_cls'][l][id_iou] > 0.95:  # slow
                     motion_id = 0
-                elif vids_gt[j]['motion_iou_cls'][l][id_iou] < 0.7:  # fast
+                elif vids_gt[j]['motion_iou_cls'][l][id_iou] < 0.8:  # fast
                     motion_id = 2
                 else:  # medium
                     motion_id = 1
@@ -846,15 +850,15 @@ def do_precison3(path_pred, path_gt):
         sum_AP_motion += apt
     mAP_motion = sum_AP_motion / 3
 
-    rltTable = PrettyTable(["category", "n_gtbox", "AP","recall"])
+    rltTable = PrettyTable(["category", "n_gtbox", "AP (%)","recall (%)"])
     # totalRow = copy.deepcopy(cls_info)
     n_all_gt = 0
     for ito in range(len(CLASS_NAMES)):
-        rltTable.add_row([CLASS_NAMES[ito], gt_counter_per_class[ito], ap[ito], recall_cls[ito]])
+        rltTable.add_row([CLASS_NAMES[ito], gt_counter_per_class[ito], round(ap[ito]*100,1), round(recall_cls[ito]*100,1)])
         n_all_gt += gt_counter_per_class[ito]
     rltTable.add_row(["----------", "------", "--------------", "-------",])
 
-    rltTable.add_row(["Total_cls", n_all_gt, mAP,(n_tp_cls/n_all_gt) ])
+    rltTable.add_row(["Total_cls", n_all_gt, round(mAP*100,1),round((n_tp_cls/n_all_gt)*100,1) ])
 
     rltTable.add_row(["----------", "------", "--------------", "-------",])
     rltTable.add_row(["----------", "------", "--------------", "-------",])
@@ -862,19 +866,36 @@ def do_precison3(path_pred, path_gt):
     n_all_gt = 0
     motion_name=['slow','medium','fast']
     for ito in range(3):
-        rltTable.add_row([motion_name[ito], gt_counter_per_motion[ito], ap_motion[ito], recall_motion[ito]])
+        rltTable.add_row([motion_name[ito], gt_counter_per_motion[ito], round(ap_motion[ito]*100,1), round(recall_motion[ito]*100,1)])
         n_all_gt += gt_counter_per_motion[ito]
     rltTable.add_row(["----------", "------", "--------------", "-------",])
 
-    rltTable.add_row(["Total_motion", n_all_gt, mAP_motion, (n_tp_motion/n_all_gt)])
+    rltTable.add_row(["Total_motion", n_all_gt, round(mAP_motion*100,1), round((n_tp_motion/n_all_gt)*100,1)])
 
     rltTable.align["n_gtbox"] = "l"
     print(rltTable)
 
+def gen_vid_class_file(path,args):
+    videos_infos, train_videos = get_ILSVRC_eval_infos(args)
+    out_file = open('%s-skip%d-%d.txt' % (path,args.gt_skip, args.dataset_year), 'w')
+    for i,v in enumerate(videos_infos):
+        nams=[]
+        for j,na in enumerate(v['name']):
+            for k in na:
+                if k not in nams:
+                    nams.append(k)
+        out_file.write(str(train_videos['video_names'][i]) + ':')
+        for ni in nams:
+            out_file.write(str(ni)+ ',')
+        out_file.write('\n')
+    out_file.close()
+
 
 if __name__ == "__main__":
     args = parser.parse_args()
-    # gen_motion_iou_plot('../datasets/data/ILSVRC-vid-eval-gt-skip5-2015-motion_iou_data.txt')
+    # gen_motion_iou_plot('../datasets/data/ILSVRC-vid-eval-gt-skip1-2015-motion_iou_data.txt')
+    if args.gen_vid_cls:
+        gen_vid_class_file('../datasets/data/vid-cls',args)
     if args.gengt:
         gen_gt_file('../datasets/data/ILSVRC-vid-eval', args)
     if args.doprecision:

@@ -382,7 +382,11 @@ def process_data_ILSVR_consecutive_frame(img_paths, opt, train_db_pos_neg_all, l
     train_db_pos_neg_gpu = []
     for train_i in img_paths:
         n_frames=len(train_i['gt'])
-        max_dis=10
+        max_dis=15
+        gt_file_path = '../datasets/data/ILSVRC/Annotations/VID/train/' + train_i['img_files'][0][39:-5] + '.xml'
+        imginfo = get_xml_img_info(gt_file_path)
+        opts['imgSize'] = imginfo['imgsize']
+
         for i in range(n_frames-1,0,-1):
             train_db_pos_neg = {
                 'img_path': train_i['img_files'][i],
@@ -396,20 +400,61 @@ def process_data_ILSVR_consecutive_frame(img_paths, opt, train_db_pos_neg_all, l
                 for k in range(len(train_i['trackid'][j])):
                     for l in range(len(train_i['trackid'][i])):
                         if train_i['trackid'][j][k]==train_i['trackid'][i][l]:
+                            # train_db_pos_neg = {
+                            #     'img_path': train_i['img_files'][i],
+                            #     'bboxes': [],
+                            #     'labels': [],
+                            #     'score_labels': []
+                            # }
                             pos_neg_box=train_i['gt'][j][k]
-                            gt_bbox=train_i['gt'][i][l]
+                            gt_bbox = train_i['gt'][i][l]
+                            action_label_pos, _ = gen_action_pos_neg_labels(opts['num_actions'], opts,
+                                                                                           np.array(pos_neg_box),
+                                                                                           gt_bbox)
+
+
+
+
                             train_db_pos_neg['bboxes'].append(pos_neg_box)
-                            train_db_pos_neg['bboxes'].append(pos_neg_box)
-                            action_label_pos,action_label_neg=gen_action_pos_neg_labels(opts['num_actions'], opts, np.array(pos_neg_box), gt_bbox)
                             action_label_pos = np.transpose(action_label_pos).tolist()
-                            action_label_neg = np.transpose(action_label_neg).tolist()
                             train_db_pos_neg['labels'].extend(action_label_pos)
-                            train_db_pos_neg['labels'].extend(action_label_neg)
                             train_db_pos_neg['score_labels'].extend(list(np.ones(1, dtype=int)))
-                            train_db_pos_neg['score_labels'].extend(list(np.zeros(1, dtype=int)))
+                            # train_db_pos_neg_gpu.append(train_db_pos_neg)
+
+                            # train_db_pos_neg = {
+                            #     'img_path': train_i['img_files'][i],
+                            #     'bboxes': [],
+                            #     'labels': [],
+                            #     'score_labels': []
+                            # }
+                            if (i-j)%3==0:
+                                nct = -1
+                                while True:
+                                    # in original code, this 1 line below use opts['nPos_train'] instead of opts['nNeg_train']
+                                    nct += 1
+                                    if nct == 20:
+                                        break
+                                    neg = gen_samples('gaussian', gt_bbox, 5, opts, 2, 10)
+                                    r = overlap_ratio(neg, np.matlib.repmat(gt_bbox, len(neg), 1))
+                                    # neg = neg[np.array(r) < opts['consecutive_negThre_train']]
+                                    neg = neg[np.array(r) < opts['consecutive_negThre_train']]
+                                    if len(neg) == 0:
+                                        continue
+                                        # break
+                                    else:
+                                        pos_neg_box = neg[0]
+                                        # print("neg[0]", end=": ")
+                                        # print(neg[0])
+                                        break
+                                train_db_pos_neg['bboxes'].append(pos_neg_box)
+                                action_label_neg = np.full((opts['num_actions'], 1), fill_value=-1)
+                                action_label_neg = np.transpose(action_label_neg).tolist()
+                                train_db_pos_neg['labels'].extend(action_label_neg)
+                                train_db_pos_neg['score_labels'].extend(list(np.zeros(1, dtype=int)))
+                            # train_db_pos_neg_gpu.append(train_db_pos_neg)
 
             # if len(train_db_pos_neg['bboxes']) >0:
-            if len(train_db_pos_neg['bboxes']) == 2*max_dis:
+            if len(train_db_pos_neg['bboxes']) == 20:
                 train_db_pos_neg_gpu.append(train_db_pos_neg)
     try:
         lock.acquire()
@@ -427,7 +472,7 @@ def get_train_dbs_ILSVR_consecutive_frame(opts):
     #opts['imgSize'] = list(img.shape)
     gt_skip = opts['train']['gt_skip']
 
-    print('before get_train_dbs_ILSVR', end=' : ')
+    print('before get_train_dbs_ILSVR_consecutive_frame', end=' : ')
     print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
 
     parser = argparse.ArgumentParser()
@@ -438,6 +483,8 @@ def get_train_dbs_ILSVR_consecutive_frame(opts):
     args2 = parser.parse_args(['--eval_imgs','0','--gt_skip','1','--dataset_year','2222'])
 
     videos_infos, _ = get_ILSVRC_eval_infos(args2)
+    print('before process_data_ILSVR_consecutive_frame', end=' : ')
+    print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
 
     #train_sequences = list(range(0, vid_info['nframes'], gt_skip))
 

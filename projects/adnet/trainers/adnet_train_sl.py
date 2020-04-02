@@ -193,6 +193,8 @@ def adnet_train_sl(args, opts):
     # curr_domain = 0
     for epoch in range(args.start_epoch, opts['numEpoch']):
         ave_loss=0
+        act_l=0
+        sco_l=0
         if epoch == args.start_epoch:
             t1 = time.time()
             t4 = time.time()
@@ -332,15 +334,21 @@ def adnet_train_sl(args, opts):
             #     action_l = action_criterion(action_out, torch.max(action_label, 1)[1])
             # else:
             #     action_l = torch.Tensor([0])
-            action_l = action_criterion(action_out[pos_idx], torch.max(action_label[pos_idx], 1)[1])
+            if args.train_consecutive:
+                action_l = action_criterion(action_out, torch.max(action_label, 1)[1])
+            else:
+                action_l = action_criterion(action_out[pos_idx], torch.max(action_label[pos_idx], 1)[1])
             score_l = score_criterion(score_out, score_label.long())
             loss = action_l + score_l
             loss.backward()
             optimizer.step()
 
             action_loss += action_l.item()
+            # print("action_loss: %.2f, score_loss: %.2f."%(action_l.item(),score_l.item()))
             score_loss += score_l.item()
             ave_loss+=loss.data.item()
+            act_l+=action_l.item()
+            sco_l+=score_l.item()
 
             # save the ADNetDomainSpecific back to their module
             if args.cuda:
@@ -351,6 +359,8 @@ def adnet_train_sl(args, opts):
             #t1 = time.time()
 
             if iteration % 2000 == 0 and iteration!=0:
+                print(score_out)
+                print(score_label)
                 #print('Timer: %.4f sec.' % (t1 - t0))
                 #print('iter ' + repr(iteration) + ' || Loss: %.4f ||' % (loss.data.item()), end=' ')
                 #if iteration==start_iter:
@@ -368,9 +378,13 @@ def adnet_train_sl(args, opts):
                 all_s = all_time % 60
                 t4=time.time()
                 ave_loss=ave_loss/2000
-                print('epoch '+repr(epoch)+' | iter ' + repr(iteration) + ' | L-now: %.4f | L-ave: %.4f | T-iter: %d m %d s | T-all: %d d %d h %d m %d s | T-now: ' % (loss.data.item(),ave_loss,t3_m,t3_s,all_d,all_h,all_m,all_s),end='')
+                act_l=act_l/2000
+                sco_l=sco_l/2000
+                print('epoch '+repr(epoch)+' | iter ' + repr(iteration) + ' | L-a: %.4f |  L-s: %.4f | L-ave: %.4f | T-iter: %d m %d s | T-all: %d d %d h %d m %d s | T-now: ' % (act_l,sco_l,ave_loss,t3_m,t3_s,all_d,all_h,all_m,all_s),end='')
                 print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
                 ave_loss=0
+                act_l =0
+                sco_l =0
 
                 if args.visualize and args.send_images_to_visualization:
                     random_batch_index = np.random.randint(images.size(0))
