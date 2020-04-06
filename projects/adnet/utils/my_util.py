@@ -2,7 +2,7 @@ import _init_paths
 import glob, os
 import xml.etree.ElementTree as ET
 import tensorflow as tf
-
+import argparse
 slim = tf.contrib.slim
 
 import cv2, glob, os, re
@@ -10,6 +10,15 @@ import numpy as np
 #import scipy.io as sio
 #import tracker_util as tutil
 from utils import vid_classes
+
+def str2bool(v):
+    return v.lower() in ("yes", "true", "t", "1")
+
+parser = argparse.ArgumentParser(
+    description='my_util')
+parser.add_argument('--img_to_mp4', default=False, type=str2bool, help='generate mp4 video with imgs')
+parser.add_argument('--imgspath', default='ADNet_SL_/ILSVRC2015_val_00000000/', type=str,
+                    help='the imgs path')
 
 def test():
     video_infos = {
@@ -783,9 +792,11 @@ def do_iou_precise(path_exam,path_gt,thre=0.7):
 
 
 if __name__ == '__main__':
+    args = parser.parse_args()
     #generate_vid_box_label('datasets/data/test/ILSVRC2015_train_00146003')
     #show_gt_box(vidpath='datasets/data/test/ILSVRC2015_train_00146003.mp4',gt_path='datasets/data/test/vid/ILSVRC2015_train_00146003/groundtruth.txt')
-    imgs_to_mp4('/home/zb/project/detectron2/projects/adnet/mains/save_result_images/ADNet_SL_backup-0.5/ILSVRC2015_train_00146003/','jpg')
+    if args.img_to_mp4:
+        imgs_to_mp4('/home/zb/project/detectron2/projects/adnet/mains/save_result_images/'+args.imgspath,'jpg')
     #do_iou_precise("mains/results_on_test_images_part2/ADNet_RL_epoch29-0.5/ILSVRC2015_train_00146003-bboxes.npy","mains/results_on_test_images_part2/ADNet_RL_epoch29-0.5/ILSVRC2015_train_00146003-ground_truth.npy")
     # test()
 
