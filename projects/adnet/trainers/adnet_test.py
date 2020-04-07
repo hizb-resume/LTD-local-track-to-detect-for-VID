@@ -349,24 +349,63 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                             # calculate the id of the box with the highest similarity
                             # if thred of the highest similarity is higher than 0.9,
                             # n_trackid +1
-                            maxid=0
-                            maxdistance=9999
-                            for nt in range(len(obj_area)):
-                                output1, output2 = siamesenet(Variable(t_aera).cuda(), Variable(obj_area[nt]).cuda())
+                            # maxid=0
+                            maxid=[]
+                            maxiou=[]
+                            # maxdistance=9999
+                            for nt in range(len(obj_box)):
+                                tiou=cal_iou(boxes[i_d], obj_box[nt])
+                                if len(maxid)==0:
+                                    maxiou.insert(0,tiou)
+                                    maxid.insert(0,nt)
+                                elif tiou>maxiou[0]:
+                                    maxiou.insert(0, tiou)
+                                    maxid.insert(0, nt)
+                                else:
+                                    s = True
+                                    lm = len(maxid)
+                                    for mt in range(1, lm):
+                                        if tiou > maxiou[mt]:
+                                            maxiou.insert(mt, tiou)
+                                            maxid.insert(mt, nt)
+                                            s = False
+                                            break
+                                    if s == True:
+                                        maxiou.insert(lm, tiou)
+                                        maxid.insert(lm, nt)
+
+                            max_compare=min(2,len(maxid))
+                            s_f=False
+                            for nt in range(max_compare):
+                                output1, output2 = siamesenet(Variable(t_aera).cuda(), Variable(obj_area[maxid[nt]]).cuda())
                                 euclidean_distance = F.pairwise_distance(output1, output2)
-                                if euclidean_distance.item()<maxdistance:
-                                    maxdistance=euclidean_distance.item()
-                                    maxid=nt
-                            # print(maxid,len(obj_box))
-                            siam_thred_inf.append(maxdistance)
-                            if maxdistance>args.siam_thred and cal_iou(boxes[i_d],obj_box[maxid])<0.6:
+                                if euclidean_distance.item() < args.siam_thred:
+                                    frame_pred['track_id'].append(maxid[nt])
+                                    obj_box[maxid[nt]] = boxes[i_d]
+                                    s_f=True
+                                    break
+                            if s_f==False:
                                 n_trackid += 1
                                 obj_area.append(t_aera)
                                 obj_box.append(boxes[i_d])
                                 frame_pred['track_id'].append(n_trackid)
-                            else:
-                                frame_pred['track_id'].append(maxid)
-                                obj_box[maxid]=boxes[i_d]
+
+                            # for nt in range(len(obj_area)):
+                            #     output1, output2 = siamesenet(Variable(t_aera).cuda(), Variable(obj_area[nt]).cuda())
+                            #     euclidean_distance = F.pairwise_distance(output1, output2)
+                            #     if euclidean_distance.item()<maxdistance:
+                            #         maxdistance=euclidean_distance.item()
+                            #         maxid=nt
+                            # # print(maxid,len(obj_box))
+                            # siam_thred_inf.append(maxdistance)
+                            # if maxdistance>args.siam_thred and cal_iou(boxes[i_d],obj_box[maxid])<0.6:
+                            #     n_trackid += 1
+                            #     obj_area.append(t_aera)
+                            #     obj_box.append(boxes[i_d])
+                            #     frame_pred['track_id'].append(n_trackid)
+                            # else:
+                            #     frame_pred['track_id'].append(maxid)
+                            #     obj_box[maxid]=boxes[i_d]
                         else:
                             # n_trackid_t=i_d
                             frame_pred['track_id'].append(i_d)
@@ -531,24 +570,66 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                                 # calculate the id of the box with the highest similarity
                                 # if thred of the highest similarity is higher than 0.9,
                                 # n_trackid +1
-                                maxid = 0
-                                maxdistance = 9999
-                                for nt in range(len(obj_area)):
+                                maxid = []
+                                maxiou = []
+                                # maxdistance=9999
+                                for nt in range(len(obj_box)):
+                                    tiou = cal_iou(boxes[i_d], obj_box[nt])
+                                    if len(maxid) == 0:
+                                        maxiou.insert(0, tiou)
+                                        maxid.insert(0, nt)
+                                    elif tiou > maxiou[0]:
+                                        maxiou.insert(0, tiou)
+                                        maxid.insert(0, nt)
+                                    else:
+                                        s = True
+                                        lm = len(maxid)
+                                        for mt in range(1, lm):
+                                            if tiou > maxiou[mt]:
+                                                maxiou.insert(mt, tiou)
+                                                maxid.insert(mt, nt)
+                                                s = False
+                                                break
+                                        if s == True:
+                                            maxiou.insert(lm, tiou)
+                                            maxid.insert(lm, nt)
+
+                                max_compare = min(2, len(maxid))
+                                s_f = False
+                                for nt in range(max_compare):
                                     output1, output2 = siamesenet(Variable(t_aera).cuda(),
-                                                                  Variable(obj_area[nt]).cuda())
+                                                                  Variable(obj_area[maxid[nt]]).cuda())
                                     euclidean_distance = F.pairwise_distance(output1, output2)
-                                    if euclidean_distance.item() < maxdistance:
-                                        maxdistance = euclidean_distance.item()
-                                        maxid = nt
-                                siam_thred_inf.append(maxdistance)
-                                if maxdistance > args.siam_thred and cal_iou(boxes[i_d], obj_box[maxid]) < 0.6:
+                                    if euclidean_distance.item() < args.siam_thred:
+                                        frame_pred['track_id'].append(maxid[nt])
+                                        obj_box[maxid[nt]] = boxes[i_d]
+                                        s_f = True
+                                        break
+                                if s_f == False:
                                     n_trackid += 1
                                     obj_area.append(t_aera)
                                     obj_box.append(boxes[i_d])
                                     frame_pred['track_id'].append(n_trackid)
-                                else:
-                                    frame_pred['track_id'].append(maxid)
-                                    obj_box[maxid] = boxes[i_d]
+
+
+                                # maxid = 0
+                                # maxdistance = 9999
+                                # for nt in range(len(obj_area)):
+                                #     output1, output2 = siamesenet(Variable(t_aera).cuda(),
+                                #                                   Variable(obj_area[nt]).cuda())
+                                #     euclidean_distance = F.pairwise_distance(output1, output2)
+                                #     if euclidean_distance.item() < maxdistance:
+                                #         maxdistance = euclidean_distance.item()
+                                #         maxid = nt
+                                # siam_thred_inf.append(maxdistance)
+                                # if maxdistance > args.siam_thred and cal_iou(boxes[i_d], obj_box[maxid]) < 0.6:
+                                #     n_trackid += 1
+                                #     obj_area.append(t_aera)
+                                #     obj_box.append(boxes[i_d])
+                                #     frame_pred['track_id'].append(n_trackid)
+                                # else:
+                                #     frame_pred['track_id'].append(maxid)
+                                #     obj_box[maxid] = boxes[i_d]
                             else:
                                 # n_trackid_t=i_d
                                 frame_pred['track_id'].append(i_d)
@@ -651,25 +732,66 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                                     # calculate the id of the box with the highest similarity
                                     # if thred of the highest similarity is higher than 0.9,
                                     # n_trackid +1
-                                    maxid = 0
-                                    maxdistance = 9999
-                                    for nt in range(len(obj_area)):
+                                    maxid = []
+                                    maxiou = []
+                                    # maxdistance=9999
+                                    for nt in range(len(obj_box)):
+                                        tiou = cal_iou(boxes[i_d], obj_box[nt])
+                                        if len(maxid) == 0:
+                                            maxiou.insert(0, tiou)
+                                            maxid.insert(0, nt)
+                                        elif tiou > maxiou[0]:
+                                            maxiou.insert(0, tiou)
+                                            maxid.insert(0, nt)
+                                        else:
+                                            s = True
+                                            lm = len(maxid)
+                                            for mt in range(1, lm):
+                                                if tiou > maxiou[mt]:
+                                                    maxiou.insert(mt, tiou)
+                                                    maxid.insert(mt, nt)
+                                                    s = False
+                                                    break
+                                            if s == True:
+                                                maxiou.insert(lm, tiou)
+                                                maxid.insert(lm, nt)
+
+                                    max_compare = min(2, len(maxid))
+                                    s_f = False
+                                    for nt in range(max_compare):
                                         output1, output2 = siamesenet(Variable(t_aera).cuda(),
-                                                                      Variable(obj_area[nt]).cuda())
+                                                                      Variable(obj_area[maxid[nt]]).cuda())
                                         euclidean_distance = F.pairwise_distance(output1, output2)
-                                        if euclidean_distance.item() < maxdistance:
-                                            maxdistance = euclidean_distance.item()
-                                            maxid = nt
-                                    # print("maxdistance: %.2f, iou: %.2f."%(maxdistance,cal_iou(boxes[i_d], obj_box[maxid])))
-                                    siam_thred_inf.append(maxdistance)
-                                    if maxdistance > args.siam_thred and cal_iou(boxes[i_d], obj_box[maxid]) < 0.6:
+                                        if euclidean_distance.item() < args.siam_thred:
+                                            frame_pred['track_id'].append(maxid[nt])
+                                            obj_box[maxid[nt]] = boxes[i_d]
+                                            s_f = True
+                                            break
+                                    if s_f == False:
                                         n_trackid += 1
                                         obj_area.append(t_aera)
                                         obj_box.append(boxes[i_d])
                                         frame_pred['track_id'].append(n_trackid)
-                                    else:
-                                        frame_pred['track_id'].append(maxid)
-                                        obj_box[maxid] = boxes[i_d]
+
+                                    # maxid = 0
+                                    # maxdistance = 9999
+                                    # for nt in range(len(obj_area)):
+                                    #     output1, output2 = siamesenet(Variable(t_aera).cuda(),
+                                    #                                   Variable(obj_area[nt]).cuda())
+                                    #     euclidean_distance = F.pairwise_distance(output1, output2)
+                                    #     if euclidean_distance.item() < maxdistance:
+                                    #         maxdistance = euclidean_distance.item()
+                                    #         maxid = nt
+                                    # # print("maxdistance: %.2f, iou: %.2f."%(maxdistance,cal_iou(boxes[i_d], obj_box[maxid])))
+                                    # siam_thred_inf.append(maxdistance)
+                                    # if maxdistance > args.siam_thred and cal_iou(boxes[i_d], obj_box[maxid]) < 0.6:
+                                    #     n_trackid += 1
+                                    #     obj_area.append(t_aera)
+                                    #     obj_box.append(boxes[i_d])
+                                    #     frame_pred['track_id'].append(n_trackid)
+                                    # else:
+                                    #     frame_pred['track_id'].append(maxid)
+                                    #     obj_box[maxid] = boxes[i_d]
                                 else:
                                     # n_trackid_t=i_d
                                     frame_pred['track_id'].append(i_d)
