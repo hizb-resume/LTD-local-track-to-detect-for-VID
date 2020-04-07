@@ -377,13 +377,18 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                             max_compare=min(2,len(maxid))
                             s_f=False
                             for nt in range(max_compare):
-                                output1, output2 = siamesenet(Variable(t_aera).cuda(), Variable(obj_area[maxid[nt]]).cuda())
-                                euclidean_distance = F.pairwise_distance(output1, output2)
-                                if euclidean_distance.item() < args.siam_thred:
+                                if maxiou[nt]>0.5:
                                     frame_pred['track_id'].append(maxid[nt])
                                     obj_box[maxid[nt]] = boxes[i_d]
                                     s_f=True
                                     break
+                                # output1, output2 = siamesenet(Variable(t_aera).cuda(), Variable(obj_area[maxid[nt]]).cuda())
+                                # euclidean_distance = F.pairwise_distance(output1, output2)
+                                # if euclidean_distance.item() < args.siam_thred:
+                                #     frame_pred['track_id'].append(maxid[nt])
+                                #     obj_box[maxid[nt]] = boxes[i_d]
+                                #     s_f=True
+                                #     break
                             if s_f==False:
                                 n_trackid += 1
                                 obj_area.append(t_aera)
@@ -597,14 +602,19 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                                 max_compare = min(2, len(maxid))
                                 s_f = False
                                 for nt in range(max_compare):
-                                    output1, output2 = siamesenet(Variable(t_aera).cuda(),
-                                                                  Variable(obj_area[maxid[nt]]).cuda())
-                                    euclidean_distance = F.pairwise_distance(output1, output2)
-                                    if euclidean_distance.item() < args.siam_thred:
+                                    if maxiou[nt]>0.5:
                                         frame_pred['track_id'].append(maxid[nt])
                                         obj_box[maxid[nt]] = boxes[i_d]
-                                        s_f = True
+                                        s_f=True
                                         break
+                                    # output1, output2 = siamesenet(Variable(t_aera).cuda(),
+                                    #                               Variable(obj_area[maxid[nt]]).cuda())
+                                    # euclidean_distance = F.pairwise_distance(output1, output2)
+                                    # if euclidean_distance.item() < args.siam_thred:
+                                    #     frame_pred['track_id'].append(maxid[nt])
+                                    #     obj_box[maxid[nt]] = boxes[i_d]
+                                    #     s_f = True
+                                    #     break
                                 if s_f == False:
                                     n_trackid += 1
                                     obj_area.append(t_aera)
@@ -759,14 +769,19 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                                     max_compare = min(2, len(maxid))
                                     s_f = False
                                     for nt in range(max_compare):
-                                        output1, output2 = siamesenet(Variable(t_aera).cuda(),
-                                                                      Variable(obj_area[maxid[nt]]).cuda())
-                                        euclidean_distance = F.pairwise_distance(output1, output2)
-                                        if euclidean_distance.item() < args.siam_thred:
+                                        if maxiou[nt]>0.5:
                                             frame_pred['track_id'].append(maxid[nt])
                                             obj_box[maxid[nt]] = boxes[i_d]
-                                            s_f = True
+                                            s_f=True
                                             break
+                                        # output1, output2 = siamesenet(Variable(t_aera).cuda(),
+                                        #                               Variable(obj_area[maxid[nt]]).cuda())
+                                        # euclidean_distance = F.pairwise_distance(output1, output2)
+                                        # if euclidean_distance.item() < args.siam_thred:
+                                        #     frame_pred['track_id'].append(maxid[nt])
+                                        #     obj_box[maxid[nt]] = boxes[i_d]
+                                        #     s_f = True
+                                        #     break
                                     if s_f == False:
                                         n_trackid += 1
                                         obj_area.append(t_aera)
