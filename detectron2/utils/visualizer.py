@@ -433,7 +433,7 @@ class Visualizer:
             #     ]
 
             colors = [
-                tuple([x / 255 for x in self.metadata.thing_colors[c*5]]) for c in trackids
+                tuple([x / 255 for x in self.metadata.thing_colors[c]]) for c in trackids
             ]
             alpha = 0.8
         else:
