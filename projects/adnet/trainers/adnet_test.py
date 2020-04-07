@@ -300,6 +300,9 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
 
         # cap.set(cv2.CAP_PROP_POS_FRAMES, float(frame_idx))
         # success, frame = cap.read()
+
+        # if frame_idx==21:
+        #     print("debug")
         if len(frame_pred['bbox']) == 0:
             sign_redet = True
             # print('the num of pred boxes is 0! pre frame: %d, now frame: %d .'%(frame_idx-1,frame_idx))
@@ -824,6 +827,9 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                             if args.checktrackid:
                                 if euclidean_distance.item()<args.update_siam_thred:
                                     obj_box[frame_pred['track_id'][t_id]] = curr_bbox
+                    else:
+                        if args.checktrackid:
+                            obj_box[frame_pred['track_id'][t_id]] = curr_bbox
             n_bbox=len(frame_pred['bbox'])
             if is_negative==False:
                 spend_time['track'] += ts_all
@@ -861,7 +867,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                     "detortrack":[vid_pred['detortrack'][-1]]*len(frame_pred['obj_name']),
                     "siam_inf":siam_thred_inf
                 }
-                v = Visualizer(frame[:, :, ::-1], metalog, scale=1.2,instance_mode=1)
+                v = Visualizer(frame[:, :, ::-1], metalog, scale=1,instance_mode=1)
                 v = v.draw_instance_predictions2(outputs,args)
                 cv2.imshow("result",v.get_image())
                 cv2.waitKey(1)
@@ -883,7 +889,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                     "detortrack":[vid_pred['detortrack'][-1]]*len(frame_pred['obj_name']),
                     "siam_inf":siam_thred_inf
                 }
-                v = Visualizer(frame[:, :, ::-1], metalog, scale=1.2,instance_mode=1)
+                v = Visualizer(frame[:, :, ::-1], metalog, scale=1,instance_mode=1)
                 v = v.draw_instance_predictions2(outputs,args)
                 cv2.imwrite(filename, v.get_image(), [int(cv2.IMWRITE_JPEG_QUALITY), 70])
 
