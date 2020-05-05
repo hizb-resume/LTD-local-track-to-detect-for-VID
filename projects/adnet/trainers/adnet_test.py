@@ -873,7 +873,10 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                 cv2.waitKey(1)
 
         if args.save_result_images_bool:
-            filename = os.path.join(args.save_result_images, str(frame_idx).rjust(4,'0')+'-99-21-final' + '.jpg')
+            name_det_or_track='-det'
+            if vid_pred['detortrack'][-1]==1:
+                name_det_or_track='-track'
+            filename = os.path.join(args.save_result_images, str(frame_idx).rjust(4,'0')+'-99-21-final' +name_det_or_track+ '.jpg')
             # cv2.imwrite(filename, im_with_bb)
             if len(frame_pred['bbox']) == 0:
                 cv2.imwrite(filename, frame, [int(cv2.IMWRITE_JPEG_QUALITY), 70])
