@@ -414,6 +414,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                             # else:
                             #     frame_pred['track_id'].append(maxid)
                             #     obj_box[maxid]=boxes[i_d]
+                            siam_thred_inf.append(0)
                         else:
                             # n_trackid_t=i_d
                             frame_pred['track_id'].append(i_d)
@@ -643,6 +644,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                                 # else:
                                 #     frame_pred['track_id'].append(maxid)
                                 #     obj_box[maxid] = boxes[i_d]
+                                siam_thred_inf.append(0)
                             else:
                                 # n_trackid_t=i_d
                                 frame_pred['track_id'].append(i_d)
@@ -810,6 +812,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                                     # else:
                                     #     frame_pred['track_id'].append(maxid)
                                     #     obj_box[maxid] = boxes[i_d]
+                                    siam_thred_inf.append(0)
                                 else:
                                     # n_trackid_t=i_d
                                     frame_pred['track_id'].append(i_d)
