@@ -206,7 +206,7 @@ def _create_text_labels(classes, scores, class_names):
             labels = ["{} {:.0f}%".format(l, s * 100) for l, s in zip(labels, scores)]
     return labels
 
-def _create_text_labels2(classes, scores,trackids,detortrack,siam_inf,args, class_names):
+def _create_text_labels2(classes, scores,trackids,detortrack,siam_inf,r_iou,args, class_names):
     """
     Args:
         classes (list[int] or None):
@@ -230,10 +230,10 @@ def _create_text_labels2(classes, scores,trackids,detortrack,siam_inf,args, clas
                 if args.label_more:
                     dt = ["det" if d == 0 else "track" for d in detortrack]
                     if args.useSiamese:
-                        labels = ["{}, objectid:{}, {}, siamese:{}, {:.0f}%".format(l,t,d,round(si,2),  s * 100) for l, d,si,t, s in
-                                  zip(labels, dt,siam_inf,trackids, scores)]
+                        labels = ["{}, id:{}, {}, siam:{}, iou:{}, {:.0f}%".format(l,t,d,round(si,2),  s * 100) for l, d,si,iou,t, s in
+                                  zip(labels, dt,siam_inf,r_iou,trackids, scores)]
                     else:
-                        labels = ["{}, objectid:{}, {}, {:.0f}%".format(l, t,d, s * 100) for l, d,t, s in
+                        labels = ["{}, id:{}, {}, {:.0f}%".format(l, t,d, s * 100) for l, d,t, s in
                                   zip(labels, dt,trackids, scores)]
                 else:
                     labels = ["{}, objectid:{}, {:.0f}%".format(l,t, s * 100) for l,t, s in zip(labels,trackids, scores)]
@@ -422,7 +422,8 @@ class Visualizer:
         trackids = predictions['trackids'] if 'trackids' in predictions else None
         detortrack= predictions['detortrack'] if 'detortrack' in predictions else None
         siam_inf=predictions['siam_inf'] if 'siam_inf' in predictions else None
-        labels = _create_text_labels2(classes, scores,trackids,detortrack, siam_inf,args,self.metadata.get("thing_classes", None))
+        r_iou=predictions['r_iou'] if 'r_iou' in predictions else None
+        labels = _create_text_labels2(classes, scores,trackids,detortrack, siam_inf,r_iou,args,self.metadata.get("thing_classes", None))
         keypoints = predictions['pred_keypoints'] if 'pred_keypoints' in predictions else None
 
         masks = None
