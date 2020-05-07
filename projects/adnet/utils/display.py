@@ -4,6 +4,10 @@ if '/opt/ros/kinetic/lib/python2.7/dist-packages' in sys.path:
 
 import cv2
 
+def draw_box_bigline(image, box):
+    im_with_bb = image.copy()
+    cv2.rectangle(im_with_bb, (int(box[0]), int(box[1])), (int(box[0] + box[2]), int(box[1] + box[3])), (0, 0, 255),4)
+    return im_with_bb
 
 def draw_box(image, box):
     im_with_bb = image.copy()
