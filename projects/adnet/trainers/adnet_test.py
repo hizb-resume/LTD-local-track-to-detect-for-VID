@@ -387,7 +387,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                                     frame_pred['track_id'].append(maxid[nt])
                                     obj_box[maxid[nt]] = boxes[i_d]
                                     s_f=True
-                                    r_iou.append(maxiou[nt])
+                                    r_iou.append(round(maxiou[nt],2))
                                     break
                                 # output1, output2 = siamesenet(Variable(t_aera).cuda(), Variable(obj_area[maxid[nt]]).cuda())
                                 # euclidean_distance = F.pairwise_distance(output1, output2)
@@ -618,7 +618,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                                         frame_pred['track_id'].append(maxid[nt])
                                         obj_box[maxid[nt]] = boxes[i_d]
                                         s_f=True
-                                        r_iou.append(maxiou[nt])
+                                        r_iou.append(round(maxiou[nt],2))
                                         break
                                     # output1, output2 = siamesenet(Variable(t_aera).cuda(),
                                     #                               Variable(obj_area[maxid[nt]]).cuda())
@@ -654,7 +654,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                                 # else:
                                 #     frame_pred['track_id'].append(maxid)
                                 #     obj_box[maxid] = boxes[i_d]
-                                siam_thred_inf.append(9+curr_score)
+                                siam_thred_inf.append(round((9+curr_score),2))
                             else:
                                 # n_trackid_t=i_d
                                 frame_pred['track_id'].append(i_d)
@@ -709,7 +709,6 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                 else:
                     is_negative = False
                     r_iou_pred=frame_pred['bbox'][t_id]
-                    print(r_iou_pred,obj_box[t_id])
                     # frame_pred['frame_id'] = frame_idx
                     # frame_pred['track_id'] = []
                     # frame_pred['obj_name'] = []
@@ -792,7 +791,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                                             frame_pred['track_id'].append(maxid[nt])
                                             obj_box[maxid[nt]] = boxes[i_d]
                                             s_f=True
-                                            r_iou.append(maxiou[nt])
+                                            r_iou.append(round(maxiou[nt],2))
                                             break
                                         # output1, output2 = siamesenet(Variable(t_aera).cuda(),
                                         #                               Variable(obj_area[maxid[nt]]).cuda())
@@ -828,7 +827,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                                     # else:
                                     #     frame_pred['track_id'].append(maxid)
                                     #     obj_box[maxid] = boxes[i_d]
-                                    siam_thred_inf.append(euclidean_distance.item())
+                                    siam_thred_inf.append(round(euclidean_distance.item(),2))
                                 else:
                                     # n_trackid_t=i_d
                                     frame_pred['track_id'].append(i_d)
@@ -843,9 +842,9 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                             spend_time['append'] += ts2 - ts1
                             break
                         else:
-                            siam_thred_inf.append(euclidean_distance.item())
-                            tt_iou=cal_iou(obj_box[t_id],curr_bbox)
-                            r_iou.append(tt_iou)
+                            siam_thred_inf.append(round(euclidean_distance.item(),2))
+                            tt_iou=cal_iou(r_iou_pred,curr_bbox)
+                            r_iou.append(round(tt_iou,2))
 
                             if args.checktrackid:
                                 if euclidean_distance.item()<args.update_siam_thred:
