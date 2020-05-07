@@ -36,6 +36,13 @@ from detectron2.config import get_cfg
 # from detectron2.utils.visualizer import Visualizer
 from detectron2.data import MetadataCatalog
 
+import sys
+from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
+from PyQt5.QtCore import *
+from PyQt5.QtWidgets import QApplication, QWidget
+
 def str2bool(v):
     return v.lower() in ("yes", "true", "t", "1")
 
@@ -57,6 +64,7 @@ parser.add_argument('--useSiamese', default=True, type=str2bool, help='use siame
 parser.add_argument('--checktrackid', default=False, type=str2bool, help='if objects in different frames are the same instance, trackid should be same too')
 
 
+parser.add_argument('--testSiamese', default=False, type=str2bool, help='test siamese or not')
 parser.add_argument('--test1vid', default=False, type=str2bool, help='only test 1 video')
 parser.add_argument('--testVidPath', default='../datasets/data/ILSVRC/Data/VID/val/ILSVRC2015_val_00136000/',
                     type=str, help='test video path, only turn on when --test1vid is True')
@@ -118,6 +126,156 @@ def testsiamese(siamesenet,videos_infos):
             print("vid1: %d, name1: %s; vid2: %d , name2: %s."%(
                 vidx1,videos_infos[vidx1]['name'][fidx1][0],vidx2,videos_infos[vidx2]['name'][fidx2][0]),end='  ')
 
+class siamese_test(QWidget):
+    def __init__(self,siamesenet,videos_infos,transform3):
+        super(siamese_test, self).__init__()
+        self.initUI(siamesenet,videos_infos,transform3)
+
+    def initUI(self,siamesenet,videos_infos,transform3):
+        self.resize(600, 400)
+        self.center()
+        self.setWindowTitle("siamese result test")
+        grid = QGridLayout()
+        self.setLayout(grid)
+
+        label1 = QLabel("path1")
+        # label1.setText("path1")
+        grid.addWidget(label1, 0, 0)
+        label2 = QLabel("path2")
+        grid.addWidget(label2, 0, 2)
+        label3 = QLabel("siamese distance: ")
+        grid.addWidget(label3, 2, 1,1,2)
+        self.label4 = QLabel(self)   #siamese value
+        grid.addWidget(self.label4, 2, 3)
+
+        self.label_path1 = QLabel(self)
+        grid.addWidget(self.label_path1, 0, 1)
+        self.label_path2 = QLabel(self)
+        grid.addWidget(self.label_path2, 0, 3)
+
+        self.pic1=QLabel("picture1")
+        self.pic1.setStyleSheet("border: 2px solid red")
+        self.pic1.setScaledContents(True)
+        grid.addWidget(self.pic1, 1, 1)
+        self.pic2 = QLabel("picture2")
+        self.pic2.setStyleSheet("border: 2px solid red")
+        self.pic2.setScaledContents(True)
+        grid.addWidget(self.pic2, 1, 3)
+
+        button1 = QPushButton("random positive")
+        grid.addWidget(button1, 3,1)
+        button1.clicked.connect(self.rand_pos)
+        button2 = QPushButton("random negative")
+        grid.addWidget(button2, 3, 3)
+        button2.clicked.connect(self.rand_neg)
+
+        self.transform3 = transform3
+        self.videos_infos= videos_infos
+        self.siamesenet= siamesenet
+
+    def center(self):
+        qr = self.frameGeometry()
+        cp = QDesktopWidget().availableGeometry().center()
+        qr.moveCenter(cp)
+        self.move(qr.topLeft())
+
+    def rand_pos(self):
+        p1 = "1.jpg"
+        p2 = "2.jpg"
+        sia_value = 0
+
+        vlen = len(self.videos_infos)
+        vidx1 = random.randint(0, vlen - 1)
+        fidx1 = random.randint(0, videos_infos[vidx1]['nframes'] - 1)
+        p1 = videos_infos[vidx1]['img_files'][fidx1]
+        frame1 = cv2.imread(p1)
+        gt1 = videos_infos[vidx1]['gt'][fidx1][0]
+        t_aera1, _, _ = self.transform3(frame1, gt1)
+        trackid1 = videos_infos[vidx1]['trackid'][fidx1][0]
+
+        # while True:
+        #     vidx2 = random.randint(0, vlen - 1)
+        #     if vidx2 != vidx1:
+        #         break
+        while True:
+            fidx2 = random.randint(0, videos_infos[vidx1]['nframes'] - 1)
+            p2 = videos_infos[vidx1]['img_files'][fidx2]
+            frame2 = cv2.imread(p2)
+            gt2 = videos_infos[vidx1]['gt'][fidx2][0]
+            trackid2 = videos_infos[vidx1]['trackid'][fidx2][0]
+            if trackid1==trackid2:
+                break
+        t_aera2, _, _ = self.transform3(frame2, gt2)
+
+        output1, output2 = self.siamesenet(Variable(t_aera1).cuda(), Variable(t_aera2).cuda())
+        euclidean_distance = F.pairwise_distance(output1, output2)
+
+        sia_value=round(euclidean_distance,2)
+        img1 = QtGui.QPixmap(p1).scaled(self.pic1.width(), self.pic1.height())
+        self.pic1.setPixmap(img1)
+        img2 = QtGui.QPixmap(p2).scaled(self.pic2.width(), self.pic2.height())
+        self.pic2.setPixmap(img2)
+        self.label4.setText(str(sia_value))
+        self.label_path1.setText(p1)
+        self.label_path2.setText(p2)
+
+    def rand_neg(self):
+        p1 = "1.jpg"
+        p2 = "2.jpg"
+        sia_value = 0
+
+        vlen = len(self.videos_infos)
+        vidx1 = random.randint(0, vlen - 1)
+        fidx1 = random.randint(0, videos_infos[vidx1]['nframes'] - 1)
+        p1 = videos_infos[vidx1]['img_files'][fidx1]
+        frame1 = cv2.imread(p1)
+        gt1 = videos_infos[vidx1]['gt'][fidx1][0]
+        t_aera1, _, _ = self.transform3(frame1, gt1)
+        trackid1 = videos_infos[vidx1]['trackid'][fidx1][0]
+
+        while True:
+            found=False
+            vidx2 = random.randint(0, vlen - 1)
+            if vidx1==vidx2:
+                cnt=0
+                while True:
+                    cnt+=1
+                    fidx2 = random.randint(0, videos_infos[vidx2]['nframes'] - 1)
+                    p2 = videos_infos[vidx2]['img_files'][fidx2]
+                    n_obj=len(videos_infos[vidx2]['trackid'][fidx2])
+                    tid=random.randint(0, videos_infos[vidx2]['trackid'][fidx2] - 1)
+                    gt2 = videos_infos[vidx2]['gt'][fidx2][tid]
+                    trackid2 = videos_infos[vidx2]['trackid'][fidx2][tid]
+                    if trackid1 != trackid2:
+                        found=True
+                        break
+                    elif cnt>=20:
+                        break
+                    else:
+                        pass
+            else:
+                fidx2 = random.randint(0, videos_infos[vidx2]['nframes'] - 1)
+                p2 = videos_infos[vidx2]['img_files'][fidx2]
+                # frame2 = cv2.imread(p2)
+                gt2 = videos_infos[vidx2]['gt'][fidx2][0]
+                found = True
+            if found==True:
+                break
+
+        frame2 = cv2.imread(p2)
+        t_aera2, _, _ = self.transform3(frame2, gt2)
+
+        output1, output2 = self.siamesenet(Variable(t_aera1).cuda(), Variable(t_aera2).cuda())
+        euclidean_distance = F.pairwise_distance(output1, output2)
+
+        sia_value = round(euclidean_distance, 2)
+        img1 = QtGui.QPixmap(p1).scaled(self.pic1.width(), self.pic1.height())
+        self.pic1.setPixmap(img1)
+        img2 = QtGui.QPixmap(p2).scaled(self.pic2.width(), self.pic2.height())
+        self.pic2.setPixmap(img2)
+        self.label4.setText(str(sia_value))
+        self.label_path1.setText(p1)
+        self.label_path2.setText(p2)
 
 if __name__ == "__main__":
     args = parser.parse_args()
@@ -147,7 +305,7 @@ if __name__ == "__main__":
     # resume = False
     if resume:
         siamesenet.load_weights(resume)
-        checkpoint = torch.load(resume)
+        # checkpoint = torch.load(resume)
         # optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
     # assert 0 < args.pos_samples_ratio <= 1, "the pos_samples_ratio valid range is (0, 1]"
@@ -229,6 +387,16 @@ if __name__ == "__main__":
             if not os.path.exists(args.save_result_images):
                 os.makedirs(args.save_result_images)
         vid_pred = adnet_test(net, predictor, siamesenet, metalog, class_names, 0, vid_path, opts, args)
+    elif args.testSiamese:
+        videos_infos, train_videos = get_ILSVRC_eval_infos(args)
+        transform3_adition = transforms.Compose([transforms.Resize((100, 100)),
+                                                 transforms.ToTensor()
+                                                 ])
+        transform3 = ADNet_Augmentation3(transform3_adition)
+        app = QtWidgets.QApplication(sys.argv)
+        st = siamese_test(siamesenet,videos_infos,transform3)
+        st.show()
+        sys.exit(app.exec_())
     else:
         videos_infos, train_videos = get_ILSVRC_eval_infos(args)
 
