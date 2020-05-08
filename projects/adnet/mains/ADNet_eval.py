@@ -374,26 +374,40 @@ if __name__ == "__main__":
     # cfg.MODEL.WEIGHTS = "../../../demo/faster_rcnn_R_101_FPN_3x.pkl"
     # metalog=MetadataCatalog.get(cfg.DATASETS.TRAIN[0])
 
-    register_ILSVRC()
-    cfg = get_cfg()
-    cfg.merge_from_file("../../../configs/COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml")
-    cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # set threshold for this model
-    # Find a model from detectron2's model zoo. You can either use the https://dl.fbaipublicfiles.... url, or use the following shorthand
-    # cfg.MODEL.WEIGHTS ="../datasets/tem/train_output/model_0449999.pth"
-    cfg.MODEL.WEIGHTS = args.weight_detector
-    cfg.MODEL.ROI_HEADS.NUM_CLASSES = 30
-    metalog = MetadataCatalog.get("ILSVRC_VID_val")
-
-    predictor = DefaultPredictor(cfg)
-    class_names = metalog.get("thing_classes", None)
-
-    siamesenet = SiameseNetwork().cuda()
-    resume = args.weight_siamese
-    # resume = False
-    if resume:
-        siamesenet.load_weights(resume)
+    
+    siamesenet=''
+    if args.useSiamese:
+        siamesenet = SiameseNetwork().cuda()
+        resume = args.weight_siamese
+        # resume = False
+        if resume:
+            siamesenet.load_weights(resume)
         # checkpoint = torch.load(resume)
         # optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+
+    if torch.cuda.is_available():
+        if args.cuda:
+            torch.set_default_tensor_type('torch.cuda.FloatTensor')
+        if not args.cuda:
+            print(
+                "WARNING: It looks like you have a CUDA device, but aren't " + "using CUDA.\nRun with --cuda for optimal training speed.")
+            torch.set_default_tensor_type('torch.FloatTensor')
+    else:
+        torch.set_default_tensor_type('torch.FloatTensor')
+
+    if not args.testSiamese:
+        register_ILSVRC()
+        cfg = get_cfg()
+        cfg.merge_from_file("../../../configs/COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml")
+        cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # set threshold for this model
+        # Find a model from detectron2's model zoo. You can either use the https://dl.fbaipublicfiles.... url, or use the following shorthand
+        # cfg.MODEL.WEIGHTS ="../datasets/tem/train_output/model_0449999.pth"
+        cfg.MODEL.WEIGHTS = args.weight_detector
+        cfg.MODEL.ROI_HEADS.NUM_CLASSES = 30
+        metalog = MetadataCatalog.get("ILSVRC_VID_val")
+
+        predictor = DefaultPredictor(cfg)
+        class_names = metalog.get("thing_classes", None)
 
     # assert 0 < args.pos_samples_ratio <= 1, "the pos_samples_ratio valid range is (0, 1]"
 
@@ -416,26 +430,18 @@ if __name__ == "__main__":
     # opts['finetune_iters_online'] = args.online_iteration
     # opts['redet_samples'] = args.redetection_samples
 
-    if args.save_result_images_bool:
-        args.save_result_images = os.path.join(args.save_result_images,
-                                               os.path.basename(args.weight_file)[:-4])
-        if not os.path.exists(args.save_result_images):
-            os.makedirs(args.save_result_images)
+        if args.save_result_images_bool:
+            args.save_result_images = os.path.join(args.save_result_images,
+                                                   os.path.basename(args.weight_file)[:-4])
+            if not os.path.exists(args.save_result_images):
+                os.makedirs(args.save_result_images)
 
     # args.save_result_npy = os.path.join(args.save_result_npy, os.path.basename(args.weight_file)[:-4] + '-' +
     #                                     str(args.pos_samples_ratio))
     # if not os.path.exists(args.save_result_npy):
     #     os.makedirs(args.save_result_npy)
 
-    if torch.cuda.is_available():
-        if args.cuda:
-            torch.set_default_tensor_type('torch.cuda.FloatTensor')
-        if not args.cuda:
-            print(
-                "WARNING: It looks like you have a CUDA device, but aren't " + "using CUDA.\nRun with --cuda for optimal training speed.")
-            torch.set_default_tensor_type('torch.FloatTensor')
-    else:
-        torch.set_default_tensor_type('torch.FloatTensor')
+    
 
 
 
@@ -447,22 +453,22 @@ if __name__ == "__main__":
     # vid_folders.sort(key=str.lower)
     # all_precisions = []
 
-    save_root = args.save_result_images
+        save_root = args.save_result_images
     # save_root_npy = args.save_result_npy
 
-    print('Loading {}...'.format(args.weight_file))
-    opts['num_videos'] = 1
-    net, domain_nets = adnet(opts, trained_file=args.weight_file, random_initialize_domain_specific=False)
-    net.eval()
-    if args.cuda:
-        net = nn.DataParallel(net)
-        cudnn.benchmark = True
-    if args.cuda:
-        net = net.cuda()
-    if args.cuda:
-        net.module.set_phase('test')
-    else:
-        net.set_phase('test')
+        print('Loading {}...'.format(args.weight_file))
+        opts['num_videos'] = 1
+        net, domain_nets = adnet(opts, trained_file=args.weight_file, random_initialize_domain_specific=False)
+        net.eval()
+        if args.cuda:
+            net = nn.DataParallel(net)
+            cudnn.benchmark = True
+        if args.cuda:
+            net = net.cuda()
+        if args.cuda:
+            net.module.set_phase('test')
+        else:
+            net.set_phase('test')
 
     if args.test1vid:
         vid_path = args.testVidPath
