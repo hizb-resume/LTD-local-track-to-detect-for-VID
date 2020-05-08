@@ -18,10 +18,10 @@ import torch.nn.functional as F
 class Config():
     # training_dir = "./data/faces/training/"
     # testing_dir = "./data/faces/testing/"
-    weight_dir="siameseWeight_del/" #the path to save model file
+    weight_dir="siameseWeight4/" #the path to save model file
     start_epoch=0
-    train_batch_size = 256
-    train_number_epochs = 20
+    train_batch_size = 512
+    train_number_epochs = 30
 
 class SiameseNetworkDataset(Dataset):
 
@@ -31,10 +31,10 @@ class SiameseNetworkDataset(Dataset):
         self.transform = transform
         self.should_invert = should_invert
         self.lens=len(self.train_db['gt'])
-        self.expand_lens=self.lens*10
+        # self.expand_lens=self.lens*10
 
     def __getitem__(self, index):
-        index=index%self.lens
+        # index=index%self.lens
 
         # img0_tuple = random.choice(self.imageFolderDataset.imgs)
         img0_path=self.train_db['img_files'][index]
