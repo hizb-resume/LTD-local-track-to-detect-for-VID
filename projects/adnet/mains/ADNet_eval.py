@@ -216,8 +216,16 @@ class siamese_test(QWidget):
         #     vidx2 = random.randint(0, vlen - 1)
         #     if vidx2 != vidx1:
         #         break
+
+        letf_bd = fidx1 - 20
+        right_bd = fidx1 + 20
+        if letf_bd < 0:
+            letf_bd = 0
+        if right_bd > (videos_infos[vidx1]['nframes'] - 2):
+            right_bd=videos_infos[vidx1]['nframes'] - 1
         while True:
-            fidx2 = random.randint(0, videos_infos[vidx1]['nframes'] - 1)
+            # fidx2 = random.randint(0, videos_infos[vidx1]['nframes'] - 1)
+            fidx2 = random.randint(letf_bd, right_bd)
             n_obj=len(videos_infos[vidx1]['trackid'][fidx2])
             if n_obj==0:
                 continue
