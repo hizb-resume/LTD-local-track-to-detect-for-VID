@@ -93,7 +93,7 @@ class CropRegion3(object):
         box = np.array(box)
         if box is not None:
             center = box[0:2] + 0.5 * box[2:4]
-            wh = box[2:4] * 1.4  # multiplication = 1.4
+            wh = box[2:4] * 1  # multiplication = 1.4
             box_lefttop = center - 0.5 * wh
             box_rightbottom = center + 0.5 * wh
             box_ = [
