@@ -247,9 +247,10 @@ class siamese_test(QWidget):
                 continue
             p1 = videos_infos[vidx1]['img_files'][fidx1]
             frame1 = cv2.imread(p1)
-            gt1 = videos_infos[vidx1]['gt'][fidx1][0]
+            tid1=random.randint(0, n_obj - 1)
+            gt1 = videos_infos[vidx1]['gt'][fidx1][tid1]
             t_aera1, _, _ = self.transform3(frame1, gt1)
-            trackid1 = videos_infos[vidx1]['trackid'][fidx1][0]
+            trackid1 = videos_infos[vidx1]['trackid'][fidx1][tid1]
             break
 
         # while True:
@@ -271,8 +272,9 @@ class siamese_test(QWidget):
                 continue
             p2 = videos_infos[vidx1]['img_files'][fidx2]
             frame2 = cv2.imread(p2)
-            gt2 = videos_infos[vidx1]['gt'][fidx2][0]
-            trackid2 = videos_infos[vidx1]['trackid'][fidx2][0]
+            tid2=random.randint(0, n_obj - 1)
+            gt2 = videos_infos[vidx1]['gt'][fidx2][tid2]
+            trackid2 = videos_infos[vidx1]['trackid'][fidx2][tid2]
             if trackid1==trackid2:
                 break
         t_aera2, _, _ = self.transform3(frame2, gt2)
@@ -282,8 +284,8 @@ class siamese_test(QWidget):
 
         sia_value=round(euclidean_distance.item(),2)
 
-        category_name1 = videos_infos[vidx1]['name'][fidx1][0]
-        category_name2 = videos_infos[vidx1]['name'][fidx2][0]
+        category_name1 = videos_infos[vidx1]['name'][fidx1][tid1]
+        category_name2 = videos_infos[vidx1]['name'][fidx2][tid2]
 
         im_with_bb1 = draw_box_bigline(frame1, gt1,category_name1)
         im_with_bb1=cv2.resize(im_with_bb1,(self.pic1.width(), self.pic1.height()), interpolation=cv2.INTER_CUBIC)
@@ -325,9 +327,10 @@ class siamese_test(QWidget):
                 continue
             p1 = videos_infos[vidx1]['img_files'][fidx1]
             frame1 = cv2.imread(p1)
-            gt1 = videos_infos[vidx1]['gt'][fidx1][0]
+            tid1=random.randint(0, n_obj - 1)
+            gt1 = videos_infos[vidx1]['gt'][fidx1][tid1]
             t_aera1, _, _ = self.transform3(frame1, gt1)
-            trackid1 = videos_infos[vidx1]['trackid'][fidx1][0]
+            trackid1 = videos_infos[vidx1]['trackid'][fidx1][tid1]
             break
 
         while True:
@@ -342,9 +345,9 @@ class siamese_test(QWidget):
                     n_obj=len(videos_infos[vidx2]['trackid'][fidx2])
                     if n_obj==0:
                         break
-                    tid=random.randint(0, n_obj - 1)
-                    gt2 = videos_infos[vidx2]['gt'][fidx2][tid]
-                    trackid2 = videos_infos[vidx2]['trackid'][fidx2][tid]
+                    tid2=random.randint(0, n_obj - 1)
+                    gt2 = videos_infos[vidx2]['gt'][fidx2][tid2]
+                    trackid2 = videos_infos[vidx2]['trackid'][fidx2][tid2]
                     if trackid1 != trackid2:
                         found=True
                         break
@@ -359,7 +362,8 @@ class siamese_test(QWidget):
                     continue
                 p2 = videos_infos[vidx2]['img_files'][fidx2]
                 # frame2 = cv2.imread(p2)
-                gt2 = videos_infos[vidx2]['gt'][fidx2][0]
+                tid2=random.randint(0, n_obj - 1)
+                gt2 = videos_infos[vidx2]['gt'][fidx2][tid2]
                 found = True
             if found==True:
                 break
@@ -372,8 +376,8 @@ class siamese_test(QWidget):
 
         sia_value = round(euclidean_distance.item(), 2)
 
-        category_name1 = videos_infos[vidx1]['name'][fidx1][0]
-        category_name2 = videos_infos[vidx2]['name'][fidx2][0]
+        category_name1 = videos_infos[vidx1]['name'][fidx1][tid1]
+        category_name2 = videos_infos[vidx2]['name'][fidx2][tid2]
 
         im_with_bb1 = draw_box_bigline(frame1, gt1,category_name1)
         im_with_bb1=cv2.resize(im_with_bb1,(self.pic1.width(), self.pic1.height()), interpolation=cv2.INTER_CUBIC)
@@ -432,9 +436,10 @@ class siamese_test(QWidget):
                 continue
             p1 = videos_infos[vidx1]['img_files'][fidx1]
             frame1 = cv2.imread(p1)
-            gt1 = videos_infos[vidx1]['gt'][fidx1][0]
+            tid1=random.randint(0, n_obj - 1)
+            gt1 = videos_infos[vidx1]['gt'][fidx1][tid1]
             t_aera1, _, _ = self.transform3(frame1, gt1)
-            trackid1 = videos_infos[vidx1]['trackid'][fidx1][0]
+            trackid1 = videos_infos[vidx1]['trackid'][fidx1][tid1]
             break
 
         opts['imgSize'] = [frame1.shape[0],frame1.shape[1]]
@@ -453,7 +458,7 @@ class siamese_test(QWidget):
 
         sia_value = round(euclidean_distance.item(), 2)
 
-        category_name1 = videos_infos[vidx1]['name'][fidx1][0]
+        category_name1 = videos_infos[vidx1]['name'][fidx1][tid1]
         category_name2 = "random box"
 
         im_with_bb1 = draw_box_bigline(frame1, gt1,category_name1)
@@ -467,7 +472,7 @@ class siamese_test(QWidget):
         # img1 = QtGui.QPixmap(p1).scaled(self.pic1.width(), self.pic1.height())
         # self.pic1.setPixmap(img1)
 
-        im_with_bb2 = draw_box_bigline(frame1, gt2,category_name1)
+        im_with_bb2 = draw_box_bigline(frame1, gt2,category_name2)
         im_with_bb2=cv2.resize(im_with_bb2,(self.pic2.width(), self.pic2.height()), interpolation=cv2.INTER_CUBIC)
         im_with_bb2=cv2.cvtColor(im_with_bb2,cv2.COLOR_BGR2RGB)
         img2 = QtGui.QImage(im_with_bb2.data, width, height, bytesPerLine,QtGui.QImage.Format_RGB888)
