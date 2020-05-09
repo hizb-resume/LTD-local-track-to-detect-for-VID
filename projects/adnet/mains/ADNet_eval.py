@@ -282,7 +282,10 @@ class siamese_test(QWidget):
 
         sia_value=round(euclidean_distance.item(),2)
 
-        im_with_bb1 = draw_box_bigline(frame1, gt1)
+        category_name1 = videos_infos[vidx1]['name'][fidx1][0]
+        category_name2 = videos_infos[vidx1]['name'][fidx2][0]
+
+        im_with_bb1 = draw_box_bigline(frame1, gt1,category_name1)
         im_with_bb1=cv2.resize(im_with_bb1,(self.pic1.width(), self.pic1.height()), interpolation=cv2.INTER_CUBIC)
         im_with_bb1=cv2.cvtColor(im_with_bb1,cv2.COLOR_BGR2RGB)
         height, width, bytesPerComponent= im_with_bb1.shape
@@ -293,7 +296,7 @@ class siamese_test(QWidget):
         # img1 = QtGui.QPixmap(p1).scaled(self.pic1.width(), self.pic1.height())
         # self.pic1.setPixmap(img1)
 
-        im_with_bb2 = draw_box_bigline(frame2, gt2)
+        im_with_bb2 = draw_box_bigline(frame2, gt2,category_name2)
         im_with_bb2=cv2.resize(im_with_bb2,(self.pic2.width(), self.pic2.height()), interpolation=cv2.INTER_CUBIC)
         im_with_bb2=cv2.cvtColor(im_with_bb2,cv2.COLOR_BGR2RGB)
         height, width, bytesPerComponent= im_with_bb2.shape
@@ -369,7 +372,10 @@ class siamese_test(QWidget):
 
         sia_value = round(euclidean_distance.item(), 2)
 
-        im_with_bb1 = draw_box_bigline(frame1, gt1)
+        category_name1 = videos_infos[vidx1]['name'][fidx1][0]
+        category_name2 = videos_infos[vidx2]['name'][fidx2][0]
+
+        im_with_bb1 = draw_box_bigline(frame1, gt1,category_name1)
         im_with_bb1=cv2.resize(im_with_bb1,(self.pic1.width(), self.pic1.height()), interpolation=cv2.INTER_CUBIC)
         im_with_bb1=cv2.cvtColor(im_with_bb1,cv2.COLOR_BGR2RGB)
         height, width, bytesPerComponent= im_with_bb1.shape
@@ -380,7 +386,7 @@ class siamese_test(QWidget):
         # img1 = QtGui.QPixmap(p1).scaled(self.pic1.width(), self.pic1.height())
         # self.pic1.setPixmap(img1)
 
-        im_with_bb2 = draw_box_bigline(frame2, gt2)
+        im_with_bb2 = draw_box_bigline(frame2, gt2,category_name2)
         im_with_bb2=cv2.resize(im_with_bb2,(self.pic2.width(), self.pic2.height()), interpolation=cv2.INTER_CUBIC)
         im_with_bb2=cv2.cvtColor(im_with_bb2,cv2.COLOR_BGR2RGB)
         height, width, bytesPerComponent= im_with_bb2.shape
@@ -447,7 +453,10 @@ class siamese_test(QWidget):
 
         sia_value = round(euclidean_distance.item(), 2)
 
-        im_with_bb1 = draw_box_bigline(frame1, gt1)
+        category_name1 = videos_infos[vidx1]['name'][fidx1][0]
+        category_name2 = "random box"
+
+        im_with_bb1 = draw_box_bigline(frame1, gt1,category_name1)
         im_with_bb1=cv2.resize(im_with_bb1,(self.pic1.width(), self.pic1.height()), interpolation=cv2.INTER_CUBIC)
         im_with_bb1=cv2.cvtColor(im_with_bb1,cv2.COLOR_BGR2RGB)
         height, width, bytesPerComponent= im_with_bb1.shape
@@ -458,7 +467,7 @@ class siamese_test(QWidget):
         # img1 = QtGui.QPixmap(p1).scaled(self.pic1.width(), self.pic1.height())
         # self.pic1.setPixmap(img1)
 
-        im_with_bb2 = draw_box_bigline(frame1, gt2)
+        im_with_bb2 = draw_box_bigline(frame1, gt2,category_name1)
         im_with_bb2=cv2.resize(im_with_bb2,(self.pic2.width(), self.pic2.height()), interpolation=cv2.INTER_CUBIC)
         im_with_bb2=cv2.cvtColor(im_with_bb2,cv2.COLOR_BGR2RGB)
         img2 = QtGui.QImage(im_with_bb2.data, width, height, bytesPerLine,QtGui.QImage.Format_RGB888)
