@@ -15,6 +15,7 @@ from models.ADNet import adnet
 from utils.get_train_videos import get_train_videos
 from utils.ADNet_evalTools import gen_pred_file
 from utils.my_util import get_ILSVRC_eval_infos
+from utils.gen_samples import gen_samples
 from utils.display import draw_box,draw_box_bigline
 from utils.augmentations import ADNet_Augmentation3
 from trainers.adnet_test import adnet_test
@@ -133,6 +134,10 @@ class siamese_test(QWidget):
         self.initUI(siamesenet,videos_infos,transform3)
 
     def initUI(self,siamesenet,videos_infos,transform3):
+        ft=QFont("Roman times", 20, QFont.Bold)
+        pe = QPalette()
+        pe.setColor(QPalette.WindowText, Qt.red)
+
         self.resize(1200, 650)
         self.setFixedSize(1200, 650)
         self.center()
@@ -146,42 +151,77 @@ class siamese_test(QWidget):
         grid.setColumnStretch(4, 1)
         grid.setRowStretch(0,1)
         grid.setRowStretch(1,6)
-        grid.setRowStretch(2,2)
-        grid.setRowStretch(3,2)
-        grid.setRowStretch(4,1)
+        grid.setRowStretch(2,1)
+        grid.setRowStretch(3,1)
+        grid.setRowStretch(4,0.5)
 
         label1 = QLabel("path1: ")
+        # label1.setFont(ft)
         # label1.setText("path1")
         grid.addWidget(label1, 0, 0)
         label2 = QLabel("path2: ")
+        # label2.setFont(ft)
         grid.addWidget(label2, 0, 2)
-        label3 = QLabel("siamese distance: ")
+        label3 = QLabel("siamese distance of img1 and img2: ")
+        label3.setFont(ft)
         grid.addWidget(label3, 2, 1,1,2,Qt.AlignRight)
-        self.label4 = QLabel(self)   #siamese value
+        self.label4 = QLabel("realtime diversity")   #siamese value
+        self.label4.setFont(ft)
+        self.label4.setPalette(pe)
         grid.addWidget(self.label4, 2, 3)
 
-        self.label_path1 = QLabel(self)
+        self.label_path1 = QLabel("realtime\\path\\to\\img1")
+        self.label_path1.setPalette(pe)
         grid.addWidget(self.label_path1, 0, 1)
-        self.label_path2 = QLabel(self)
+        self.label_path2 = QLabel("realtime\\path\\to\\img2")
+        self.label_path2.setPalette(pe)
         grid.addWidget(self.label_path2, 0, 3)
 
-        self.pic1=QLabel("picture1")
+        self.pic1=QLabel("image1 area")
+        self.pic1.setAlignment(Qt.AlignCenter)
+        self.pic1.setFont(ft)
+        self.pic1.setPalette(pe)
         # self.pic1.setStyleSheet("border: 2px solid red")
+        self.pic1.setStyleSheet("background: yellow")
         self.pic1.setFixedSize(495, 330)
         # self.pic1.setScaledContents(True)
         grid.addWidget(self.pic1, 1, 1)
-        self.pic2 = QLabel("picture2")
-        # self.pic2.setStyleSheet("border: 2px solid red")
+        self.pic2 = QLabel("image2 area")
+        self.pic2.setAlignment(Qt.AlignCenter)
+        self.pic2.setFont(ft)
+        self.pic2.setPalette(pe)
+        self.pic2.setStyleSheet("background: yellow")
         self.pic2.setFixedSize(495, 330)
         # self.pic2.setScaledContents(True)
         grid.addWidget(self.pic2, 1, 3)
 
         button1 = QPushButton("random positive")
-        grid.addWidget(button1, 3,1)
+        button1.setFont(ft)
+        button1.setFixedSize(280,60)
+        # grid.addWidget(button1, 3,0,1,2)
         button1.clicked.connect(self.rand_pos)
         button2 = QPushButton("random negative")
-        grid.addWidget(button2, 3, 3)
+        button2.setFont(ft)
+        button2.setFixedSize(280,60)
+        # grid.addWidget(button2, 3, 3)
         button2.clicked.connect(self.rand_neg)
+        button3 = QPushButton("ramdom same frame")
+        button3.setFont(ft)
+        button3.setFixedSize(320, 60)
+        # grid.addWidget(button3, 3, 3)
+        button3.clicked.connect(self.rand_neg_same_frame)
+
+        hbox = QHBoxLayout()
+        hbox.addStretch(1)
+        hbox.addWidget(button1)
+        hbox.addStretch(1)
+        hbox.addWidget(button3)
+        hbox.addStretch(1)
+        hbox.addWidget(button2)
+        hbox.addStretch(1)
+        hwg = QtWidgets.QWidget()
+        hwg.setLayout(hbox)
+        grid.addWidget(hwg, 3, 1,1,3)
 
         self.transform3 = transform3
         self.videos_infos= videos_infos
@@ -371,6 +411,62 @@ class siamese_test(QWidget):
         self.label4.setText(str(sia_value))
         self.label_path1.setText(p1)
         self.label_path2.setText(p2)
+
+    def rand_neg_same_frame(self):
+        p1 = "1.jpg"
+        p2 = "2.jpg"
+        sia_value = 0
+
+        vlen = len(self.videos_infos)
+        vidx1 = random.randint(0, vlen - 1)
+        while True:
+            fidx1 = random.randint(0, videos_infos[vidx1]['nframes'] - 1)
+            n_obj=len(videos_infos[vidx1]['trackid'][fidx1])
+            if n_obj==0:
+                continue
+            p1 = videos_infos[vidx1]['img_files'][fidx1]
+            frame1 = cv2.imread(p1)
+            gt1 = videos_infos[vidx1]['gt'][fidx1][0]
+            t_aera1, _, _ = self.transform3(frame1, gt1)
+            trackid1 = videos_infos[vidx1]['trackid'][fidx1][0]
+            break
+
+        opts['imgSize'] = [frame1.shape[0],frame1.shape[1]]
+        pn=random.randint(0, 1)
+        if pn:
+            gt2 = gen_samples('gaussian', gt1, 1, opts, 2, 10)
+        else:
+            gt2 = gen_samples('gaussian', gt1, 1, opts, 0.1, 5)
+
+        gt2=gt2[0]
+
+        t_aera2, _, _ = self.transform3(frame1, gt2)
+
+        output1, output2 = self.siamesenet(Variable(t_aera1).cuda(), Variable(t_aera2).cuda())
+        euclidean_distance = F.pairwise_distance(output1, output2)
+
+        sia_value = round(euclidean_distance.item(), 2)
+
+        im_with_bb1 = draw_box_bigline(frame1, gt1)
+        im_with_bb1=cv2.resize(im_with_bb1,(self.pic1.width(), self.pic1.height()), interpolation=cv2.INTER_CUBIC)
+        im_with_bb1=cv2.cvtColor(im_with_bb1,cv2.COLOR_BGR2RGB)
+        height, width, bytesPerComponent= im_with_bb1.shape
+        bytesPerLine = bytesPerComponent* width
+        img1 = QtGui.QImage(im_with_bb1.data, width, height, bytesPerLine,QtGui.QImage.Format_RGB888)
+        self.pic1.setPixmap(QtGui.QPixmap.fromImage(img1).scaled(self.pic1.width(), self.pic1.height()))
+
+        # img1 = QtGui.QPixmap(p1).scaled(self.pic1.width(), self.pic1.height())
+        # self.pic1.setPixmap(img1)
+
+        im_with_bb2 = draw_box_bigline(frame1, gt2)
+        im_with_bb2=cv2.resize(im_with_bb2,(self.pic2.width(), self.pic2.height()), interpolation=cv2.INTER_CUBIC)
+        im_with_bb2=cv2.cvtColor(im_with_bb2,cv2.COLOR_BGR2RGB)
+        img2 = QtGui.QImage(im_with_bb2.data, width, height, bytesPerLine,QtGui.QImage.Format_RGB888)
+        self.pic2.setPixmap(QtGui.QPixmap.fromImage(img2).scaled(self.pic2.width(), self.pic2.height()))
+
+        self.label4.setText(str(sia_value))
+        self.label_path1.setText(p1)
+        self.label_path2.setText(p1)
 
 if __name__ == "__main__":
     args = parser.parse_args()
