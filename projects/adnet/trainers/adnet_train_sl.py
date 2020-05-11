@@ -359,8 +359,8 @@ def adnet_train_sl(args, opts):
             #t1 = time.time()
 
             if iteration % 2000 == 0 and iteration!=0:
-                print(score_out)
-                print(score_label)
+                # print(score_out)
+                # print(score_label)
                 #print('Timer: %.4f sec.' % (t1 - t0))
                 #print('iter ' + repr(iteration) + ' || Loss: %.4f ||' % (loss.data.item()), end=' ')
                 #if iteration==start_iter:
