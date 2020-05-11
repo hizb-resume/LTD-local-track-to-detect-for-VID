@@ -4,6 +4,8 @@ import os
 import multiprocessing
 import tensorflow as tf
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+import warnings
+warnings.filterwarnings("ignore")
 # sys.path.append("..")
 # import _init_paths
 
@@ -98,7 +100,7 @@ parser.add_argument('--believe_score_result', default=0, type=int, help='Believe
 #                     help='The ratio of positive in all samples for online adaptation. Rest of it will be negative samples. Default: 0.5')
 
 
-def process_adnet_test(videos_infos, i, v_start_id,v_end_id,train_videos,save_root,
+def process_adnet_test(videos_infos,dataset_start_id, v_start_id,v_end_id,train_videos,save_root,
                         spend_times,vid_preds,net, siamesenet, opts,args, lock):
     register_ILSVRC()
     cfg = get_cfg()
@@ -138,7 +140,7 @@ def process_adnet_test(videos_infos, i, v_start_id,v_end_id,train_videos,save_ro
             spend_times[0]['n_argmax_after_forward'] += spend_time['n_argmax_after_forward']
             spend_times[0]['do_action'] += spend_time['do_action']
             spend_times[0]['n_do_action'] += spend_time['n_do_action']
-            vid_preds[vidx].append(vid_pred)
+            vid_preds[vidx-dataset_start_id].append(vid_pred)
         except Exception as err:
             raise err
         finally:
@@ -333,9 +335,9 @@ if __name__ == "__main__":
             lock = multiprocessing.Manager().Lock()
             record = []
             for i in range(cpu_num):
-                print("fragment %d: start_vid: %d, end_vid: %d."%(i,start_vid[i],end_vid[i]))
+                # print("fragment %d: start_vid: %d, end_vid: %d."%(i,start_vid[i],end_vid[i]))
                 process = multiprocessing.Process(target=process_adnet_test,
-                                                  args=(videos_infos, i, start_vid[i],end_vid[i],train_videos,save_root,
+                                                  args=(videos_infos, v_start_id,start_vid[i],end_vid[i],train_videos,save_root,
                                                         spend_times_mul,vid_preds,net, siamesenet, opts,args, lock))
                 process.start()
                 record.append(process)
