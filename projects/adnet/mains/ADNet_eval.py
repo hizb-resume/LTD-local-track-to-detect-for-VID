@@ -1,6 +1,7 @@
 import argparse
 import sys
 import os
+import multiprocessing
 import tensorflow as tf
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 # sys.path.append("..")
@@ -65,7 +66,7 @@ parser.add_argument('--dataset_year', default=2015, type=int, help='dataset vers
 parser.add_argument('--useSiamese', default=True, type=str2bool, help='use siamese or not')
 parser.add_argument('--checktrackid', default=False, type=str2bool, help='if objects in different frames are the same instance, trackid should be same too')
 
-
+parser.add_argument('--multi_cpu_eval', default=False, type=str2bool, help='mutiple cpu or not when evaluate')
 parser.add_argument('--testSiamese', default=False, type=str2bool, help='test siamese or not')
 parser.add_argument('--test1vid', default=False, type=str2bool, help='only test 1 video')
 parser.add_argument('--testVidPath', default='../datasets/data/ILSVRC/Data/VID/val/ILSVRC2015_val_00136000/',
@@ -482,6 +483,40 @@ class siamese_test(QWidget):
         self.label_path1.setText(p1)
         self.label_path2.setText(p1)
 
+def process_adnet_test(videos_infos, i, v_start_id,v_end_id,train_videos,save_root,
+                        spend_times,vid_preds,net, predictor, siamesenet, metalog, class_names, opts,args, lock):
+    for vidx in range(v_start_id, v_end_id):
+        # for vidx in range(20):
+        vid_folder = videos_infos[vidx]
+
+        if args.save_result_images_bool:
+            args.save_result_images = os.path.join(save_root, train_videos['video_names'][vidx])
+            if not os.path.exists(args.save_result_images):
+                os.makedirs(args.save_result_images)
+
+        vid_pred,spend_time = adnet_test(net,predictor,siamesenet,metalog,class_names, vidx,vid_folder['img_files'], opts, args)
+        try:
+            lock.acquire()
+            spend_times[0]['predict']+=spend_time['predict']
+            spend_times[0]['n_predict_frames'] += spend_time['n_predict_frames']
+            spend_times[0]['track'] += spend_time['track']
+            spend_times[0]['n_track_frames'] += spend_time['n_track_frames']
+            spend_times[0]['readframe'] += spend_time['readframe']
+            spend_times[0]['n_readframe'] += spend_time['n_readframe']
+            spend_times[0]['append'] += spend_time['append']
+            spend_times[0]['n_append'] += spend_time['n_append']
+            spend_times[0]['transform'] += spend_time['transform']
+            spend_times[0]['n_transform'] += spend_time['n_transform']
+            spend_times[0]['argmax_after_forward'] += spend_time['argmax_after_forward']
+            spend_times[0]['n_argmax_after_forward'] += spend_time['n_argmax_after_forward']
+            spend_times[0]['do_action'] += spend_time['do_action']
+            spend_times[0]['n_do_action'] += spend_time['n_do_action']
+            vid_preds[vidx].append(vid_pred)
+        except Exception as err:
+            raise err
+        finally:
+            lock.release()
+
 if __name__ == "__main__":
     args = parser.parse_args()
 
@@ -644,47 +679,86 @@ if __name__ == "__main__":
         }
 
         t_eval0=time.time()
-        # for vidx,vid_folder in enumerate(videos_infos):
-        for vidx  in range(v_start_id,v_end_id):
-        # for vidx in range(20):
-            vid_folder=videos_infos[vidx]
 
-            # net, domain_nets = adnet(opts, trained_file=args.weight_file, random_initialize_domain_specific=True)
-            # net.train()
-            if args.save_result_images_bool:
-                args.save_result_images = os.path.join(save_root, train_videos['video_names'][vidx])
-                if not os.path.exists(args.save_result_images):
-                    os.makedirs(args.save_result_images)
+        if args.multi_cpu_eval:
+            all_vid_num=v_end_id-v_start_id
+            cpu_num = 5
+            if all_vid_num < cpu_num:
+                cpu_num = all_vid_num
+            every_cpu_vid = all_vid_num // cpu_num
+            start_vid=[]
+            end_vid=[]
+            for gn in range(cpu_num - 1):
+                # gn * every_gpu_img: (gn + 1) * every_gpu_img
+                start_vid.append(gn * every_cpu_vid+v_start_id)
+                end_vid.append((gn + 1) * every_cpu_vid+v_start_id)
+            start_vid.append((cpu_num-1) * every_cpu_vid+v_start_id)
+            end_vid.append(v_end_id)
 
-            # args.save_result_npy = os.path.join(save_root_npy, train_videos['video_names'][vidx])
+            vid_preds = multiprocessing.Manager().list()
+            spend_times_mul = multiprocessing.Manager().list()
+            spend_times_mul.append(spend_times)
+            for i in range(all_vid_num):
+                vid_preds.append([])
 
-            # vid_path = os.path.join(train_videos['video_paths'][vidx], train_videos['video_names'][vidx])
+            lock = multiprocessing.Manager().Lock()
+            record = []
+            for i in range(cpu_num):
+                print("fragment %d: start_vid: %d, end_vid: %d."%(i,start_vid[i],end_vid[i]))
+                process = multiprocessing.Process(target=process_adnet_test,
+                                                  args=(videos_infos, i, start_vid[i],end_vid[i],train_videos,save_root,
+                                                        spend_times_mul,vid_preds,net, predictor, siamesenet, metalog, class_names, opts,args, lock))
+                process.start()
+                record.append(process)
+            for process in record:
+                process.join()
 
-            # load ADNetDomainSpecific
+            vid_preds=list(vid_preds)
+            for i in range(len(vid_preds)):
+                isstart = i == 0
+                gen_pred_file(args.results_file, vid_preds[i][0], isstart)
+        else:
+            # for vidx,vid_folder in enumerate(videos_infos):
+            for vidx  in range(v_start_id,v_end_id):
+            # for vidx in range(20):
+                vid_folder=videos_infos[vidx]
 
-            # if args.cuda:
-            #     net.module.load_domain_specific(domain_nets[0])
-            # else:
-            #     net.load_domain_specific(domain_nets[0])
+                # net, domain_nets = adnet(opts, trained_file=args.weight_file, random_initialize_domain_specific=True)
+                # net.train()
+                if args.save_result_images_bool:
+                    args.save_result_images = os.path.join(save_root, train_videos['video_names'][vidx])
+                    if not os.path.exists(args.save_result_images):
+                        os.makedirs(args.save_result_images)
 
-            vid_pred,spend_time = adnet_test(net,predictor,siamesenet,metalog,class_names, vidx,vid_folder['img_files'], opts, args)
-            isstart=vidx==v_start_id
-            gen_pred_file(args.results_file,vid_pred,isstart)
+                # args.save_result_npy = os.path.join(save_root_npy, train_videos['video_names'][vidx])
 
-            spend_times['predict']+=spend_time['predict']
-            spend_times['n_predict_frames'] += spend_time['n_predict_frames']
-            spend_times['track'] += spend_time['track']
-            spend_times['n_track_frames'] += spend_time['n_track_frames']
-            spend_times['readframe'] += spend_time['readframe']
-            spend_times['n_readframe'] += spend_time['n_readframe']
-            spend_times['append'] += spend_time['append']
-            spend_times['n_append'] += spend_time['n_append']
-            spend_times['transform'] += spend_time['transform']
-            spend_times['n_transform'] += spend_time['n_transform']
-            spend_times['argmax_after_forward'] += spend_time['argmax_after_forward']
-            spend_times['n_argmax_after_forward'] += spend_time['n_argmax_after_forward']
-            spend_times['do_action'] += spend_time['do_action']
-            spend_times['n_do_action'] += spend_time['n_do_action']
+                # vid_path = os.path.join(train_videos['video_paths'][vidx], train_videos['video_names'][vidx])
+
+                # load ADNetDomainSpecific
+
+                # if args.cuda:
+                #     net.module.load_domain_specific(domain_nets[0])
+                # else:
+                #     net.load_domain_specific(domain_nets[0])
+
+                vid_pred,spend_time = adnet_test(net,predictor,siamesenet,metalog,class_names, vidx,vid_folder['img_files'], opts, args)
+                isstart=vidx==v_start_id
+                gen_pred_file(args.results_file,vid_pred,isstart)
+
+                spend_times['predict']+=spend_time['predict']
+                spend_times['n_predict_frames'] += spend_time['n_predict_frames']
+                spend_times['track'] += spend_time['track']
+                spend_times['n_track_frames'] += spend_time['n_track_frames']
+                spend_times['readframe'] += spend_time['readframe']
+                spend_times['n_readframe'] += spend_time['n_readframe']
+                spend_times['append'] += spend_time['append']
+                spend_times['n_append'] += spend_time['n_append']
+                spend_times['transform'] += spend_time['transform']
+                spend_times['n_transform'] += spend_time['n_transform']
+                spend_times['argmax_after_forward'] += spend_time['argmax_after_forward']
+                spend_times['n_argmax_after_forward'] += spend_time['n_argmax_after_forward']
+                spend_times['do_action'] += spend_time['do_action']
+                spend_times['n_do_action'] += spend_time['n_do_action']
 
         #     all_precisions.append(precisions)
         #
