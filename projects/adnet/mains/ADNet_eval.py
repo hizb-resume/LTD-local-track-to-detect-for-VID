@@ -340,7 +340,7 @@ if __name__ == "__main__":
 
         if args.multi_cpu_eval:
             all_vid_num=v_end_id-v_start_id
-            cpu_num = 20
+            cpu_num = 28
             if all_vid_num < cpu_num:
                 cpu_num = all_vid_num
             every_cpu_vid = all_vid_num // cpu_num
@@ -364,11 +364,11 @@ if __name__ == "__main__":
             for i in range(cpu_num):
                 if i==0:
                     os.environ["CUDA_VISIBLE_DEVICES"]="0"
-                if i==5:
+                if i==9:
                     os.environ["CUDA_VISIBLE_DEVICES"]="1"
-                if i==10:
+                if i==18:
                     os.environ["CUDA_VISIBLE_DEVICES"]="2"
-                if i==15:
+                if i==24:
                     os.environ["CUDA_VISIBLE_DEVICES"]="3"
                 # print("fragment %d: start_vid: %d, end_vid: %d."%(i,start_vid[i],end_vid[i]))
                 process = multiprocessing.Process(target=process_adnet_test,
@@ -381,8 +381,11 @@ if __name__ == "__main__":
 
             vid_preds=list(vid_preds)
             spend_times=list(spend_times_mul)[0]
+            # print("len(vid_preds): %d"%(len(vid_preds)))
             for i in range(len(vid_preds)):
                 isstart = i == 0
+                # print(i,type(vid_preds[i]))
+                # print("len vid_preds[%d]: %d"%(i,len(vid_preds[i])))
                 gen_pred_file(args.results_file, vid_preds[i], isstart)
         else:
             # for vidx,vid_folder in enumerate(videos_infos):
