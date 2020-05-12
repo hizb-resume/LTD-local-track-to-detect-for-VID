@@ -101,7 +101,7 @@ parser.add_argument('--believe_score_result', default=0, type=int, help='Believe
 
 
 def process_adnet_test(videos_infos,dataset_start_id, v_start_id,v_end_id,train_videos,save_root,
-                        spend_times,vid_preds,net, siamesenet, opts,args, lock):
+                        spend_times_share,vid_preds,net, siamesenet, opts,args, lock):
     register_ILSVRC()
     cfg = get_cfg()
     cfg.merge_from_file("../../../configs/COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml")
@@ -126,21 +126,23 @@ def process_adnet_test(videos_infos,dataset_start_id, v_start_id,v_end_id,train_
         vid_pred,spend_time = adnet_test(net,predictor,siamesenet,metalog,class_names, vidx,vid_folder['img_files'], opts, args)
         try:
             lock.acquire()
-            spend_times[0]['predict']+=spend_time['predict']
-            spend_times[0]['n_predict_frames'] += spend_time['n_predict_frames']
-            spend_times[0]['track'] += spend_time['track']
-            spend_times[0]['n_track_frames'] += spend_time['n_track_frames']
-            spend_times[0]['readframe'] += spend_time['readframe']
-            spend_times[0]['n_readframe'] += spend_time['n_readframe']
-            spend_times[0]['append'] += spend_time['append']
-            spend_times[0]['n_append'] += spend_time['n_append']
-            spend_times[0]['transform'] += spend_time['transform']
-            spend_times[0]['n_transform'] += spend_time['n_transform']
-            spend_times[0]['argmax_after_forward'] += spend_time['argmax_after_forward']
-            spend_times[0]['n_argmax_after_forward'] += spend_time['n_argmax_after_forward']
-            spend_times[0]['do_action'] += spend_time['do_action']
-            spend_times[0]['n_do_action'] += spend_time['n_do_action']
-            vid_preds[vidx-dataset_start_id].append(vid_pred)
+            spend_times=spend_times_share[0].copy()
+            spend_times['predict']+=spend_time['predict']
+            spend_times['n_predict_frames'] += spend_time['n_predict_frames']
+            spend_times['track'] += spend_time['track']
+            spend_times['n_track_frames'] += spend_time['n_track_frames']
+            spend_times['readframe'] += spend_time['readframe']
+            spend_times['n_readframe'] += spend_time['n_readframe']
+            spend_times['append'] += spend_time['append']
+            spend_times['n_append'] += spend_time['n_append']
+            spend_times['transform'] += spend_time['transform']
+            spend_times['n_transform'] += spend_time['n_transform']
+            spend_times['argmax_after_forward'] += spend_time['argmax_after_forward']
+            spend_times['n_argmax_after_forward'] += spend_time['n_argmax_after_forward']
+            spend_times['do_action'] += spend_time['do_action']
+            spend_times['n_do_action'] += spend_time['n_do_action']
+            spend_times_share[0]=spend_times
+            vid_preds[vidx-dataset_start_id]=vid_pred
         except Exception as err:
             raise err
         finally:
@@ -348,7 +350,7 @@ if __name__ == "__main__":
             spend_times=list(spend_times_mul)[0]
             for i in range(len(vid_preds)):
                 isstart = i == 0
-                gen_pred_file(args.results_file, vid_preds[i][0], isstart)
+                gen_pred_file(args.results_file, vid_preds[i], isstart)
         else:
             # for vidx,vid_folder in enumerate(videos_infos):
             for vidx  in range(v_start_id,v_end_id):
