@@ -1,6 +1,7 @@
 import argparse
 import sys
 import os
+import re 
 import multiprocessing
 import tensorflow as tf
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
@@ -89,56 +90,56 @@ class siamese_test(QWidget):
         path_input_tip2 = QLabel("input_path2:")
         frameid_tip1 = QLabel("frameid1:")
         frameid_tip2 = QLabel("frameid2:")
-        trackid_tip1 = QLabel("trackid1:")
-        trackid_tip2 = QLabel("trackid2:")
+        trackid_tip1 = QLabel("objid1:")
+        trackid_tip2 = QLabel("objid2:")
 
         self.input_path1=QLineEdit(self)
-        self.input_path1.setFixedSize(170, 30)
+        self.input_path1.setFixedSize(200, 30)
         self.input_path1.setPlaceholderText("eg: ILSVRC2015_val_00000001")
         # self.input_path1.isClearButtonEnabled()
         self.input_path2 = QLineEdit(self)
-        self.input_path2.setFixedSize(170, 30)
+        self.input_path2.setFixedSize(200, 30)
         self.input_path2.setPlaceholderText("eg: ILSVRC2015_val_00000001")
         # self.input_path2.isClearButtonEnabled()
         self.frameid1 = QLineEdit(self)
-        self.frameid1.setFixedSize(50, 30)
-        self.frameid1.setPlaceholderText("eg: 12")
+        self.frameid1.setFixedSize(45, 30)
+        self.frameid1.setPlaceholderText("eg:12")
         # self.frameid1.isClearButtonEnabled()
         self.frameid2 = QLineEdit(self)
-        self.frameid2.setFixedSize(50, 30)
-        self.frameid2.setPlaceholderText("eg: 15")
+        self.frameid2.setFixedSize(45, 30)
+        self.frameid2.setPlaceholderText("eg:15")
         # self.frameid2.isClearButtonEnabled()
         self.trackid1 = QLineEdit(self)
         self.trackid1.setFixedSize(40, 30)
-        self.trackid1.setPlaceholderText("eg: 0")
+        self.trackid1.setPlaceholderText("eg:0")
         # self.trackid1.isClearButtonEnabled()
         self.trackid2 = QLineEdit(self)
         self.trackid2.setFixedSize(40, 30)
-        self.trackid2.setPlaceholderText("eg: 0")
+        self.trackid2.setPlaceholderText("eg:0")
         # self.trackid2.isClearButtonEnabled()
 
         button_start = QPushButton("start")
         button_start.setFont(ft)
-        button_start.setFixedSize(100, 30)
+        button_start.setFixedSize(80, 30)
         button_start.clicked.connect(self.custom_siam)
 
         hbox0 = QHBoxLayout()
         # hbox0.addStretch(1)
         hbox0.addWidget(path_input_tip1)
         hbox0.addWidget(self.input_path1)
-        hbox0.addStretch(1)
+        # hbox0.addStretch(1)
         hbox0.addWidget(frameid_tip1)
         hbox0.addWidget(self.frameid1)
-        hbox0.addStretch(1)
+        # hbox0.addStretch(1)
         hbox0.addWidget(trackid_tip1)
         hbox0.addWidget(self.trackid1)
         hbox0.addStretch(2)
         hbox0.addWidget(path_input_tip2)
         hbox0.addWidget(self.input_path2)
-        hbox0.addStretch(1)
+        # hbox0.addStretch(1)
         hbox0.addWidget(frameid_tip2)
         hbox0.addWidget(self.frameid2)
-        hbox0.addStretch(1)
+        # hbox0.addStretch(1)
         hbox0.addWidget(trackid_tip2)
         hbox0.addWidget(self.trackid2)
         hbox0.addStretch(1)
@@ -232,17 +233,41 @@ class siamese_test(QWidget):
     def custom_siam(self):
         p1=self.input_path1.text()
         p2=self.input_path2.text()
-        f1=int(self.frameid1.text())
-        f2=int(self.frameid2.text())
-        tid1=int(self.trackid1.text())
-        tid2=int(self.trackid2.text())
+        f1=self.frameid1.text()
+        f2=self.frameid2.text()
+        tid1=self.trackid1.text()
+        tid2=self.trackid2.text()
+
+        isint = '^-?[0-9]\d*$'
+        rr1 = re.compile(isint)
+        if rr1.match(f1) is None:
+            QMessageBox.information(self, "message box", "Please enter an integer in the 'frameid1'",
+                                    QMessageBox.Yes)
+            return
+        if rr1.match(f2) is None:
+            QMessageBox.information(self, "message box", "Please enter an integer in the 'frameid2'",
+                                    QMessageBox.Yes)
+            return
+        if rr1.match(tid1) is None:
+            QMessageBox.information(self, "message box", "Please enter an integer in the 'objid1'",
+                                    QMessageBox.Yes)
+            return
+        if rr1.match(tid2) is None:
+            QMessageBox.information(self, "message box", "Please enter an integer in the 'objid2'",
+                                    QMessageBox.Yes)
+            return
+
+        f1=int(f1)
+        f2=int(f2)
+        tid1=int(tid1)
+        tid2=int(tid2)
         vlen = len(self.videos_infos)
         videos_infos = self.videos_infos
         vidx1=-1
         vidx2 = -1
 
         for i in range(vlen):
-            if videos_infos[i]['img_files'][0][:]==p1:
+            if videos_infos[i]['img_files'][0][-35:-12]==p1:
                 vidx1=i
                 break
         if vidx1==-1:
@@ -253,7 +278,7 @@ class siamese_test(QWidget):
             vidx2=vidx1
         else:
             for i in range(vlen):
-                if videos_infos[i]['img_files'][0][:] == p2:
+                if videos_infos[i]['img_files'][0][-35:-12] == p2:
                     vidx2 = i
                     break
             if vidx2==-1:
@@ -287,12 +312,12 @@ class siamese_test(QWidget):
             return
         if tid1<0 or tid1>=n_trackid1:
             QMessageBox.information(self, "message box",
-                                    "the range of trackid1 is: %d-%d, please retype!" % (0, n_trackid1 - 1),
+                                    "the range of objid1 is: %d-%d, please retype!" % (0, n_trackid1 - 1),
                                     QMessageBox.Yes)
             return
         if tid2<0 or tid2>=n_trackid2:
             QMessageBox.information(self, "message box",
-                                    "the range of trackid2 is: %d-%d, please retype!" % (0, n_trackid2 - 1),
+                                    "the range of objid2 is: %d-%d, please retype!" % (0, n_trackid2 - 1),
                                     QMessageBox.Yes)
             return
 
