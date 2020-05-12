@@ -71,39 +71,105 @@ class siamese_test(QWidget):
         self.center()
         self.setWindowTitle("siamese result test")
         grid = QGridLayout()
+
         self.setLayout(grid)
         grid.setColumnStretch(0, 1)
         grid.setColumnStretch(1, 7)
         grid.setColumnStretch(2, 1)
         grid.setColumnStretch(3, 7)
         grid.setColumnStretch(4, 1)
-        grid.setRowStretch(0,1)
-        grid.setRowStretch(1,6)
-        grid.setRowStretch(2,1)
+        grid.setRowStretch(0, 1)
+        grid.setRowStretch(1,0.6)
+        grid.setRowStretch(2,6)
         grid.setRowStretch(3,1)
-        grid.setRowStretch(4,0.5)
+        grid.setRowStretch(4,1)
+        grid.setRowStretch(5,0.5)
+
+        path_input_tip1 = QLabel("input_path1:")
+        path_input_tip2 = QLabel("input_path2:")
+        frameid_tip1 = QLabel("frameid1:")
+        frameid_tip2 = QLabel("frameid2:")
+        trackid_tip1 = QLabel("trackid1:")
+        trackid_tip2 = QLabel("trackid2:")
+
+        self.input_path1=QLineEdit(self)
+        self.input_path1.setFixedSize(170, 30)
+        self.input_path1.setPlaceholderText("eg: ILSVRC2015_val_00000001")
+        # self.input_path1.isClearButtonEnabled()
+        self.input_path2 = QLineEdit(self)
+        self.input_path2.setFixedSize(170, 30)
+        self.input_path2.setPlaceholderText("eg: ILSVRC2015_val_00000001")
+        # self.input_path2.isClearButtonEnabled()
+        self.frameid1 = QLineEdit(self)
+        self.frameid1.setFixedSize(50, 30)
+        self.frameid1.setPlaceholderText("eg: 12")
+        # self.frameid1.isClearButtonEnabled()
+        self.frameid2 = QLineEdit(self)
+        self.frameid2.setFixedSize(50, 30)
+        self.frameid2.setPlaceholderText("eg: 15")
+        # self.frameid2.isClearButtonEnabled()
+        self.trackid1 = QLineEdit(self)
+        self.trackid1.setFixedSize(40, 30)
+        self.trackid1.setPlaceholderText("eg: 0")
+        # self.trackid1.isClearButtonEnabled()
+        self.trackid2 = QLineEdit(self)
+        self.trackid2.setFixedSize(40, 30)
+        self.trackid2.setPlaceholderText("eg: 0")
+        # self.trackid2.isClearButtonEnabled()
+
+        button_start = QPushButton("start")
+        button_start.setFont(ft)
+        button_start.setFixedSize(100, 30)
+        button_start.clicked.connect(self.custom_siam)
+
+        hbox0 = QHBoxLayout()
+        # hbox0.addStretch(1)
+        hbox0.addWidget(path_input_tip1)
+        hbox0.addWidget(self.input_path1)
+        hbox0.addStretch(1)
+        hbox0.addWidget(frameid_tip1)
+        hbox0.addWidget(self.frameid1)
+        hbox0.addStretch(1)
+        hbox0.addWidget(trackid_tip1)
+        hbox0.addWidget(self.trackid1)
+        hbox0.addStretch(2)
+        hbox0.addWidget(path_input_tip2)
+        hbox0.addWidget(self.input_path2)
+        hbox0.addStretch(1)
+        hbox0.addWidget(frameid_tip2)
+        hbox0.addWidget(self.frameid2)
+        hbox0.addStretch(1)
+        hbox0.addWidget(trackid_tip2)
+        hbox0.addWidget(self.trackid2)
+        hbox0.addStretch(1)
+        hbox0.addWidget(button_start)
+        # hbox0.addStretch(1)
+        hwg = QtWidgets.QWidget()
+        hwg.setLayout(hbox0)
+        # hwg.setSpacing(10)
+        grid.addWidget(hwg, 0, 0, 1, 6)
 
         label1 = QLabel("path1: ")
         # label1.setFont(ft)
         # label1.setText("path1")
-        grid.addWidget(label1, 0, 0)
+        grid.addWidget(label1, 1, 0)
         label2 = QLabel("path2: ")
         # label2.setFont(ft)
-        grid.addWidget(label2, 0, 2)
+        grid.addWidget(label2, 1, 2)
         label3 = QLabel("siamese distance of img1 and img2: ")
         label3.setFont(ft)
-        grid.addWidget(label3, 2, 1,1,2,Qt.AlignRight)
+        grid.addWidget(label3, 3, 1,1,2,Qt.AlignRight)
         self.label4 = QLabel("realtime diversity")   #siamese value
         self.label4.setFont(ft)
         self.label4.setPalette(pe)
-        grid.addWidget(self.label4, 2, 3)
+        grid.addWidget(self.label4, 3, 3)
 
         self.label_path1 = QLabel("realtime\\path\\to\\img1")
         self.label_path1.setPalette(pe)
-        grid.addWidget(self.label_path1, 0, 1)
+        grid.addWidget(self.label_path1, 1, 1)
         self.label_path2 = QLabel("realtime\\path\\to\\img2")
         self.label_path2.setPalette(pe)
-        grid.addWidget(self.label_path2, 0, 3)
+        grid.addWidget(self.label_path2, 1, 3)
 
         self.pic1=QLabel("image1 area")
         self.pic1.setAlignment(Qt.AlignCenter)
@@ -113,7 +179,7 @@ class siamese_test(QWidget):
         self.pic1.setStyleSheet("background: yellow")
         self.pic1.setFixedSize(495, 330)
         # self.pic1.setScaledContents(True)
-        grid.addWidget(self.pic1, 1, 1)
+        grid.addWidget(self.pic1, 2, 1)
         self.pic2 = QLabel("image2 area")
         self.pic2.setAlignment(Qt.AlignCenter)
         self.pic2.setFont(ft)
@@ -121,7 +187,7 @@ class siamese_test(QWidget):
         self.pic2.setStyleSheet("background: yellow")
         self.pic2.setFixedSize(495, 330)
         # self.pic2.setScaledContents(True)
-        grid.addWidget(self.pic2, 1, 3)
+        grid.addWidget(self.pic2, 2, 3)
 
         button1 = QPushButton("random positive")
         button1.setFont(ft)
@@ -149,7 +215,9 @@ class siamese_test(QWidget):
         hbox.addStretch(1)
         hwg = QtWidgets.QWidget()
         hwg.setLayout(hbox)
-        grid.addWidget(hwg, 3, 1,1,3)
+        # hwg.setSpacing(10)
+        grid.addWidget(hwg, 4, 1,1,3)
+        grid.setSpacing(5)
 
         self.transform3 = transform3
         self.videos_infos= videos_infos
@@ -161,6 +229,110 @@ class siamese_test(QWidget):
         qr.moveCenter(cp)
         self.move(qr.topLeft())
 
+    def custom_siam(self):
+        p1=self.input_path1.text()
+        p2=self.input_path2.text()
+        f1=int(self.frameid1.text())
+        f2=int(self.frameid2.text())
+        tid1=int(self.trackid1.text())
+        tid2=int(self.trackid2.text())
+        vlen = len(self.videos_infos)
+        videos_infos = self.videos_infos
+        vidx1=-1
+        vidx2 = -1
+
+        for i in range(vlen):
+            if videos_infos[i]['img_files'][0][:]==p1:
+                vidx1=i
+                break
+        if vidx1==-1:
+            QMessageBox.information(self, "message box", "input_path1 doesn't exist, please retype!",
+                                    QMessageBox.Yes)
+            return
+        if p1==p2:
+            vidx2=vidx1
+        else:
+            for i in range(vlen):
+                if videos_infos[i]['img_files'][0][:] == p2:
+                    vidx2 = i
+                    break
+            if vidx2==-1:
+                # QMessageBox.information(self, "message box", "{}{}".format(1, 2),
+                #                         QMessageBox.Yes)
+                QMessageBox.information(self, "message box", "input_path2 doesn't exist, please retype!",
+                                        QMessageBox.Yes)
+                return
+        n_frame1=videos_infos[vidx1]['nframes']
+        n_frame2 = videos_infos[vidx2]['nframes']
+        if f1<0 or f1>=n_frame1:
+            QMessageBox.information(self, "message box", "the range of frameid1 is: %d-%d, please retype!"%(0,n_frame1-1),
+                                    QMessageBox.Yes)
+            return
+        if f2<0 or f2>=n_frame2:
+            QMessageBox.information(self, "message box",
+                                    "the range of frameid2 is: %d-%d, please retype!" % (0, n_frame2 - 1),
+                                    QMessageBox.Yes)
+            return
+        n_trackid1 = len(videos_infos[vidx1]['trackid'][f1])
+        if n_trackid1==0:
+            QMessageBox.information(self, "message box",
+                                    "frameid1 %d doesn't contain any object, please retype!" % (0, f1),
+                                    QMessageBox.Yes)
+            return
+        n_trackid2 = len(videos_infos[vidx2]['trackid'][f2])
+        if n_trackid2==0:
+            QMessageBox.information(self, "message box",
+                                    "frameid2 %d doesn't contain any object, please retype!" % (0, f2),
+                                    QMessageBox.Yes)
+            return
+        if tid1<0 or tid1>=n_trackid1:
+            QMessageBox.information(self, "message box",
+                                    "the range of trackid1 is: %d-%d, please retype!" % (0, n_trackid1 - 1),
+                                    QMessageBox.Yes)
+            return
+        if tid2<0 or tid2>=n_trackid2:
+            QMessageBox.information(self, "message box",
+                                    "the range of trackid2 is: %d-%d, please retype!" % (0, n_trackid2 - 1),
+                                    QMessageBox.Yes)
+            return
+
+        path1 = videos_infos[vidx1]['img_files'][f1]
+        frame1 = cv2.imread(path1)
+        gt1 = videos_infos[vidx1]['gt'][f1][tid1]
+        t_aera1, _, _ = self.transform3(frame1, gt1)
+        path2 = videos_infos[vidx2]['img_files'][f2]
+        frame2 = cv2.imread(path2)
+        gt2 = videos_infos[vidx2]['gt'][f2][tid2]
+        t_aera2, _, _ = self.transform3(frame2, gt2)
+
+        output1, output2 = self.siamesenet(Variable(t_aera1).cuda(), Variable(t_aera2).cuda())
+        euclidean_distance = F.pairwise_distance(output1, output2)
+
+        sia_value=round(euclidean_distance.item(),2)
+
+        category_name1 = videos_infos[vidx1]['name'][f1][tid1]
+        category_name2 = videos_infos[vidx1]['name'][f2][tid2]
+
+        im_with_bb1 = draw_box_bigline(frame1, gt1,category_name1)
+        im_with_bb1=cv2.resize(im_with_bb1,(self.pic1.width(), self.pic1.height()), interpolation=cv2.INTER_CUBIC)
+        im_with_bb1=cv2.cvtColor(im_with_bb1,cv2.COLOR_BGR2RGB)
+        height, width, bytesPerComponent= im_with_bb1.shape
+        bytesPerLine = bytesPerComponent* width
+        img1 = QtGui.QImage(im_with_bb1.data, width, height, bytesPerLine,QtGui.QImage.Format_RGB888)
+        self.pic1.setPixmap(QtGui.QPixmap.fromImage(img1).scaled(self.pic1.width(), self.pic1.height()))
+
+        im_with_bb2 = draw_box_bigline(frame2, gt2,category_name2)
+        im_with_bb2=cv2.resize(im_with_bb2,(self.pic2.width(), self.pic2.height()), interpolation=cv2.INTER_CUBIC)
+        im_with_bb2=cv2.cvtColor(im_with_bb2,cv2.COLOR_BGR2RGB)
+        height, width, bytesPerComponent= im_with_bb2.shape
+        bytesPerLine = bytesPerComponent* width
+        img2 = QtGui.QImage(im_with_bb2.data, width, height, bytesPerLine,QtGui.QImage.Format_RGB888)
+        self.pic2.setPixmap(QtGui.QPixmap.fromImage(img2).scaled(self.pic2.width(), self.pic2.height()))
+
+        self.label4.setText(str(sia_value))
+        self.label_path1.setText(path1)
+        self.label_path2.setText(path2)
+        
     def rand_pos(self):
         p1 = "1.jpg"
         p2 = "2.jpg"
