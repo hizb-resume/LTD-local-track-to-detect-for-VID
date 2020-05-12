@@ -98,10 +98,6 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                                     ])
     transform3 = ADNet_Augmentation3(transform3_adition)
 
-    if isinstance(vid_path,list):
-        print('Testing sequences in ' + str(vid_path[0][-43:-12]) + '...')
-    else:
-        print('Testing sequences in ' + str(vid_path) + '...')
     t_sum = 0
 
     if args.visualize:
@@ -1057,6 +1053,10 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
     # np.save(args.save_result_npy + '-ground_truth.npy', vid_info['gt'])
 
     # return bboxes, t_sum, precisions
+    if isinstance(vid_path,list):
+        print('Testing sequences in ' + str(vid_path[0][-43:-12]) + '...')
+    else:
+        print('Testing sequences in ' + str(vid_path) + '...')
     print('vid %d : %d frames, whole tracking time : %.4f sec.' % (vidx,vid_info['nframes'],t_sum))
     if spend_time['n_predict_frames']!=0:
         print("predict time: %.2fs, predict frames: %d, average time: %.2fms."%(

@@ -101,7 +101,29 @@ parser.add_argument('--believe_score_result', default=0, type=int, help='Believe
 
 
 def process_adnet_test(videos_infos,dataset_start_id, v_start_id,v_end_id,train_videos,save_root,
-                        spend_times_share,vid_preds,net, siamesenet, opts,args, lock):
+                        spend_times_share,vid_preds, opts,args, lock):
+    siamesenet=''
+    if args.useSiamese:
+        siamesenet = SiameseNetwork().cuda()
+        resume = args.weight_siamese
+        # resume = False
+        if resume:
+            siamesenet.load_weights(resume)
+
+    # print('Loading {}...'.format(args.weight_file))
+            
+    net, domain_nets = adnet(opts, trained_file=args.weight_file, random_initialize_domain_specific=False)
+    net.eval()
+    if args.cuda:
+        net = nn.DataParallel(net)
+        cudnn.benchmark = True
+    if args.cuda:
+        net = net.cuda()
+    if args.cuda:
+        net.module.set_phase('test')
+    else:
+        net.set_phase('test')
+
     register_ILSVRC()
     cfg = get_cfg()
     cfg.merge_from_file("../../../configs/COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml")
@@ -161,11 +183,12 @@ if __name__ == "__main__":
     
     siamesenet=''
     if args.useSiamese:
-        siamesenet = SiameseNetwork().cuda()
-        resume = args.weight_siamese
-        # resume = False
-        if resume:
-            siamesenet.load_weights(resume)
+        if not args.multi_cpu_eval:
+            siamesenet = SiameseNetwork().cuda()
+            resume = args.weight_siamese
+            # resume = False
+            if resume:
+                siamesenet.load_weights(resume)
         # checkpoint = torch.load(resume)
         # optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
@@ -241,19 +264,21 @@ if __name__ == "__main__":
         save_root = args.save_result_images
     # save_root_npy = args.save_result_npy
 
-        print('Loading {}...'.format(args.weight_file))
         opts['num_videos'] = 1
-        net, domain_nets = adnet(opts, trained_file=args.weight_file, random_initialize_domain_specific=False)
-        net.eval()
-        if args.cuda:
-            net = nn.DataParallel(net)
-            cudnn.benchmark = True
-        if args.cuda:
-            net = net.cuda()
-        if args.cuda:
-            net.module.set_phase('test')
-        else:
-            net.set_phase('test')
+        if not args.multi_cpu_eval:
+            print('Loading {}...'.format(args.weight_file))
+            
+            net, domain_nets = adnet(opts, trained_file=args.weight_file, random_initialize_domain_specific=False)
+            net.eval()
+            if args.cuda:
+                net = nn.DataParallel(net)
+                cudnn.benchmark = True
+            if args.cuda:
+                net = net.cuda()
+            if args.cuda:
+                net.module.set_phase('test')
+            else:
+                net.set_phase('test')
 
     if args.test1vid:
         vid_path = args.testVidPath
@@ -315,7 +340,7 @@ if __name__ == "__main__":
 
         if args.multi_cpu_eval:
             all_vid_num=v_end_id-v_start_id
-            cpu_num = 5
+            cpu_num = 20
             if all_vid_num < cpu_num:
                 cpu_num = all_vid_num
             every_cpu_vid = all_vid_num // cpu_num
@@ -337,10 +362,18 @@ if __name__ == "__main__":
             lock = multiprocessing.Manager().Lock()
             record = []
             for i in range(cpu_num):
+                if i==0:
+                    os.environ["CUDA_VISIBLE_DEVICES"]="0"
+                if i==5:
+                    os.environ["CUDA_VISIBLE_DEVICES"]="1"
+                if i==10:
+                    os.environ["CUDA_VISIBLE_DEVICES"]="2"
+                if i==15:
+                    os.environ["CUDA_VISIBLE_DEVICES"]="3"
                 # print("fragment %d: start_vid: %d, end_vid: %d."%(i,start_vid[i],end_vid[i]))
                 process = multiprocessing.Process(target=process_adnet_test,
                                                   args=(videos_infos, v_start_id,start_vid[i],end_vid[i],train_videos,save_root,
-                                                        spend_times_mul,vid_preds,net, siamesenet, opts,args, lock))
+                                                        spend_times_mul,vid_preds, opts,args, lock))
                 process.start()
                 record.append(process)
             for process in record:
