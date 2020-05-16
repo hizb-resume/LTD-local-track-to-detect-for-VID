@@ -132,7 +132,7 @@ class siamese_test(QWidget):
         self.freshcheckBox = QtWidgets.QCheckBox("show all")
 
         button_track = QPushButton("track&siamese")
-        button_track.setFont(ft)
+        # button_track.setFont(ft)
         button_track.setFixedSize(80, 30)
         button_track.clicked.connect(self.track_and_siamese)
 
@@ -355,13 +355,14 @@ class siamese_test(QWidget):
                 path2 = videos_infos[vidx1]['img_files'][fi2]
                 frame2 = cv2.imread(path2)
                 curr_bboxs, curr_scores=self.adnet_inference(frame2, curr_bbox)
+                curr_bbox=curr_bboxs[-1]
                 self.label_path2.setText(path2)
                 for ti in range(len(curr_scores)):
                     t_aera2, _, _ = self.transform3(frame2, curr_bboxs[ti])
                     output1, output2 = self.siamesenet(Variable(t_aera1).cuda(), Variable(t_aera2).cuda())
                     euclidean_distance = F.pairwise_distance(output1, output2)
                     sia_value = round(euclidean_distance.item(), 2)
-                    category_name2 = "step: %d\/%d, score: %.2f" % (ti,len(curr_scores)-1,curr_scores[ti])
+                    category_name2 = "step: %d/%d, score: %.2f" % (ti,len(curr_scores)-1,curr_scores[ti])
                     im_with_bb2 = draw_box_bigline(frame2, curr_bboxs[ti], category_name2)
                     im_with_bb2 = cv2.resize(im_with_bb2, (self.pic2.width(), self.pic2.height()),
                                              interpolation=cv2.INTER_CUBIC)
@@ -371,7 +372,8 @@ class siamese_test(QWidget):
                     img2 = QtGui.QImage(im_with_bb2.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888)
                     self.pic2.setPixmap(QtGui.QPixmap.fromImage(img2).scaled(self.pic2.width(), self.pic2.height()))
                     self.label4.setText(str(sia_value))
-                time.sleep(1)
+                    QApplication.processEvents()
+                # time.sleep(1)
         else:
             for fi2 in range(f1+1,f2+1):
                 path2 = videos_infos[vidx1]['img_files'][fi2]
