@@ -1,6 +1,6 @@
 import argparse
 import sys
-import os
+import os,time
 import re 
 import multiprocessing
 import tensorflow as tf
@@ -11,8 +11,9 @@ from options.general2 import opts
 from utils.gen_samples import gen_samples
 from utils.display import draw_box,draw_box_bigline
 from utils.augmentations import ADNet_Augmentation3
-
+from utils.do_action import do_action
 import torch
+import numpy as np
 torch.multiprocessing.set_start_method('spawn', force=True)
 import cv2
 import random
@@ -58,17 +59,22 @@ def testsiamese(siamesenet,videos_infos):
                 vidx1,videos_infos[vidx1]['name'][fidx1][0],vidx2,videos_infos[vidx2]['name'][fidx2][0]),end='  ')
 
 class siamese_test(QWidget):
-    def __init__(self,siamesenet,videos_infos,transform3):
+    def __init__(self,siamesenet,net,videos_infos,transform3,transform):
         super(siamese_test, self).__init__()
-        self.initUI(siamesenet,videos_infos,transform3)
+        self.transform3 = transform3
+        self.transform = transform
+        self.videos_infos = videos_infos
+        self.siamesenet = siamesenet
+        self.net = net
+        self.initUI()
 
-    def initUI(self,siamesenet,videos_infos,transform3):
+    def initUI(self):
         ft=QFont("Roman times", 20, QFont.Bold)
         pe = QPalette()
         pe.setColor(QPalette.WindowText, Qt.red)
 
-        self.resize(1200, 650)
-        self.setFixedSize(1200, 650)
+        self.resize(1300, 650)
+        self.setFixedSize(1300, 650)
         self.center()
         self.setWindowTitle("siamese result test")
         grid = QGridLayout()
@@ -123,6 +129,13 @@ class siamese_test(QWidget):
         button_start.setFixedSize(80, 30)
         button_start.clicked.connect(self.custom_siam)
 
+        self.freshcheckBox = QtWidgets.QCheckBox("show all")
+
+        button_track = QPushButton("track&siamese")
+        button_track.setFont(ft)
+        button_track.setFixedSize(80, 30)
+        button_track.clicked.connect(self.track_and_siamese)
+
         hbox0 = QHBoxLayout()
         # hbox0.addStretch(1)
         hbox0.addWidget(path_input_tip1)
@@ -144,6 +157,9 @@ class siamese_test(QWidget):
         hbox0.addWidget(self.trackid2)
         hbox0.addStretch(1)
         hbox0.addWidget(button_start)
+        hbox0.addStretch(1)
+        hbox0.addWidget(self.freshcheckBox)
+        hbox0.addWidget(button_track)
         # hbox0.addStretch(1)
         hwg = QtWidgets.QWidget()
         hwg.setLayout(hbox0)
@@ -222,15 +238,189 @@ class siamese_test(QWidget):
         grid.addWidget(hwg, 4, 1,1,3)
         grid.setSpacing(5)
 
-        self.transform3 = transform3
-        self.videos_infos= videos_infos
-        self.siamesenet= siamesenet
-
     def center(self):
         qr = self.frameGeometry()
         cp = QDesktopWidget().availableGeometry().center()
         qr.moveCenter(cp)
         self.move(qr.topLeft())
+
+    def track_and_siamese(self):
+        p1 = self.input_path1.text()
+        # p2 = self.input_path2.text()
+        f1 = self.frameid1.text()
+        f2 = self.frameid2.text()
+        tid1 = self.trackid1.text()
+        # tid2 = self.trackid2.text()
+
+        isint = '^-?[0-9]\d*$'
+        rr1 = re.compile(isint)
+        if rr1.match(f1) is None:
+            QMessageBox.information(self, "message box", "Please enter an integer in the 'frameid1'",
+                                    QMessageBox.Yes)
+            return
+        if rr1.match(f2) is None:
+            QMessageBox.information(self, "message box", "Please enter an integer in the 'frameid2'",
+                                    QMessageBox.Yes)
+            return
+        if rr1.match(tid1) is None:
+            QMessageBox.information(self, "message box", "Please enter an integer in the 'objid1'",
+                                    QMessageBox.Yes)
+            return
+        # if rr1.match(tid2) is None:
+        #     QMessageBox.information(self, "message box", "Please enter an integer in the 'objid2'",
+        #                             QMessageBox.Yes)
+        #     return
+
+        f1 = int(f1)
+        f2 = int(f2)
+        tid1 = int(tid1)
+        # tid2 = int(tid2)
+        vlen = len(self.videos_infos)
+        videos_infos = self.videos_infos
+        vidx1 = -1
+        vidx2 = -1
+
+        for i in range(vlen):
+            if videos_infos[i]['img_files'][0][-35:-12] == p1:
+                vidx1 = i
+                break
+        if vidx1 == -1:
+            QMessageBox.information(self, "message box", "input_path1 doesn't exist, please retype!",
+                                    QMessageBox.Yes)
+            return
+        # if p1 == p2:
+        #     vidx2 = vidx1
+        # else:
+        #     for i in range(vlen):
+        #         if videos_infos[i]['img_files'][0][-35:-12] == p2:
+        #             vidx2 = i
+        #             break
+        #     if vidx2 == -1:
+        #         # QMessageBox.information(self, "message box", "{}{}".format(1, 2),
+        #         #                         QMessageBox.Yes)
+        #         QMessageBox.information(self, "message box", "input_path2 doesn't exist, please retype!",
+        #                                 QMessageBox.Yes)
+        #         return
+        n_frame1 = videos_infos[vidx1]['nframes']
+        # n_frame2 = videos_infos[vidx2]['nframes']
+        if f1 < 0 or f1 >= (n_frame1-1):
+            QMessageBox.information(self, "message box",
+                                    "the range of frameid1 is: %d-%d, please retype!" % (0, n_frame1 - 2),
+                                    QMessageBox.Yes)
+            return
+        if f2 <= f1 or f2 >= n_frame1:
+            QMessageBox.information(self, "message box",
+                                    "the range of frameid2 is: %d-%d, please retype!" % (f1+1, n_frame1 - 1),
+                                    QMessageBox.Yes)
+            return
+        n_trackid1 = len(videos_infos[vidx1]['trackid'][f1])
+        if n_trackid1 == 0:
+            QMessageBox.information(self, "message box",
+                                    "frameid1 %d doesn't contain any object, please retype!" % (0, f1),
+                                    QMessageBox.Yes)
+            return
+        # n_trackid2 = len(videos_infos[vidx2]['trackid'][f2])
+        # if n_trackid2 == 0:
+        #     QMessageBox.information(self, "message box",
+        #                             "frameid2 %d doesn't contain any object, please retype!" % (0, f2),
+        #                             QMessageBox.Yes)
+        #     return
+        if tid1 < 0 or tid1 >= n_trackid1:
+            QMessageBox.information(self, "message box",
+                                    "the range of objid1 is: %d-%d, please retype!" % (0, n_trackid1 - 1),
+                                    QMessageBox.Yes)
+            return
+        # if tid2 < 0 or tid2 >= n_trackid2:
+        #     QMessageBox.information(self, "message box",
+        #                             "the range of objid2 is: %d-%d, please retype!" % (0, n_trackid2 - 1),
+        #                             QMessageBox.Yes)
+        #     return
+        path1 = videos_infos[vidx1]['img_files'][f1]
+        frame1 = cv2.imread(path1)
+        gt1 = videos_infos[vidx1]['gt'][f1][tid1]
+        category_name1 = videos_infos[vidx1]['name'][f1][tid1]
+        im_with_bb1 = draw_box_bigline(frame1, gt1, category_name1)
+        im_with_bb1 = cv2.resize(im_with_bb1, (self.pic1.width(), self.pic1.height()),
+                                 interpolation=cv2.INTER_CUBIC)
+        im_with_bb1 = cv2.cvtColor(im_with_bb1, cv2.COLOR_BGR2RGB)
+        height, width, bytesPerComponent = im_with_bb1.shape
+        bytesPerLine = bytesPerComponent * width
+        img1 = QtGui.QImage(im_with_bb1.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888)
+        self.pic1.setPixmap(QtGui.QPixmap.fromImage(img1).scaled(self.pic1.width(), self.pic1.height()))
+        self.label_path1.setText(path1)
+        t_aera1, _, _ = self.transform3(frame1, gt1)
+        curr_bbox=gt1
+        if self.freshcheckBox.isChecked():
+            for fi2 in range(f1+1,f2+1):
+                path2 = videos_infos[vidx1]['img_files'][fi2]
+                frame2 = cv2.imread(path2)
+                curr_bboxs, curr_scores=self.adnet_inference(frame2, curr_bbox)
+                self.label_path2.setText(path2)
+                for ti in range(len(curr_scores)):
+                    t_aera2, _, _ = self.transform3(frame2, curr_bboxs[ti])
+                    output1, output2 = self.siamesenet(Variable(t_aera1).cuda(), Variable(t_aera2).cuda())
+                    euclidean_distance = F.pairwise_distance(output1, output2)
+                    sia_value = round(euclidean_distance.item(), 2)
+                    category_name2 = "step: %d\/%d, score: %.2f" % (ti,len(curr_scores)-1,curr_scores[ti])
+                    im_with_bb2 = draw_box_bigline(frame2, curr_bboxs[ti], category_name2)
+                    im_with_bb2 = cv2.resize(im_with_bb2, (self.pic2.width(), self.pic2.height()),
+                                             interpolation=cv2.INTER_CUBIC)
+                    im_with_bb2 = cv2.cvtColor(im_with_bb2, cv2.COLOR_BGR2RGB)
+                    height, width, bytesPerComponent = im_with_bb2.shape
+                    bytesPerLine = bytesPerComponent * width
+                    img2 = QtGui.QImage(im_with_bb2.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888)
+                    self.pic2.setPixmap(QtGui.QPixmap.fromImage(img2).scaled(self.pic2.width(), self.pic2.height()))
+                    self.label4.setText(str(sia_value))
+                time.sleep(1)
+        else:
+            for fi2 in range(f1+1,f2+1):
+                path2 = videos_infos[vidx1]['img_files'][fi2]
+                frame2 = cv2.imread(path2)
+                curr_bboxs, curr_scores=self.adnet_inference(frame2, curr_bbox)
+                curr_bbox=curr_bboxs[-1]
+            t_aera2, _, _ = self.transform3(frame2, curr_bbox)
+            output1, output2 = self.siamesenet(Variable(t_aera1).cuda(), Variable(t_aera2).cuda())
+            euclidean_distance = F.pairwise_distance(output1, output2)
+            sia_value = round(euclidean_distance.item(), 2)
+            category_name2 = "score: %.2f"%(curr_scores[-1])
+            im_with_bb2 = draw_box_bigline(frame2, curr_bbox, category_name2)
+            im_with_bb2 = cv2.resize(im_with_bb2, (self.pic2.width(), self.pic2.height()),
+                                     interpolation=cv2.INTER_CUBIC)
+            im_with_bb2 = cv2.cvtColor(im_with_bb2, cv2.COLOR_BGR2RGB)
+            height, width, bytesPerComponent = im_with_bb2.shape
+            bytesPerLine = bytesPerComponent * width
+            img2 = QtGui.QImage(im_with_bb2.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888)
+            self.pic2.setPixmap(QtGui.QPixmap.fromImage(img2).scaled(self.pic2.width(), self.pic2.height()))
+            self.label4.setText(str(sia_value))
+            self.label_path2.setText(path2)
+
+    def adnet_inference(self,frame,curr_bbox):
+        frame2 = frame.copy()
+        frame2 = frame2.astype(np.float32)
+        frame2 = torch.from_numpy(frame2).cuda()
+
+        t = 0
+        curr_bboxs=[]
+        curr_scores=[]
+        while True:
+            curr_patch, curr_bbox, _, _ = self.transform(frame2, curr_bbox, None, None)
+            fc6_out, fc7_out = self.net.forward(curr_patch)
+            curr_score = fc7_out.detach().cpu().numpy()[0][1]
+            curr_scores.append(curr_score)
+            action = np.argmax(fc6_out.detach().cpu().numpy())
+            curr_bbox = do_action(curr_bbox, opts, action, frame.shape)
+            # bound the curr_bbox size
+            if curr_bbox[2] < 10:
+                curr_bbox[0] = min(0, curr_bbox[0] + curr_bbox[2] / 2 - 10 / 2)
+                curr_bbox[2] = 10
+            if curr_bbox[3] < 10:
+                curr_bbox[1] = min(0, curr_bbox[1] + curr_bbox[3] / 2 - 10 / 2)
+                curr_bbox[3] = 10
+            curr_bboxs.append(curr_bbox)
+            t += 1
+            if action == opts['stop_action'] or t >= opts['num_action_step_max']:
+                break
+        return curr_bboxs,curr_scores
 
     def custom_siam(self):
         p1=self.input_path1.text()

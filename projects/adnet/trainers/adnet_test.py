@@ -236,20 +236,20 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
     ntraining = 0
 
     # setup training
-    if args.cuda:
-        optimizer = optim.SGD([
-            {'params': net.module.base_network.parameters(), 'lr': 0},
-            {'params': net.module.fc4_5.parameters()},
-            {'params': net.module.fc6.parameters()},
-            {'params': net.module.fc7.parameters(), 'lr': 1e-3}],
-            lr=1e-3, momentum=opts['train']['momentum'], weight_decay=opts['train']['weightDecay'])
-    else:
-        optimizer = optim.SGD([
-            {'params': net.base_network.parameters(), 'lr': 0},
-            {'params': net.fc4_5.parameters()},
-            {'params': net.fc6.parameters()},
-            {'params': net.fc7.parameters(), 'lr': 1e-3}],
-            lr=1e-3, momentum=opts['train']['momentum'], weight_decay=opts['train']['weightDecay'])
+    # if args.cuda:
+    #     optimizer = optim.SGD([
+    #         {'params': net.module.base_network.parameters(), 'lr': 0},
+    #         {'params': net.module.fc4_5.parameters()},
+    #         {'params': net.module.fc6.parameters()},
+    #         {'params': net.module.fc7.parameters(), 'lr': 1e-3}],
+    #         lr=1e-3, momentum=opts['train']['momentum'], weight_decay=opts['train']['weightDecay'])
+    # else:
+    #     optimizer = optim.SGD([
+    #         {'params': net.base_network.parameters(), 'lr': 0},
+    #         {'params': net.fc4_5.parameters()},
+    #         {'params': net.fc6.parameters()},
+    #         {'params': net.fc7.parameters(), 'lr': 1e-3}],
+    #         lr=1e-3, momentum=opts['train']['momentum'], weight_decay=opts['train']['weightDecay'])
 
     action_criterion = nn.CrossEntropyLoss()
     score_criterion = nn.CrossEntropyLoss()

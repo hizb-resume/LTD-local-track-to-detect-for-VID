@@ -21,7 +21,7 @@ from utils.my_util import get_ILSVRC_eval_infos
 from utils.siamese_test_gui import siamese_test
 from utils.gen_samples import gen_samples
 from utils.display import draw_box,draw_box_bigline
-from utils.augmentations import ADNet_Augmentation3
+from utils.augmentations import ADNet_Augmentation3,ADNet_Augmentation2
 from trainers.adnet_test import adnet_test
 from datasets.ILSVRC import register_ILSVRC
 from models.SiameseNet import SiameseNetwork
@@ -29,6 +29,7 @@ import torch
 torch.multiprocessing.set_start_method('spawn', force=True)
 import torch.backends.cudnn as cudnn
 import torch.nn as nn
+import numpy as np
 import time
 import cv2
 import random
@@ -264,21 +265,21 @@ if __name__ == "__main__":
         save_root = args.save_result_images
     # save_root_npy = args.save_result_npy
 
-        opts['num_videos'] = 1
-        if not args.multi_cpu_eval:
-            print('Loading {}...'.format(args.weight_file))
-            
-            net, domain_nets = adnet(opts, trained_file=args.weight_file, random_initialize_domain_specific=False)
-            net.eval()
-            if args.cuda:
-                net = nn.DataParallel(net)
-                cudnn.benchmark = True
-            if args.cuda:
-                net = net.cuda()
-            if args.cuda:
-                net.module.set_phase('test')
-            else:
-                net.set_phase('test')
+    opts['num_videos'] = 1
+    if not args.multi_cpu_eval:
+        print('Loading {}...'.format(args.weight_file))
+
+        net, domain_nets = adnet(opts, trained_file=args.weight_file, random_initialize_domain_specific=False)
+        net.eval()
+        if args.cuda:
+            net = nn.DataParallel(net)
+            cudnn.benchmark = True
+        if args.cuda:
+            net = net.cuda()
+        if args.cuda:
+            net.module.set_phase('test')
+        else:
+            net.set_phase('test')
 
     if args.test1vid:
         vid_path = args.testVidPath
@@ -296,9 +297,12 @@ if __name__ == "__main__":
                                                  transforms.ToTensor()
                                                  ])
         transform3 = ADNet_Augmentation3(transform3_adition)
+        mean = np.array(opts['means'], dtype=np.float32)
+        mean = torch.from_numpy(mean).cuda()
+        transform = ADNet_Augmentation2(opts, mean)
         from PyQt5 import QtWidgets
         app = QtWidgets.QApplication(sys.argv)
-        st = siamese_test(siamesenet,videos_infos,transform3)
+        st = siamese_test(siamesenet,net,videos_infos,transform3,transform)
         st.show()
         sys.exit(app.exec_())
     else:
