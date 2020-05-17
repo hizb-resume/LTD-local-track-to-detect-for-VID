@@ -58,6 +58,95 @@ def testsiamese(siamesenet,videos_infos):
             print("vid1: %d, name1: %s; vid2: %d , name2: %s."%(
                 vidx1,videos_infos[vidx1]['name'][fidx1][0],vidx2,videos_infos[vidx2]['name'][fidx2][0]),end='  ')
 
+
+
+class Thread_track(QThread):  
+    _signal =pyqtSignal(str,str,str,list,int)
+    def __init__(self,videos_infos,transform3,transform,siamesenet,net):
+        super().__init__()
+        self.videos_infos=videos_infos
+        self.transform3=transform3
+        self.transform=transform
+        self.siamesenet=siamesenet
+        self.net=net
+
+        self.freshcheckBox=True
+        self.vidx1=0
+        self.f1=0
+        self.tid1=0
+        self.f2=0
+
+    def run(self):
+        path1 = self.videos_infos[self.vidx1]['img_files'][self.f1]
+        frame1 = cv2.imread(path1)
+        gt1 = self.videos_infos[self.vidx1]['gt'][self.f1][self.tid1]
+
+        t_aera1, _, _ = self.transform3(frame1, gt1)
+        curr_bbox=gt1
+        if self.freshcheckBox:
+            for fi2 in range(self.f1+1,self.f2+1):
+                path2 = self.videos_infos[self.vidx1]['img_files'][fi2]
+                frame2 = cv2.imread(path2)
+                curr_bboxs, curr_scores=self.adnet_inference(frame2, curr_bbox) #look
+                curr_bbox=curr_bboxs[-1]
+                #self.label_path2.setText(path2)
+                for ti in range(len(curr_scores)):
+                    t_aera2, _, _ = self.transform3(frame2, curr_bboxs[ti])
+                    output1, output2 = self.siamesenet(Variable(t_aera1).cuda(), Variable(t_aera2).cuda())
+                    euclidean_distance = F.pairwise_distance(output1, output2)
+                    sia_value = round(euclidean_distance.item(), 2)
+                    sia_value=str(sia_value)
+                    category_name2 = "step: %d/%d, score: %.2f" % (ti,len(curr_scores)-1,curr_scores[ti])
+                    
+                    # time.sleep(0.5)
+                    if not self.freshcheckBox:
+                        self._signal.emit(path2,sia_value,category_name2,curr_bboxs[ti],0)
+                        return
+                    else:
+                        self._signal.emit(path2,sia_value,category_name2,curr_bboxs[ti],1)
+        else:
+            for fi2 in range(self.f1+1,self.f2+1):
+                path2 = self.videos_infos[self.vidx1]['img_files'][fi2]
+                frame2 = cv2.imread(path2)
+                curr_bboxs, curr_scores=self.adnet_inference(frame2, curr_bbox)
+                curr_bbox=curr_bboxs[-1]
+            t_aera2, _, _ = self.transform3(frame2, curr_bbox)
+            output1, output2 = self.siamesenet(Variable(t_aera1).cuda(), Variable(t_aera2).cuda())
+            euclidean_distance = F.pairwise_distance(output1, output2)
+            sia_value = round(euclidean_distance.item(), 2)
+            category_name2 = "score: %.2f"%(curr_scores[-1])
+            self._signal.emit(path2,sia_value,category_name2,curr_bbox,0)
+
+    def adnet_inference(self,frame,curr_bbox):
+        frame2 = frame.copy()
+        frame2 = frame2.astype(np.float32)
+        frame2 = torch.from_numpy(frame2).cuda()
+
+        t = 0
+        curr_bboxs=[]
+        curr_scores=[]
+        while True:
+            curr_patch, curr_bbox, _, _ = self.transform(frame2, curr_bbox, None, None)
+            fc6_out, fc7_out = self.net.forward(curr_patch)
+            curr_score = fc7_out.detach().cpu().numpy()[0][1]
+            curr_scores.append(curr_score)
+            action = np.argmax(fc6_out.detach().cpu().numpy())
+            curr_bbox = do_action(curr_bbox, opts, action, frame.shape)
+            # bound the curr_bbox size
+            if curr_bbox[2] < 10:
+                curr_bbox[0] = min(0, curr_bbox[0] + curr_bbox[2] / 2 - 10 / 2)
+                curr_bbox[2] = 10
+            if curr_bbox[3] < 10:
+                curr_bbox[1] = min(0, curr_bbox[1] + curr_bbox[3] / 2 - 10 / 2)
+                curr_bbox[3] = 10
+            curr_bboxs.append(curr_bbox)
+            t += 1
+            if action == opts['stop_action'] or t >= opts['num_action_step_max']:
+                break
+        return curr_bboxs,curr_scores
+
+        
+        
 class siamese_test(QWidget):
     def __init__(self,siamesenet,net,videos_infos,transform3,transform):
         super(siamese_test, self).__init__()
@@ -66,6 +155,8 @@ class siamese_test(QWidget):
         self.videos_infos = videos_infos
         self.siamesenet = siamesenet
         self.net = net
+        self.thread_track = Thread_track(videos_infos,transform3,transform,siamesenet,net)
+        self.thread_track._signal.connect(self.call_back_track)
         self.initUI()
 
     def initUI(self):
@@ -131,10 +222,10 @@ class siamese_test(QWidget):
 
         self.freshcheckBox = QtWidgets.QCheckBox("show all")
 
-        button_track = QPushButton("track&siamese")
+        self.button_track = QPushButton("track&siamese")
         # button_track.setFont(ft)
-        button_track.setFixedSize(80, 30)
-        button_track.clicked.connect(self.track_and_siamese)
+        self.button_track.setFixedSize(80, 30)
+        self.button_track.clicked.connect(self.track_and_siamese)
 
         hbox0 = QHBoxLayout()
         # hbox0.addStretch(1)
@@ -159,7 +250,7 @@ class siamese_test(QWidget):
         hbox0.addWidget(button_start)
         hbox0.addStretch(1)
         hbox0.addWidget(self.freshcheckBox)
-        hbox0.addWidget(button_track)
+        hbox0.addWidget(self.button_track)
         # hbox0.addStretch(1)
         hwg = QtWidgets.QWidget()
         hwg.setLayout(hbox0)
@@ -348,81 +439,86 @@ class siamese_test(QWidget):
         img1 = QtGui.QImage(im_with_bb1.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888)
         self.pic1.setPixmap(QtGui.QPixmap.fromImage(img1).scaled(self.pic1.width(), self.pic1.height()))
         self.label_path1.setText(path1)
-        t_aera1, _, _ = self.transform3(frame1, gt1)
-        curr_bbox=gt1
-        if self.freshcheckBox.isChecked():
-            for fi2 in range(f1+1,f2+1):
-                path2 = videos_infos[vidx1]['img_files'][fi2]
-                frame2 = cv2.imread(path2)
-                curr_bboxs, curr_scores=self.adnet_inference(frame2, curr_bbox)
-                curr_bbox=curr_bboxs[-1]
-                self.label_path2.setText(path2)
-                for ti in range(len(curr_scores)):
-                    t_aera2, _, _ = self.transform3(frame2, curr_bboxs[ti])
-                    output1, output2 = self.siamesenet(Variable(t_aera1).cuda(), Variable(t_aera2).cuda())
-                    euclidean_distance = F.pairwise_distance(output1, output2)
-                    sia_value = round(euclidean_distance.item(), 2)
-                    category_name2 = "step: %d/%d, score: %.2f" % (ti,len(curr_scores)-1,curr_scores[ti])
-                    im_with_bb2 = draw_box_bigline(frame2, curr_bboxs[ti], category_name2)
-                    im_with_bb2 = cv2.resize(im_with_bb2, (self.pic2.width(), self.pic2.height()),
-                                             interpolation=cv2.INTER_CUBIC)
-                    im_with_bb2 = cv2.cvtColor(im_with_bb2, cv2.COLOR_BGR2RGB)
-                    height, width, bytesPerComponent = im_with_bb2.shape
-                    bytesPerLine = bytesPerComponent * width
-                    img2 = QtGui.QImage(im_with_bb2.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888)
-                    self.pic2.setPixmap(QtGui.QPixmap.fromImage(img2).scaled(self.pic2.width(), self.pic2.height()))
-                    self.label4.setText(str(sia_value))
-                    QApplication.processEvents()
-                # time.sleep(1)
-        else:
-            for fi2 in range(f1+1,f2+1):
-                path2 = videos_infos[vidx1]['img_files'][fi2]
-                frame2 = cv2.imread(path2)
-                curr_bboxs, curr_scores=self.adnet_inference(frame2, curr_bbox)
-                curr_bbox=curr_bboxs[-1]
-            t_aera2, _, _ = self.transform3(frame2, curr_bbox)
-            output1, output2 = self.siamesenet(Variable(t_aera1).cuda(), Variable(t_aera2).cuda())
-            euclidean_distance = F.pairwise_distance(output1, output2)
-            sia_value = round(euclidean_distance.item(), 2)
-            category_name2 = "score: %.2f"%(curr_scores[-1])
-            im_with_bb2 = draw_box_bigline(frame2, curr_bbox, category_name2)
-            im_with_bb2 = cv2.resize(im_with_bb2, (self.pic2.width(), self.pic2.height()),
-                                     interpolation=cv2.INTER_CUBIC)
-            im_with_bb2 = cv2.cvtColor(im_with_bb2, cv2.COLOR_BGR2RGB)
-            height, width, bytesPerComponent = im_with_bb2.shape
-            bytesPerLine = bytesPerComponent * width
-            img2 = QtGui.QImage(im_with_bb2.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888)
-            self.pic2.setPixmap(QtGui.QPixmap.fromImage(img2).scaled(self.pic2.width(), self.pic2.height()))
-            self.label4.setText(str(sia_value))
-            self.label_path2.setText(path2)
 
-    def adnet_inference(self,frame,curr_bbox):
-        frame2 = frame.copy()
-        frame2 = frame2.astype(np.float32)
-        frame2 = torch.from_numpy(frame2).cuda()
+        self.button_track.setEnabled(False)
+        self.thread_track.freshcheckBox=self.freshcheckBox.isChecked()
+        self.thread_track.start()
 
-        t = 0
-        curr_bboxs=[]
-        curr_scores=[]
-        while True:
-            curr_patch, curr_bbox, _, _ = self.transform(frame2, curr_bbox, None, None)
-            fc6_out, fc7_out = self.net.forward(curr_patch)
-            curr_score = fc7_out.detach().cpu().numpy()[0][1]
-            curr_scores.append(curr_score)
-            action = np.argmax(fc6_out.detach().cpu().numpy())
-            curr_bbox = do_action(curr_bbox, opts, action, frame.shape)
-            # bound the curr_bbox size
-            if curr_bbox[2] < 10:
-                curr_bbox[0] = min(0, curr_bbox[0] + curr_bbox[2] / 2 - 10 / 2)
-                curr_bbox[2] = 10
-            if curr_bbox[3] < 10:
-                curr_bbox[1] = min(0, curr_bbox[1] + curr_bbox[3] / 2 - 10 / 2)
-                curr_bbox[3] = 10
-            curr_bboxs.append(curr_bbox)
-            t += 1
-            if action == opts['stop_action'] or t >= opts['num_action_step_max']:
-                break
-        return curr_bboxs,curr_scores
+    def call_back_track(self,path2,sia_value,category_name2,curr_bbox,is_running):
+        frame2 = cv2.imread(path2)
+        im_with_bb2 = draw_box_bigline(frame2, curr_bbox, category_name2)
+        im_with_bb2 = cv2.resize(im_with_bb2, (self.pic2.width(), self.pic2.height()),
+                                 interpolation=cv2.INTER_CUBIC)
+        im_with_bb2 = cv2.cvtColor(im_with_bb2, cv2.COLOR_BGR2RGB)
+        height, width, bytesPerComponent = im_with_bb2.shape
+        bytesPerLine = bytesPerComponent * width
+        img2 = QtGui.QImage(im_with_bb2.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888)
+        self.pic2.setPixmap(QtGui.QPixmap.fromImage(img2).scaled(self.pic2.width(), self.pic2.height()))
+        self.label4.setText(str(sia_value))
+        self.label_path2.setText(path2)
+        QApplication.processEvents()
+
+
+        self.thread_track.freshcheckBox=self.freshcheckBox.isChecked()
+
+        if not is_running:
+            self.button_track.setEnabled(True)
+            self.thread_track.stop()
+
+
+
+        # t_aera1, _, _ = self.transform3(frame1, gt1)
+        # curr_bbox=gt1
+        # if self.freshcheckBox.isChecked():
+        #     for fi2 in range(f1+1,f2+1):
+        #         path2 = videos_infos[vidx1]['img_files'][fi2]
+        #         frame2 = cv2.imread(path2)
+        #         curr_bboxs, curr_scores=self.adnet_inference(frame2, curr_bbox)
+        #         curr_bbox=curr_bboxs[-1]
+        #         self.label_path2.setText(path2)
+        #         for ti in range(len(curr_scores)):
+        #             t_aera2, _, _ = self.transform3(frame2, curr_bboxs[ti])
+        #             output1, output2 = self.siamesenet(Variable(t_aera1).cuda(), Variable(t_aera2).cuda())
+        #             euclidean_distance = F.pairwise_distance(output1, output2)
+        #             sia_value = round(euclidean_distance.item(), 2)
+        #             category_name2 = "step: %d/%d, score: %.2f" % (ti,len(curr_scores)-1,curr_scores[ti])
+        #             im_with_bb2 = draw_box_bigline(frame2, curr_bboxs[ti], category_name2)
+        #             im_with_bb2 = cv2.resize(im_with_bb2, (self.pic2.width(), self.pic2.height()),
+        #                                      interpolation=cv2.INTER_CUBIC)
+        #             im_with_bb2 = cv2.cvtColor(im_with_bb2, cv2.COLOR_BGR2RGB)
+        #             height, width, bytesPerComponent = im_with_bb2.shape
+        #             bytesPerLine = bytesPerComponent * width
+        #             img2 = QtGui.QImage(im_with_bb2.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888)
+        #             self.pic2.setPixmap(QtGui.QPixmap.fromImage(img2).scaled(self.pic2.width(), self.pic2.height()))
+        #             self.label4.setText(str(sia_value))
+        #             QApplication.processEvents()
+        #             # time.sleep(0.5)
+        #             if not self.freshcheckBox.isChecked():
+        #                 return
+        #         # time.sleep(1)
+        # else:
+        #     for fi2 in range(f1+1,f2+1):
+        #         path2 = videos_infos[vidx1]['img_files'][fi2]
+        #         frame2 = cv2.imread(path2)
+        #         curr_bboxs, curr_scores=self.adnet_inference(frame2, curr_bbox)
+        #         curr_bbox=curr_bboxs[-1]
+        #     t_aera2, _, _ = self.transform3(frame2, curr_bbox)
+        #     output1, output2 = self.siamesenet(Variable(t_aera1).cuda(), Variable(t_aera2).cuda())
+        #     euclidean_distance = F.pairwise_distance(output1, output2)
+        #     sia_value = round(euclidean_distance.item(), 2)
+        #     category_name2 = "score: %.2f"%(curr_scores[-1])
+        #     im_with_bb2 = draw_box_bigline(frame2, curr_bbox, category_name2)
+        #     im_with_bb2 = cv2.resize(im_with_bb2, (self.pic2.width(), self.pic2.height()),
+        #                              interpolation=cv2.INTER_CUBIC)
+        #     im_with_bb2 = cv2.cvtColor(im_with_bb2, cv2.COLOR_BGR2RGB)
+        #     height, width, bytesPerComponent = im_with_bb2.shape
+        #     bytesPerLine = bytesPerComponent * width
+        #     img2 = QtGui.QImage(im_with_bb2.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888)
+        #     self.pic2.setPixmap(QtGui.QPixmap.fromImage(img2).scaled(self.pic2.width(), self.pic2.height()))
+        #     self.label4.setText(str(sia_value))
+        #     self.label_path2.setText(path2)
+
+    
 
     def custom_siam(self):
         p1=self.input_path1.text()
