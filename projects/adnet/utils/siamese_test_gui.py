@@ -61,7 +61,8 @@ def testsiamese(siamesenet,videos_infos):
 
 
 class Thread_track(QThread):  
-    _signal =pyqtSignal(str,str,str,list,int,int)
+    # _signal =pyqtSignal(str,str,str,list,int,int)
+    _signal =pyqtSignal(list,int)
     def __init__(self,videos_infos,transform3,transform,siamesenet,net):
         super().__init__()
         self.videos_infos=videos_infos
@@ -85,6 +86,7 @@ class Thread_track(QThread):
 
         t_aera1, _, _ = self.transform3(frame1, gt1)
         curr_bbox=gt1
+        sig=[]
         if self.freshcheckBox:
             for fi2 in range(self.f1+1,self.f2+1):
                 path2 = self.videos_infos[self.vidx1]['img_files'][fi2]
@@ -104,12 +106,15 @@ class Thread_track(QThread):
                     tem_list=[]
                     tem_list.append(curr_bboxs[ti])
                     if self.do_stop:
-                        self._signal.emit(path2,sia_value,category_name2,tem_list,0,self.count)
+                        # self._signal.emit(path2,sia_value,category_name2,tem_list,0,self.count)
+                        self._signal.emit(sig,2)
                         return
                     else:
-                        self._signal.emit(path2,sia_value,category_name2,tem_list,1,self.count)
+                        sig.append([path2,sia_value,category_name2,tem_list])
+                        # self._signal.emit(path2,sia_value,category_name2,tem_list,1,self.count)
                     self.count+=1
-            self._signal.emit(path2, sia_value, category_name2, tem_list, 2,self.count)
+            # self._signal.emit(path2, sia_value, category_name2, tem_list, 2,self.count)
+            self._signal.emit(sig,1)
         else:
             for fi2 in range(self.f1+1,self.f2+1):
                 path2 = self.videos_infos[self.vidx1]['img_files'][fi2]
@@ -117,7 +122,8 @@ class Thread_track(QThread):
                 curr_bboxs, curr_scores=self.adnet_inference(frame2, curr_bbox)
                 curr_bbox=curr_bboxs[-1]
                 if self.do_stop:
-                    self._signal.emit(path2, "", "", [], 2)
+                    # self._signal.emit(path2, "", "", [], 2)
+                    self._signal.emit([], 2)
                     return
             t_aera2, _, _ = self.transform3(frame2, curr_bbox)
             output1, output2 = self.siamesenet(Variable(t_aera1).cuda(), Variable(t_aera2).cuda())
@@ -127,7 +133,9 @@ class Thread_track(QThread):
             category_name2 = "score: %.2f"%(curr_scores[-1])
             tem_list=[]
             tem_list.append(curr_bbox)
-            self._signal.emit(path2,sia_value,category_name2,tem_list,0,self.count)
+            # self._signal.emit(path2,sia_value,category_name2,tem_list,0,self.count)
+            sig.append([path2,sia_value,category_name2,tem_list])
+            self._signal.emit(sig,1)
 
     def adnet_inference(self,frame,curr_bbox):
         frame2 = frame.copy()
@@ -480,46 +488,55 @@ class siamese_test(QWidget):
     def refersh(self):
         pass
 
-    def call_back_track(self,path2,sia_value,category_name2,curr_bbox,is_running,ncount):
+    # def call_back_track(self,path2,sia_value,category_name2,curr_bbox,is_running,ncount):
+    def call_back_track(self,sig,is_running):
         # self.thread_track.freshcheckBox=self.freshcheckBox.isChecked()
         # self.qmut_1.lock()
-        while(ncount>self.count):
-            time.sleep(0.1)
-        print(path2,category_name2,is_running)
-        if is_running==0:   #stop and show the last img2
-            frame2 = cv2.imread(path2)
-            curr_bbox=curr_bbox[0]
-            im_with_bb2 = draw_box_bigline(frame2, curr_bbox, category_name2)
-            im_with_bb2 = cv2.resize(im_with_bb2, (self.pic2.width(), self.pic2.height()),
-                                     interpolation=cv2.INTER_CUBIC)
-            im_with_bb2 = cv2.cvtColor(im_with_bb2, cv2.COLOR_BGR2RGB)
-            height, width, bytesPerComponent = im_with_bb2.shape
-            bytesPerLine = bytesPerComponent * width
-            img2 = QtGui.QImage(im_with_bb2.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888)
-            self.pic2.setPixmap(QtGui.QPixmap.fromImage(img2).scaled(self.pic2.width(), self.pic2.height()))
-            self.label4.setText(str(sia_value))
-            self.label_path2.setText(path2)
-            self.button_track.setEnabled(True)
-            # QApplication.processEvents()
-        elif is_running==2: #stop and don't need to show the last img2
+        # while(ncount>self.count):
+        #     time.sleep(0.1)
+        # print(path2,category_name2,is_running)
+        # if is_running==0:   #stop and show the last img2
+        #     frame2 = cv2.imread(path2)
+        #     curr_bbox=curr_bbox[0]
+        #     im_with_bb2 = draw_box_bigline(frame2, curr_bbox, category_name2)
+        #     im_with_bb2 = cv2.resize(im_with_bb2, (self.pic2.width(), self.pic2.height()),
+        #                              interpolation=cv2.INTER_CUBIC)
+        #     im_with_bb2 = cv2.cvtColor(im_with_bb2, cv2.COLOR_BGR2RGB)
+        #     height, width, bytesPerComponent = im_with_bb2.shape
+        #     bytesPerLine = bytesPerComponent * width
+        #     img2 = QtGui.QImage(im_with_bb2.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888)
+        #     self.pic2.setPixmap(QtGui.QPixmap.fromImage(img2).scaled(self.pic2.width(), self.pic2.height()))
+        #     self.label4.setText(str(sia_value))
+        #     self.label_path2.setText(path2)
+        #     self.button_track.setEnabled(True)
+        #     # QApplication.processEvents()
+        # el
+        if is_running==2: #stop and don't need to show the last img2
             self.button_track.setEnabled(True)
         else:   #is_running==1, continue running
-            frame2 = cv2.imread(path2)
-            curr_bbox=curr_bbox[0]
-            im_with_bb2 = draw_box_bigline(frame2, curr_bbox, category_name2)
-            im_with_bb2 = cv2.resize(im_with_bb2, (self.pic2.width(), self.pic2.height()),
-                                     interpolation=cv2.INTER_CUBIC)
-            im_with_bb2 = cv2.cvtColor(im_with_bb2, cv2.COLOR_BGR2RGB)
-            height, width, bytesPerComponent = im_with_bb2.shape
-            bytesPerLine = bytesPerComponent * width
-            img2 = QtGui.QImage(im_with_bb2.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888)
-            self.pic2.setPixmap(QtGui.QPixmap.fromImage(img2).scaled(self.pic2.width(), self.pic2.height()))
-            self.label4.setText(str(sia_value))
-            self.label_path2.setText(path2)
+            for i in range(len(sig)):
+                path2,sia_value,category_name2,curr_bbox=sig[i]
+                frame2 = cv2.imread(path2)
+                curr_bbox=curr_bbox[0]
+                im_with_bb2 = draw_box_bigline(frame2, curr_bbox, category_name2)
+                im_with_bb2 = cv2.resize(im_with_bb2, (self.pic2.width(), self.pic2.height()),
+                                         interpolation=cv2.INTER_CUBIC)
+                im_with_bb2 = cv2.cvtColor(im_with_bb2, cv2.COLOR_BGR2RGB)
+                height, width, bytesPerComponent = im_with_bb2.shape
+                bytesPerLine = bytesPerComponent * width
+                img2 = QtGui.QImage(im_with_bb2.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888)
+                self.pic2.setPixmap(QtGui.QPixmap.fromImage(img2).scaled(self.pic2.width(), self.pic2.height()))
+                self.label4.setText(str(sia_value))
+                self.label_path2.setText(path2)
+                QApplication.processEvents()
+                if self.thread_track.do_stop==True:
+                    self.button_track.setEnabled(True)
+                    return
+            self.button_track.setEnabled(True)                     
             # time.sleep(0.5)
             # QApplication.processEvents()
-        self.refersh()
-        self.count+=1
+        # self.refersh()
+        # self.count+=1
         # self.qmut_1.unlock()
         # time.sleep(0.5)
 
