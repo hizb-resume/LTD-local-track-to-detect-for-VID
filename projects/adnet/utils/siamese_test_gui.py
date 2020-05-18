@@ -100,12 +100,14 @@ class Thread_track(QThread):
                     category_name2 = "step: %d/%d, score: %.2f" % (ti,len(curr_scores)-1,curr_scores[ti])
                     
                     # time.sleep(0.5)
+                    tem_list=[]
+                    tem_list.append(curr_bboxs[ti])
                     if self.do_stop:
-                        self._signal.emit(path2,sia_value,category_name2,curr_bboxs[ti],0)
+                        self._signal.emit(path2,sia_value,category_name2,tem_list,0)
                         return
                     else:
-                        self._signal.emit(path2,sia_value,category_name2,curr_bboxs[ti],1)
-                self._signal.emit(path2, sia_value, category_name2, curr_bbox, 2)
+                        self._signal.emit(path2,sia_value,category_name2,tem_list,1)
+                self._signal.emit(path2, sia_value, category_name2, tem_list, 2)
         else:
             for fi2 in range(self.f1+1,self.f2+1):
                 path2 = self.videos_infos[self.vidx1]['img_files'][fi2]
@@ -113,7 +115,7 @@ class Thread_track(QThread):
                 curr_bboxs, curr_scores=self.adnet_inference(frame2, curr_bbox)
                 curr_bbox=curr_bboxs[-1]
                 if self.do_stop:
-                    self._signal.emit(path2, "", "", curr_bbox, 2)
+                    self._signal.emit(path2, "", "", [], 2)
                     return
             t_aera2, _, _ = self.transform3(frame2, curr_bbox)
             output1, output2 = self.siamesenet(Variable(t_aera1).cuda(), Variable(t_aera2).cuda())
@@ -121,7 +123,9 @@ class Thread_track(QThread):
             sia_value = round(euclidean_distance.item(), 2)
             sia_value = str(sia_value)
             category_name2 = "score: %.2f"%(curr_scores[-1])
-            self._signal.emit(path2,sia_value,category_name2,curr_bbox,0)
+            tem_list=[]
+            tem_list.append(curr_bbox)
+            self._signal.emit(path2,sia_value,category_name2,tem_list,0)
 
     def adnet_inference(self,frame,curr_bbox):
         frame2 = frame.copy()
@@ -459,7 +463,7 @@ class siamese_test(QWidget):
         self.thread_track.f1=f1
         self.thread_track.tid1=tid1
         self.thread_track.f2=f2
-        self.thread_track.thread_track.start()
+        self.thread_track.start()
 
     def stop_thread(self):
         self.thread_track.do_stop=True
@@ -468,8 +472,8 @@ class siamese_test(QWidget):
         # self.thread_track.freshcheckBox=self.freshcheckBox.isChecked()
         if is_running==0:   #stop and show the last img2
             self.button_track.setEnabled(True)
-            self.thread_track.stop()
             frame2 = cv2.imread(path2)
+            curr_bbox=curr_bbox[0]
             im_with_bb2 = draw_box_bigline(frame2, curr_bbox, category_name2)
             im_with_bb2 = cv2.resize(im_with_bb2, (self.pic2.width(), self.pic2.height()),
                                      interpolation=cv2.INTER_CUBIC)
@@ -483,9 +487,9 @@ class siamese_test(QWidget):
             QApplication.processEvents()
         elif is_running==2: #stop and don't need to show the last img2
             self.button_track.setEnabled(True)
-            self.thread_track.stop()
         else:   #is_running==1, continue running
             frame2 = cv2.imread(path2)
+            curr_bbox=curr_bbox[0]
             im_with_bb2 = draw_box_bigline(frame2, curr_bbox, category_name2)
             im_with_bb2 = cv2.resize(im_with_bb2, (self.pic2.width(), self.pic2.height()),
                                      interpolation=cv2.INTER_CUBIC)
