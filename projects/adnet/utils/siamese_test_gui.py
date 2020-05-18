@@ -71,6 +71,7 @@ class Thread_track(QThread):
         self.net=net
 
         self.freshcheckBox=True
+        self.do_stop = False
         self.vidx1=0
         self.f1=0
         self.tid1=0
@@ -99,21 +100,26 @@ class Thread_track(QThread):
                     category_name2 = "step: %d/%d, score: %.2f" % (ti,len(curr_scores)-1,curr_scores[ti])
                     
                     # time.sleep(0.5)
-                    if not self.freshcheckBox:
+                    if self.do_stop:
                         self._signal.emit(path2,sia_value,category_name2,curr_bboxs[ti],0)
                         return
                     else:
                         self._signal.emit(path2,sia_value,category_name2,curr_bboxs[ti],1)
+                self._signal.emit(path2, sia_value, category_name2, curr_bbox, 2)
         else:
             for fi2 in range(self.f1+1,self.f2+1):
                 path2 = self.videos_infos[self.vidx1]['img_files'][fi2]
                 frame2 = cv2.imread(path2)
                 curr_bboxs, curr_scores=self.adnet_inference(frame2, curr_bbox)
                 curr_bbox=curr_bboxs[-1]
+                if self.do_stop:
+                    self._signal.emit(path2, "", "", curr_bbox, 2)
+                    return
             t_aera2, _, _ = self.transform3(frame2, curr_bbox)
             output1, output2 = self.siamesenet(Variable(t_aera1).cuda(), Variable(t_aera2).cuda())
             euclidean_distance = F.pairwise_distance(output1, output2)
             sia_value = round(euclidean_distance.item(), 2)
+            sia_value = str(sia_value)
             category_name2 = "score: %.2f"%(curr_scores[-1])
             self._signal.emit(path2,sia_value,category_name2,curr_bbox,0)
 
@@ -315,6 +321,12 @@ class siamese_test(QWidget):
         # grid.addWidget(button3, 3, 3)
         button3.clicked.connect(self.rand_neg_same_frame)
 
+        button_stop = QPushButton("stop")
+        # button_stop.setFont(ft)
+        # button_stop.setFixedSize(320, 60)
+        # grid.addWidget(button3, 3, 3)
+        button_stop.clicked.connect(self.stop_thread)
+
         hbox = QHBoxLayout()
         hbox.addStretch(1)
         hbox.addWidget(button1)
@@ -322,6 +334,7 @@ class siamese_test(QWidget):
         hbox.addWidget(button3)
         hbox.addStretch(1)
         hbox.addWidget(button2)
+        hbox.addWidget(button_stop)
         hbox.addStretch(1)
         hwg = QtWidgets.QWidget()
         hwg.setLayout(hbox)
@@ -442,30 +455,48 @@ class siamese_test(QWidget):
 
         self.button_track.setEnabled(False)
         self.thread_track.freshcheckBox=self.freshcheckBox.isChecked()
-        self.thread_track.start()
+        self.thread_track.vidx1=vidx1
+        self.thread_track.f1=f1
+        self.thread_track.tid1=tid1
+        self.thread_track.f2=f2
+        self.thread_track.thread_track.start()
+
+    def stop_thread(self):
+        self.thread_track.do_stop=True
 
     def call_back_track(self,path2,sia_value,category_name2,curr_bbox,is_running):
-        frame2 = cv2.imread(path2)
-        im_with_bb2 = draw_box_bigline(frame2, curr_bbox, category_name2)
-        im_with_bb2 = cv2.resize(im_with_bb2, (self.pic2.width(), self.pic2.height()),
-                                 interpolation=cv2.INTER_CUBIC)
-        im_with_bb2 = cv2.cvtColor(im_with_bb2, cv2.COLOR_BGR2RGB)
-        height, width, bytesPerComponent = im_with_bb2.shape
-        bytesPerLine = bytesPerComponent * width
-        img2 = QtGui.QImage(im_with_bb2.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888)
-        self.pic2.setPixmap(QtGui.QPixmap.fromImage(img2).scaled(self.pic2.width(), self.pic2.height()))
-        self.label4.setText(str(sia_value))
-        self.label_path2.setText(path2)
-        QApplication.processEvents()
-
-
-        self.thread_track.freshcheckBox=self.freshcheckBox.isChecked()
-
-        if not is_running:
+        # self.thread_track.freshcheckBox=self.freshcheckBox.isChecked()
+        if is_running==0:   #stop and show the last img2
             self.button_track.setEnabled(True)
             self.thread_track.stop()
-
-
+            frame2 = cv2.imread(path2)
+            im_with_bb2 = draw_box_bigline(frame2, curr_bbox, category_name2)
+            im_with_bb2 = cv2.resize(im_with_bb2, (self.pic2.width(), self.pic2.height()),
+                                     interpolation=cv2.INTER_CUBIC)
+            im_with_bb2 = cv2.cvtColor(im_with_bb2, cv2.COLOR_BGR2RGB)
+            height, width, bytesPerComponent = im_with_bb2.shape
+            bytesPerLine = bytesPerComponent * width
+            img2 = QtGui.QImage(im_with_bb2.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888)
+            self.pic2.setPixmap(QtGui.QPixmap.fromImage(img2).scaled(self.pic2.width(), self.pic2.height()))
+            self.label4.setText(str(sia_value))
+            self.label_path2.setText(path2)
+            QApplication.processEvents()
+        elif is_running==2: #stop and don't need to show the last img2
+            self.button_track.setEnabled(True)
+            self.thread_track.stop()
+        else:   #is_running==1, continue running
+            frame2 = cv2.imread(path2)
+            im_with_bb2 = draw_box_bigline(frame2, curr_bbox, category_name2)
+            im_with_bb2 = cv2.resize(im_with_bb2, (self.pic2.width(), self.pic2.height()),
+                                     interpolation=cv2.INTER_CUBIC)
+            im_with_bb2 = cv2.cvtColor(im_with_bb2, cv2.COLOR_BGR2RGB)
+            height, width, bytesPerComponent = im_with_bb2.shape
+            bytesPerLine = bytesPerComponent * width
+            img2 = QtGui.QImage(im_with_bb2.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888)
+            self.pic2.setPixmap(QtGui.QPixmap.fromImage(img2).scaled(self.pic2.width(), self.pic2.height()))
+            self.label4.setText(str(sia_value))
+            self.label_path2.setText(path2)
+            QApplication.processEvents()
 
         # t_aera1, _, _ = self.transform3(frame1, gt1)
         # curr_bbox=gt1
@@ -521,6 +552,7 @@ class siamese_test(QWidget):
     
 
     def custom_siam(self):
+        self.stop_thread()
         p1=self.input_path1.text()
         p2=self.input_path2.text()
         f1=self.frameid1.text()
@@ -649,6 +681,7 @@ class siamese_test(QWidget):
         self.label_path2.setText(path2)
         
     def rand_pos(self):
+        self.stop_thread()
         p1 = "1.jpg"
         p2 = "2.jpg"
         sia_value = 0
@@ -730,6 +763,7 @@ class siamese_test(QWidget):
         self.label_path2.setText(p2)
 
     def rand_neg(self):
+        self.stop_thread()
         p1 = "1.jpg"
         p2 = "2.jpg"
         sia_value = 0
@@ -840,6 +874,7 @@ class siamese_test(QWidget):
         self.label_path2.setText(p2)
 
     def rand_neg_same_frame(self):
+        self.stop_thread()
         p1 = "1.jpg"
         p2 = "2.jpg"
         sia_value = 0
