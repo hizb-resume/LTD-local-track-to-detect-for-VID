@@ -100,7 +100,7 @@ class Thread_track(QThread):
                     euclidean_distance = F.pairwise_distance(output1, output2)
                     sia_value = round(euclidean_distance.item(), 2)
                     sia_value=str(sia_value)
-                    category_name2 = "step: %d/%d, score: %.2f" % (ti,len(curr_scores)-1,curr_scores[ti])
+                    category_name2 = "step: %d/%d, score: %.2f" % (ti+1,len(curr_scores),curr_scores[ti])
                     
                     # time.sleep(0.5)
                     tem_list=[]
@@ -177,6 +177,7 @@ class siamese_test(QWidget):
         self.net = net
         self.thread_track = ''
         self.count=0
+        # self.pause=False
         # self.qmut_1 = QMutex()
         self.thread_track=Thread_track(self.videos_infos,self.transform3,self.transform,self.siamesenet,self.net)
         self.thread_track._signal.connect(self.call_back_track)
@@ -238,47 +239,82 @@ class siamese_test(QWidget):
         self.trackid2.setPlaceholderText("eg:0")
         # self.trackid2.isClearButtonEnabled()
 
-        button_start = QPushButton("start")
-        button_start.setFont(ft)
-        button_start.setFixedSize(80, 30)
+        button_start = QPushButton("compare two")
+        # button_start.setFont(ft)
+        # button_start.setFixedSize(80, 30)
         button_start.clicked.connect(self.custom_siam)
+
+        # self.button_pause = QPushButton("pause")
+        # # self.button_pause.setFont(ft)
+        # # self.button_pause.setFixedSize(320, 60)
+        # self.button_pause.clicked.connect(self.pause_thread)
+
+        button_stop = QPushButton("stop track")
+        # button_stop.setFont(ft)
+        # button_stop.setFixedSize(320, 60)
+        button_stop.clicked.connect(self.stop_thread)
 
         self.freshcheckBox = QtWidgets.QCheckBox("show all")
 
         self.button_track = QPushButton("track&siamese")
         # button_track.setFont(ft)
-        self.button_track.setFixedSize(80, 30)
+        self.button_track.setFixedSize(90, 30)
         self.button_track.clicked.connect(self.track_and_siamese)
 
-        hbox0 = QHBoxLayout()
-        # hbox0.addStretch(1)
-        hbox0.addWidget(path_input_tip1)
-        hbox0.addWidget(self.input_path1)
-        # hbox0.addStretch(1)
-        hbox0.addWidget(frameid_tip1)
-        hbox0.addWidget(self.frameid1)
-        # hbox0.addStretch(1)
-        hbox0.addWidget(trackid_tip1)
-        hbox0.addWidget(self.trackid1)
-        hbox0.addStretch(2)
-        hbox0.addWidget(path_input_tip2)
-        hbox0.addWidget(self.input_path2)
-        # hbox0.addStretch(1)
-        hbox0.addWidget(frameid_tip2)
-        hbox0.addWidget(self.frameid2)
-        # hbox0.addStretch(1)
-        hbox0.addWidget(trackid_tip2)
-        hbox0.addWidget(self.trackid2)
-        hbox0.addStretch(1)
-        hbox0.addWidget(button_start)
-        hbox0.addStretch(1)
-        hbox0.addWidget(self.freshcheckBox)
-        hbox0.addWidget(self.button_track)
-        # hbox0.addStretch(1)
+        hbox1 = QHBoxLayout()
+        # hbox1.addStretch(1)
+        hbox1.addWidget(path_input_tip1)
+        hbox1.addWidget(self.input_path1)
+        # hbox1.addStretch(1)
+        hbox1.addWidget(frameid_tip1)
+        hbox1.addWidget(self.frameid1)
+        # hbox1.addStretch(1)
+        hbox1.addWidget(trackid_tip1)
+        hbox1.addWidget(self.trackid1)
+        hbox1.addStretch(1)
+        hbox1.addWidget(self.freshcheckBox)
+        hbox1.addWidget(self.button_track)
+        # hbox1.addStretch(1)
+        hwg1 = QtWidgets.QWidget()
+        hwg1.setLayout(hbox1)
+        # hwg1.setSpacing(10)
+
+        hbox2 = QHBoxLayout()
+        hbox2.addWidget(path_input_tip2)
+        hbox2.addWidget(self.input_path2)
+        # hbox2.addStretch(1)
+        hbox2.addWidget(frameid_tip2)
+        hbox2.addWidget(self.frameid2)
+        # hbox2.addStretch(1)
+        hbox2.addWidget(trackid_tip2)
+        hbox2.addWidget(self.trackid2)
+        hbox2.addStretch(1)
+        hbox2.addWidget(button_start)
+        hbox2.addStretch(1)
+        # hbox2.addWidget(self.button_pause)
+        # hbox2.addStretch(1)
+        hbox2.addWidget(button_stop)
+        # hbox2.addStretch(1)
+
+        hwg2 = QtWidgets.QWidget()
+        hwg2.setLayout(hbox2)
+        # hwg2.setSpacing(10)
+
+        vbox=QVBoxLayout()
+        vbox.addWidget(hwg1)
+        vbox.addWidget(hwg2)
+
         hwg = QtWidgets.QWidget()
-        hwg.setLayout(hbox0)
-        # hwg.setSpacing(10)
-        grid.addWidget(hwg, 0, 0, 1, 6)
+        hwg.setLayout(vbox)
+
+        grid.addWidget(hwg, 0, 0, 1, 3)
+
+        # w = QWidget()
+        # w.setWindowTitle("output console:\n\n")
+        # w.resize(300, 300)
+        self.output_console = QTextEdit("output console:\n\n")
+        self.output_console.setReadOnly(True)
+        grid.addWidget(self.output_console, 0, 3, 1, 2)
 
         label1 = QLabel("path1: ")
         # label1.setFont(ft)
@@ -338,12 +374,6 @@ class siamese_test(QWidget):
         # grid.addWidget(button3, 3, 3)
         button3.clicked.connect(self.rand_neg_same_frame)
 
-        button_stop = QPushButton("stop")
-        # button_stop.setFont(ft)
-        # button_stop.setFixedSize(320, 60)
-        # grid.addWidget(button3, 3, 3)
-        button_stop.clicked.connect(self.stop_thread)
-
         hbox = QHBoxLayout()
         hbox.addStretch(1)
         hbox.addWidget(button1)
@@ -351,7 +381,7 @@ class siamese_test(QWidget):
         hbox.addWidget(button3)
         hbox.addStretch(1)
         hbox.addWidget(button2)
-        hbox.addWidget(button_stop)
+        # hbox.addWidget(button_stop)
         hbox.addStretch(1)
         hwg = QtWidgets.QWidget()
         hwg.setLayout(hbox)
@@ -472,6 +502,8 @@ class siamese_test(QWidget):
 
         self.button_track.setEnabled(False)
         self.count=0
+        # self.pause=False
+        # self.button_pause.setText("pause")
 
         self.thread_track = Thread_track(self.videos_infos,self.transform3,self.transform,self.siamesenet,self.net)
         self.thread_track._signal.connect(self.call_back_track)
@@ -482,8 +514,23 @@ class siamese_test(QWidget):
         self.thread_track.f2=f2
         self.thread_track.start()
 
+        self.output_console.append("\ncompare siamese of track area")
+        self.output_console.append("path1: %s"%path1)
+        self.output_console.append("object category: %s"%category_name1)
+
     def stop_thread(self):
         self.thread_track.do_stop=True
+        # self.pause=False
+        # self.button_pause.setText("pause")
+
+    # def pause_thread(self):
+    #     if self.pause==False:
+    #         self.pause=True
+    #         self.button_pause.setText("continue")
+    #     else:
+    #         self.pause=False
+    #         self.button_pause.setText("pause")
+
 
     def refersh(self):
         pass
@@ -528,10 +575,13 @@ class siamese_test(QWidget):
                 self.pic2.setPixmap(QtGui.QPixmap.fromImage(img2).scaled(self.pic2.width(), self.pic2.height()))
                 self.label4.setText(str(sia_value))
                 self.label_path2.setText(path2)
+                self.output_console.append("%s - %s, siamese distance: %s"%(path2[-8:],category_name2,sia_value))
                 QApplication.processEvents()
                 if self.thread_track.do_stop==True:
                     self.button_track.setEnabled(True)
                     return
+                # while self.pause==True:
+                #     time.sleep(0.2)
             self.button_track.setEnabled(True)                     
             # time.sleep(0.5)
             # QApplication.processEvents()
@@ -700,7 +750,7 @@ class siamese_test(QWidget):
         sia_value=round(euclidean_distance.item(),2)
 
         category_name1 = videos_infos[vidx1]['name'][f1][tid1]
-        category_name2 = videos_infos[vidx1]['name'][f2][tid2]
+        category_name2 = videos_infos[vidx2]['name'][f2][tid2]
 
         im_with_bb1 = draw_box_bigline(frame1, gt1,category_name1)
         im_with_bb1=cv2.resize(im_with_bb1,(self.pic1.width(), self.pic1.height()), interpolation=cv2.INTER_CUBIC)
@@ -721,6 +771,13 @@ class siamese_test(QWidget):
         self.label4.setText(str(sia_value))
         self.label_path1.setText(path1)
         self.label_path2.setText(path2)
+
+        self.output_console.append("\ncompare custom select area")
+        self.output_console.append("path1: %s"%path1)
+        self.output_console.append("path2: %s"%path2)
+        self.output_console.append("object1 category: %s, object2 category: %s, siamese distance: %.2f"%(category_name1,category_name2,sia_value))
+        # self.output_console.append("object2 category: %s"%category_name2)
+        # self.output_console.append("siamese distance: %f"%sia_value)
         
     def rand_pos(self):
         self.stop_thread()
@@ -803,6 +860,11 @@ class siamese_test(QWidget):
         self.label4.setText(str(sia_value))
         self.label_path1.setText(p1)
         self.label_path2.setText(p2)
+        self.output_console.append("\ncompare random positive samples")
+        self.output_console.append("path1: %s"%p1)
+        self.output_console.append("path2: %s"%p2)
+        self.output_console.append("object category: %s, siamese distance: %.2f"%(category_name1, sia_value))
+        # self.output_console.append("siamese distance: %f"%sia_value)
 
     def rand_neg(self):
         self.stop_thread()
@@ -915,6 +977,15 @@ class siamese_test(QWidget):
         self.label_path1.setText(p1)
         self.label_path2.setText(p2)
 
+        self.output_console.append("\ncompare random negative samples")
+        self.output_console.append("path1: %s"%p1)
+        self.output_console.append("path2: %s"%p2)
+        # self.output_console.append("object1 category: %s"%category_name1)
+        # self.output_console.append("object2 category: %s"%category_name2)
+        # self.output_console.append("siamese distance: %f"%sia_value)
+        self.output_console.append("object1 category: %s, object2 category: %s, siamese distance: %.2f"%(category_name1,category_name2,sia_value))
+        
+
     def rand_neg_same_frame(self):
         self.stop_thread()
         p1 = "1.jpg"
@@ -976,3 +1047,8 @@ class siamese_test(QWidget):
         self.label4.setText(str(sia_value))
         self.label_path1.setText(p1)
         self.label_path2.setText(p1)
+
+        self.output_console.append("\ncompare random area")
+        self.output_console.append("path: %s"%p1)
+        self.output_console.append("object1 category: %s, siamese distance: %.2f"%(category_name1,sia_value))
+        # self.output_console.append("siamese distance: %f"%sia_value)
