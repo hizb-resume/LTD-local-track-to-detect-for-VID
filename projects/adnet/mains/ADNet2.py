@@ -31,6 +31,7 @@ parser.add_argument('--send_images_to_visualization', type=str2bool, default=Fal
 parser.add_argument('--save_folder', default='weights_del', help='Location to save checkpoint models')
 parser.add_argument('--tensorlogdir', default='tensorboardx_log_del', help='Location to save tensorboardx_log')
 parser.add_argument('--train_consecutive', default=False, type=str2bool, help='Whether to train consecutive frames')
+parser.add_argument('--train_mul_step', default=False, type=str2bool, help='Whether to train multiple steps')
 
 parser.add_argument('--save_file', default='ADNet_SL_', type=str, help='save file part of file name for SL')
 parser.add_argument('--save_file_RL', default='ADNet_RL_', type=str, help='save file part of file name for RL')

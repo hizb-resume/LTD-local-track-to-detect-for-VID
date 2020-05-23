@@ -12,6 +12,7 @@ import torch.utils.data as data
 from datasets.get_train_dbs import get_train_dbs
 from datasets.get_train_dbs import get_train_dbs_ILSVR
 from datasets.get_train_dbs import get_train_dbs_ILSVR_consecutive_frame
+from datasets.get_train_dbs import get_train_dbs_mul_step
 from utils.get_video_infos import get_video_infos
 
 
@@ -113,6 +114,8 @@ def initialize_pos_neg_dataset(train_videos, opts,args, transform=None, multidom
             # train_db_pos_, train_db_neg_ = get_train_dbs_ILSVR(opts)
             if args.train_consecutive:
                 train_db_pos_neg_ = get_train_dbs_ILSVR_consecutive_frame(opts)
+            elif args.train_mul_step:
+                train_db_pos_neg_ = get_train_dbs_mul_step(opts)
             else:
                 train_db_pos_neg_ = get_train_dbs_ILSVR(opts)
         else:
