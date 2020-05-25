@@ -390,17 +390,24 @@ def process_data_ILSVR_consecutive_frame(img_paths, opt, train_db_pos_neg_all, l
         opts['imgSize'] = imginfo['imgsize']
 
         for i in range(n_frames-1,0,-1):
-            train_db_pos_neg = {
-                'img_path': train_i['img_files'][i],
-                'bboxes': [],
-                'labels': [],
-                'score_labels': []
-            }
-            for j in range(i-1,i-max_dis-1,-1):
-                if j<0:
-                    break
-                for k in range(len(train_i['trackid'][j])):
-                    for l in range(len(train_i['trackid'][i])):
+            # train_db_pos_neg = {
+            #     'img_path': train_i['img_files'][i],
+            #     'bboxes': [],
+            #     'labels': [],
+            #     'score_labels': []
+            # }
+            for l in range(len(train_i['trackid'][i])):
+                train_db_pos_neg = {
+                    'img_path': train_i['img_files'][i],
+                    'bboxes': [],
+                    'labels': [],
+                    'score_labels': []
+                }
+                for j in range(i-1,i-max_dis-1,-1):
+                    if j<0:
+                        break
+                    for k in range(len(train_i['trackid'][j])):
+
                         if train_i['trackid'][j][k]==train_i['trackid'][i][l]:
                             # train_db_pos_neg = {
                             #     'img_path': train_i['img_files'][i],
@@ -455,9 +462,9 @@ def process_data_ILSVR_consecutive_frame(img_paths, opt, train_db_pos_neg_all, l
                                 train_db_pos_neg['score_labels'].extend(list(np.zeros(1, dtype=int)))
                             # train_db_pos_neg_gpu.append(train_db_pos_neg)
 
-            # if len(train_db_pos_neg['bboxes']) >0:
-            if len(train_db_pos_neg['bboxes']) == 20:
-                train_db_pos_neg_gpu.append(train_db_pos_neg)
+                # if len(train_db_pos_neg['bboxes']) >0:
+                if len(train_db_pos_neg['bboxes']) == 20:
+                    train_db_pos_neg_gpu.append(train_db_pos_neg)
     try:
         lock.acquire()
         train_db_pos_neg_all.extend(train_db_pos_neg_gpu)
