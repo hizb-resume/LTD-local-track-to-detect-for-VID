@@ -588,14 +588,13 @@ def process_data_mul_step(img_paths, opt, train_db_pos_neg_all, lock):
                         iou_max=c_iou
                         step_max=step
                         box_max=box
-                print(iou_max)
                 if iou_max>opts['stopIou']:  #save data to train_db
                     for datai in range(len(step_max)):
                         train_db_pos_neg['bboxes'].append(box_max[datai])
                         action_t = np.zeros(opts['num_actions'])
                         action_t[step_max[datai]] = 1
                         action_label_pos=action_t.tolist()
-                        train_db_pos_neg['labels'].extend(action_label_pos)
+                        train_db_pos_neg['labels'].append(action_label_pos)
                         train_db_pos_neg['score_labels'].extend(list(np.ones(1, dtype=int)))
 
                         if (datai)%3==0:
@@ -625,7 +624,7 @@ def process_data_mul_step(img_paths, opt, train_db_pos_neg_all, lock):
                         # train_db_pos_neg_gpu.append(train_db_pos_neg)
 
                 # if len(train_db_pos_neg['bboxes']) >0:
-                print(len(train_db_pos_neg['bboxes']))
+                # print(iou_max,len(train_db_pos_neg['bboxes']))
                 if len(train_db_pos_neg['bboxes']) == 20:
                     train_db_pos_neg_gpu.append(train_db_pos_neg)
     try:
