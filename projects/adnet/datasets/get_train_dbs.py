@@ -576,16 +576,19 @@ def process_data_mul_step(img_paths, opt, train_db_pos_neg_all, lock):
                     curr_bbox = train_i['gt'][i][l]
                     step=[]
                     box=[]
-                    for st in range(15): #step numbers
+                    for st in range(14): #step numbers
                         action=random.randint(0, 10)
                         step.append(action)
                         box.append(curr_bbox)
                         curr_bbox = do_action(curr_bbox, opts, action, opts['imgSize'])
+                    box.append(curr_bbox)
+                    step.append(opts['stop_action'])  #stop action
                     c_iou=cal_iou(curr_bbox,gt_end)
                     if c_iou>iou_max:
                         iou_max=c_iou
                         step_max=step
                         box_max=box
+                print(iou_max)
                 if iou_max>opts['stopIou']:  #save data to train_db
                     for datai in range(len(step_max)):
                         train_db_pos_neg['bboxes'].append(box_max[datai])
@@ -622,6 +625,7 @@ def process_data_mul_step(img_paths, opt, train_db_pos_neg_all, lock):
                         # train_db_pos_neg_gpu.append(train_db_pos_neg)
 
                 # if len(train_db_pos_neg['bboxes']) >0:
+                print(len(train_db_pos_neg['bboxes']))
                 if len(train_db_pos_neg['bboxes']) == 20:
                     train_db_pos_neg_gpu.append(train_db_pos_neg)
     try:
