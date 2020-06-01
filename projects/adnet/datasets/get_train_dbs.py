@@ -579,7 +579,7 @@ def process_data_mul_step(img_paths, opt, train_db_pos_neg_all, lock):
                 iou_max=0
                 step_max=[]
                 box_max=[]
-                for lp in range(60):
+                for lp in range(500):
                     curr_bbox = train_i['gt'][i][l]
                     step=[]
                     box=[]

@@ -69,6 +69,7 @@ parser.add_argument('--dataset_year', default=2015, type=int, help='dataset vers
 parser.add_argument('--useSiamese', default=True, type=str2bool, help='use siamese or not')
 parser.add_argument('--checktrackid', default=False, type=str2bool, help='if objects in different frames are the same instance, trackid should be same too')
 
+parser.add_argument('--testFixTrackFrequency', default=False, type=str2bool, help='fix the track frequency to 20')
 parser.add_argument('--multi_cpu_eval', default=False, type=str2bool, help='mutiple cpu or not when evaluate')
 parser.add_argument('--testSiamese', default=False, type=str2bool, help='test siamese or not')
 parser.add_argument('--test1vid', default=False, type=str2bool, help='only test 1 video')

@@ -553,7 +553,7 @@ def adnet_test(net, predictor,siamesenet,metalog,class_names,vidx,vid_path, opts
                 # if ntraining > args.believe_score_result:
 
                 # print(fc7_out)
-                if curr_score < 0.5:
+                if curr_score < 0.5 and (not args.testFixTrackFrequency):
                     # print('redetection: frame %d' % frame_idx)
                     is_negative = True
                     dis_redet = 0
