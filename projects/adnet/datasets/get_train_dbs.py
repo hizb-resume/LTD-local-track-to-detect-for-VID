@@ -396,6 +396,9 @@ def process_data_ILSVR_consecutive_frame(img_paths, opt, train_db_pos_neg_all, l
             #     'labels': [],
             #     'score_labels': []
             # }
+            # del_t=len(train_i['trackid'][i])
+            # if del_t>1:
+            #     print("debug")
             for l in range(len(train_i['trackid'][i])):
                 train_db_pos_neg = {
                     'img_path': train_i['img_files'][i],
@@ -417,6 +420,8 @@ def process_data_ILSVR_consecutive_frame(img_paths, opt, train_db_pos_neg_all, l
                             # }
                             pos_neg_box=train_i['gt'][j][k]
                             gt_bbox = train_i['gt'][i][l]
+                            # del_iou=cal_iou(pos_neg_box,gt_bbox)
+                            # print(i-j,del_iou)
                             action_label_pos, _ = gen_action_pos_neg_labels(opts['num_actions'], opts,
                                                                                            np.array(pos_neg_box),
                                                                                            gt_bbox)
@@ -668,7 +673,7 @@ def process_data_mul_step_2(img_paths, opt, train_db_pos_neg_all, lock):
                 box_list=[]
                 box_list.append(train_i['gt'][i][l])
                 for st_list in range(14):
-                    iou_max=0
+                    iou_max=-1
                     step_max=[]
                     box_max=[]
                     for lp in range(50):
@@ -687,6 +692,8 @@ def process_data_mul_step_2(img_paths, opt, train_db_pos_neg_all, lock):
                             iou_max=c_iou
                             step_max=step
                             box_max=box
+                    # if len(step_max)==0:
+                    #     print(c_iou,iou_max)
                     step_list.append(step_max[0])
                     box_list.append(box_max[1])
                 step_list.append(opts['stop_action'])
