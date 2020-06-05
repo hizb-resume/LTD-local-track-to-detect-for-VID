@@ -642,6 +642,102 @@ def process_data_mul_step(img_paths, opt, train_db_pos_neg_all, lock):
     finally:
         lock.release()
 
+def process_data_mul_step_2(img_paths, opt, train_db_pos_neg_all, lock):
+    opts=opt.copy()
+    train_db_pos_neg_gpu = []
+    for train_i in img_paths:
+        n_frames=len(train_i['gt'])
+        # max_dis=15
+        gt_file_path = '../datasets/data/ILSVRC/Annotations/VID/train/' + train_i['img_files'][0][39:-5] + '.xml'
+        imginfo = get_xml_img_info(gt_file_path)
+        opts['imgSize'] = imginfo['imgsize']
+
+        for i in range(0,n_frames-2,5):
+            for l in range(len(train_i['trackid'][i])):
+                train_db_pos_neg = {
+                    'img_path': train_i['img_files'][i + 1],
+                    'bboxes': [],
+                    'labels': [],
+                    'score_labels': []
+                }
+                for k in range(len(train_i['trackid'][i + 1])):
+                    if train_i['trackid'][i][l] == train_i['trackid'][i + 1][k]:
+                        gt_end = train_i['gt'][i + 1][k]
+                
+                step_list=[]
+                box_list=[]
+                box_list.append(train_i['gt'][i][l])
+                for st_list in range(14):
+                    iou_max=0
+                    step_max=[]
+                    box_max=[]
+                    for lp in range(50):
+                        curr_bbox = box_list[-1]
+                        step=[]
+                        box=[]
+                        for st in range(5): #step numbers
+                            action=random.randint(0, 10)
+                            step.append(action)
+                            box.append(curr_bbox)
+                            curr_bbox = do_action(curr_bbox, opts, action, opts['imgSize'])
+                        box.append(curr_bbox)
+                        step.append(opts['stop_action'])  #stop action
+                        c_iou=cal_iou(curr_bbox,gt_end)
+                        if c_iou>iou_max:
+                            iou_max=c_iou
+                            step_max=step
+                            box_max=box
+                    step_list.append(step_max[0])
+                    box_list.append(box_max[1])
+                step_list.append(opts['stop_action'])
+                iou_max=cal_iou(box_list[-1],gt_end)
+                if iou_max>opts['stopIou']:  #save data to train_db
+                    for datai in range(len(step_list)):
+                        train_db_pos_neg['bboxes'].append(box_list[datai])
+                        action_t = np.zeros(opts['num_actions'])
+                        action_t[step_list[datai]] = 1
+                        action_label_pos=action_t.tolist()
+                        train_db_pos_neg['labels'].append(action_label_pos)
+                        train_db_pos_neg['score_labels'].extend(list(np.ones(1, dtype=int)))
+
+                        if (datai)%3==0:
+                            nct = -1
+                            while True:
+                                # in original code, this 1 line below use opts['nPos_train'] instead of opts['nNeg_train']
+                                nct += 1
+                                if nct == 20:
+                                    break
+                                neg = gen_samples('gaussian', gt_end, 5, opts, 2, 10)
+                                r = overlap_ratio(neg, np.matlib.repmat(gt_end, len(neg), 1))
+                                # neg = neg[np.array(r) < opts['consecutive_negThre_train']]
+                                neg = neg[np.array(r) < opts['consecutive_negThre_train']]
+                                if len(neg) == 0:
+                                    continue
+                                    # break
+                                else:
+                                    pos_neg_box = neg[0]
+                                    # print("neg[0]", end=": ")
+                                    # print(neg[0])
+                                    break
+                            train_db_pos_neg['bboxes'].append(pos_neg_box)
+                            action_label_neg = np.full((opts['num_actions'], 1), fill_value=-1)
+                            action_label_neg = np.transpose(action_label_neg).tolist()
+                            train_db_pos_neg['labels'].extend(action_label_neg)
+                            train_db_pos_neg['score_labels'].extend(list(np.zeros(1, dtype=int)))
+                        # train_db_pos_neg_gpu.append(train_db_pos_neg)
+
+                # if len(train_db_pos_neg['bboxes']) >0:
+                # print(iou_max,len(train_db_pos_neg['bboxes']))
+                if len(train_db_pos_neg['bboxes']) == 20:
+                    train_db_pos_neg_gpu.append(train_db_pos_neg)
+    try:
+        lock.acquire()
+        train_db_pos_neg_all.extend(train_db_pos_neg_gpu)
+    except Exception as err:
+        raise err
+    finally:
+        lock.release()
+
 def get_train_dbs_mul_step(opts):
 
     opts['scale_factor'] = 1.05
@@ -677,7 +773,7 @@ def get_train_dbs_mul_step(opts):
     lock = multiprocessing.Manager().Lock()
     record = []
     for i in range(cpu_num):
-        process = multiprocessing.Process(target=process_data_mul_step, args=(img_paths_as[i], opts,train_db_pos_neg,lock))
+        process = multiprocessing.Process(target=process_data_mul_step_2, args=(img_paths_as[i], opts,train_db_pos_neg,lock))
         process.start()
         record.append(process)
     for process in record:
