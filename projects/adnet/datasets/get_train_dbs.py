@@ -406,12 +406,14 @@ def process_data_ILSVR_consecutive_frame(img_paths, opt, train_db_pos_neg_all, l
             # if del_t>1:
             #     print("debug")
             for l in range(len(train_i['trackid'][i])):
+                gt_bbox = train_i['gt'][i][l]
                 # train_db_pos_neg = {
                 #     'img_path': [],#train_i['img_files'][i],
                 #     'bboxes': [],
                 #     'labels': [],
                 #     'score_labels': []
                 # }
+                bk_sign=False
                 for j in range(i-1,i-max_dis-1,-1):
                     if j<0:
                         break
@@ -425,22 +427,26 @@ def process_data_ILSVR_consecutive_frame(img_paths, opt, train_db_pos_neg_all, l
                             #     'score_labels': []
                             # }
                             pos_neg_box=train_i['gt'][j][k]
-                            gt_bbox = train_i['gt'][i][l]
+                            c_iou=cal_iou(pos_neg_box,gt_bbox)
                             # del_iou=cal_iou(pos_neg_box,gt_bbox)
                             # print(i-j,del_iou)
-                            action_label_pos, _ = gen_action_pos_neg_labels(opts['num_actions'], opts,
-                                                                                           np.array(pos_neg_box),
-                                                                                           gt_bbox)
+                            if c_iou>0.7:
+                                action_label_pos, _ = gen_action_pos_neg_labels(opts['num_actions'], opts,
+                                                                                               np.array(pos_neg_box),
+                                                                                               gt_bbox)
 
 
 
 
-                            train_db_pos_neg['img_path'].append(train_i['img_files'][i])
-                            train_db_pos_neg['bboxes'].append(pos_neg_box)
-                            action_label_pos = np.transpose(action_label_pos).tolist()
-                            train_db_pos_neg['labels'].extend(action_label_pos)
-                            train_db_pos_neg['score_labels'].extend(list(np.ones(1, dtype=int)))
-                            # train_db_pos_neg_gpu.append(train_db_pos_neg)
+                                train_db_pos_neg['img_path'].append(train_i['img_files'][i])
+                                train_db_pos_neg['bboxes'].append(pos_neg_box)
+                                action_label_pos = np.transpose(action_label_pos).tolist()
+                                train_db_pos_neg['labels'].extend(action_label_pos)
+                                train_db_pos_neg['score_labels'].extend(list(np.ones(1, dtype=int)))
+                                # train_db_pos_neg_gpu.append(train_db_pos_neg)
+                            else:
+                                bk_sign=True
+                                break
 
                             # train_db_pos_neg = {
                             #     'img_path': train_i['img_files'][i],
@@ -474,6 +480,8 @@ def process_data_ILSVR_consecutive_frame(img_paths, opt, train_db_pos_neg_all, l
                                 train_db_pos_neg['labels'].extend(action_label_neg)
                                 train_db_pos_neg['score_labels'].extend(list(np.zeros(1, dtype=int)))
                             # train_db_pos_neg_gpu.append(train_db_pos_neg)
+                    if bk_sign==True:
+                        break
 
                 # if len(train_db_pos_neg['bboxes']) >0:
                 # if len(train_db_pos_neg['bboxes']) == 20:
@@ -503,7 +511,7 @@ def get_train_dbs_ILSVR_consecutive_frame(opts):
                         help='the num of imgs that picked from val.txt, 0 represent all imgs')
     parser.add_argument('--gt_skip', default=1, type=int, help='frame sampling frequency')
     parser.add_argument('--dataset_year', default=2222, type=int, help='dataset version, like ILSVRC2015, ILSVRC2017, 2222 means train.txt')
-    args2 = parser.parse_args(['--eval_imgs','0','--gt_skip','1','--dataset_year','2222'])
+    args2 = parser.parse_args(['--eval_imgs','20','--gt_skip','1','--dataset_year','2222'])
 
     videos_infos, _ = get_ILSVRC_eval_infos(args2)
     print('before process_data_ILSVR_consecutive_frame', end=' : ')
@@ -532,7 +540,7 @@ def get_train_dbs_ILSVR_consecutive_frame(opts):
     #t2 = time.time()
 
     # cpu_num=27
-    cpu_num = 24
+    cpu_num = 1
     if all_img_num<cpu_num:
         cpu_num=all_img_num
     every_gpu_img=all_img_num//cpu_num

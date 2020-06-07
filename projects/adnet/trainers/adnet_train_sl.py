@@ -334,10 +334,11 @@ def adnet_train_sl(args, opts):
             #     action_l = action_criterion(action_out, torch.max(action_label, 1)[1])
             # else:
             #     action_l = torch.Tensor([0])
-            if args.train_consecutive:
-                action_l = action_criterion(action_out, torch.max(action_label, 1)[1])
-            else:
-                action_l = action_criterion(action_out[pos_idx], torch.max(action_label[pos_idx], 1)[1])
+            # if args.train_consecutive:
+            #     action_l = action_criterion(action_out, torch.max(action_label, 1)[1])
+            # else:
+            #     action_l = action_criterion(action_out[pos_idx], torch.max(action_label[pos_idx], 1)[1])
+            action_l = action_criterion(action_out[pos_idx], torch.max(action_label[pos_idx], 1)[1])
             score_l = score_criterion(score_out, score_label.long())
             loss = action_l + score_l
             loss.backward()

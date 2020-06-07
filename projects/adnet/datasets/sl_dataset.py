@@ -43,14 +43,17 @@ class SLDataset(data.Dataset):
         score_labels = torch.from_numpy(score_labels.astype(np.float32)).cuda()
         # vid_idxs = torch.Tensor(vid_idxs).cuda()
         if self.transform is not None:
-            for i,bbox in enumerate(bboxes):
-                # ims=None
-                if i==0:
-                # im, bbox, action_label, score_label = self.transform(frame2, bbox, action_labels[i], score_labels[i])
-                    ims, _, _, _ = self.transform(frame2, bbox, action_labels[i], score_labels[i])
-                else:
-                    im, _, _, _ = self.transform(frame2, bbox, action_labels[i], score_labels[i])
-                    ims=torch.cat([ims,im],dim=0)
+            # for i,bbox in enumerate(bboxes):
+            #     # ims=None
+            #     if i==0:
+            #     # im, bbox, action_label, score_label = self.transform(frame2, bbox, action_labels[i], score_labels[i])
+            #         ims, _, _, _ = self.transform(frame2, bbox, action_labels[i], score_labels[i])
+            #     else:
+            #         im, _, _, _ = self.transform(frame2, bbox, action_labels[i], score_labels[i])
+            #         ims=torch.cat([ims,im],dim=0)
+
+            ims, _, _, _ = self.transform(frame2, bboxes, action_labels, score_labels)
+            ims=ims.squeeze(0)
         # return im, bbox, action_label, score_label, vid_idx
         bboxes = torch.Tensor(bboxes).cuda()
         return ims, bboxes, action_labels, score_labels#, vid_idxs
