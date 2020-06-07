@@ -381,7 +381,13 @@ def get_train_dbs_ILSVR(opts):
 
 def process_data_ILSVR_consecutive_frame(img_paths, opt, train_db_pos_neg_all, lock):
     opts=opt.copy()
-    train_db_pos_neg_gpu = []
+    # train_db_pos_neg_gpu = []
+    train_db_pos_neg = {
+        'img_path': [],  # train_i['img_files'][i],
+        'bboxes': [],
+        'labels': [],
+        'score_labels': []
+    }
     for train_i in img_paths:
         n_frames=len(train_i['gt'])
         max_dis=15
@@ -400,12 +406,12 @@ def process_data_ILSVR_consecutive_frame(img_paths, opt, train_db_pos_neg_all, l
             # if del_t>1:
             #     print("debug")
             for l in range(len(train_i['trackid'][i])):
-                train_db_pos_neg = {
-                    'img_path': train_i['img_files'][i],
-                    'bboxes': [],
-                    'labels': [],
-                    'score_labels': []
-                }
+                # train_db_pos_neg = {
+                #     'img_path': [],#train_i['img_files'][i],
+                #     'bboxes': [],
+                #     'labels': [],
+                #     'score_labels': []
+                # }
                 for j in range(i-1,i-max_dis-1,-1):
                     if j<0:
                         break
@@ -429,6 +435,7 @@ def process_data_ILSVR_consecutive_frame(img_paths, opt, train_db_pos_neg_all, l
 
 
 
+                            train_db_pos_neg['img_path'].append(train_i['img_files'][i])
                             train_db_pos_neg['bboxes'].append(pos_neg_box)
                             action_label_pos = np.transpose(action_label_pos).tolist()
                             train_db_pos_neg['labels'].extend(action_label_pos)
@@ -460,6 +467,7 @@ def process_data_ILSVR_consecutive_frame(img_paths, opt, train_db_pos_neg_all, l
                                         # print("neg[0]", end=": ")
                                         # print(neg[0])
                                         break
+                                train_db_pos_neg['img_path'].append(train_i['img_files'][i])
                                 train_db_pos_neg['bboxes'].append(pos_neg_box)
                                 action_label_neg = np.full((opts['num_actions'], 1), fill_value=-1)
                                 action_label_neg = np.transpose(action_label_neg).tolist()
@@ -468,11 +476,12 @@ def process_data_ILSVR_consecutive_frame(img_paths, opt, train_db_pos_neg_all, l
                             # train_db_pos_neg_gpu.append(train_db_pos_neg)
 
                 # if len(train_db_pos_neg['bboxes']) >0:
-                if len(train_db_pos_neg['bboxes']) == 20:
-                    train_db_pos_neg_gpu.append(train_db_pos_neg)
+                # if len(train_db_pos_neg['bboxes']) == 20:
+                #     train_db_pos_neg_gpu.append(train_db_pos_neg)
     try:
         lock.acquire()
-        train_db_pos_neg_all.extend(train_db_pos_neg_gpu)
+        # train_db_pos_neg_all.extend(train_db_pos_neg_gpu)
+        train_db_pos_neg_all.append(train_db_pos_neg)
     except Exception as err:
         raise err
     finally:

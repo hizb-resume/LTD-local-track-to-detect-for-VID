@@ -36,12 +36,12 @@ class SLDataset(data.Dataset):
         bboxes = self.train_db['bboxes'][index]
         action_labels = np.array(self.train_db['labels'][index], dtype=np.float32)
         score_labels = np.array(self.train_db['score_labels'][index])
-        vid_idxs = self.train_db['vid_idx'][index]
+        # vid_idxs = self.train_db['vid_idx'][index]
 
 
         action_labels = torch.from_numpy(action_labels).cuda()
         score_labels = torch.from_numpy(score_labels.astype(np.float32)).cuda()
-        vid_idxs = torch.Tensor(vid_idxs).cuda()
+        # vid_idxs = torch.Tensor(vid_idxs).cuda()
         if self.transform is not None:
             for i,bbox in enumerate(bboxes):
                 # ims=None
@@ -53,7 +53,7 @@ class SLDataset(data.Dataset):
                     ims=torch.cat([ims,im],dim=0)
         # return im, bbox, action_label, score_label, vid_idx
         bboxes = torch.Tensor(bboxes).cuda()
-        return ims, bboxes, action_labels, score_labels, vid_idxs
+        return ims, bboxes, action_labels, score_labels#, vid_idxs
 
     def __len__(self):
         return len(self.train_db['img_path'])
@@ -99,7 +99,7 @@ def initialize_pos_neg_dataset(train_videos, opts,args, transform=None, multidom
             'bboxes': [],  # list of ndarray left top coordinate [left top width height]
             'labels': [],  # list of ndarray #action elements. One hot vector
             'score_labels': [],  # list of scalar 0 (negative) or 1 (positive)
-            'vid_idx': []  # list of int. Each video (or domain) index
+            # 'vid_idx': []  # list of int. Each video (or domain) index
         }
         # train_db_neg = {
         #     'img_path': [],  # list of string
@@ -134,13 +134,18 @@ def initialize_pos_neg_dataset(train_videos, opts,args, transform=None, multidom
         print("before train_db_pos['img_path'].extend", end=' : ')
         print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
         for sample_idx in range(len(train_db_pos_neg_)):
-            # for img_path_idx in range(len(train_db_pos_[sample_idx]['score_labels'])):
-            train_db['img_path'].append(train_db_pos_neg_[sample_idx]['img_path'])
-            train_db['bboxes'].append(train_db_pos_neg_[sample_idx]['bboxes'])
-            train_db['labels'].append(train_db_pos_neg_[sample_idx]['labels'])
-            train_db['score_labels'].append(train_db_pos_neg_[sample_idx]['score_labels'])
-            # train_db['vid_idx'].extend(np.repeat(vid_idx, len(train_db_pos_[sample_idx]['img_path'])))
-            train_db['vid_idx'].append(vid_idx)
+            # # for img_path_idx in range(len(train_db_pos_[sample_idx]['score_labels'])):
+            # train_db['img_path'].append(train_db_pos_neg_[sample_idx]['img_path'])
+            # train_db['bboxes'].append(train_db_pos_neg_[sample_idx]['bboxes'])
+            # train_db['labels'].append(train_db_pos_neg_[sample_idx]['labels'])
+            # train_db['score_labels'].append(train_db_pos_neg_[sample_idx]['score_labels'])
+            # # train_db['vid_idx'].extend(np.repeat(vid_idx, len(train_db_pos_[sample_idx]['img_path'])))
+            # # train_db['vid_idx'].append(vid_idx)
+
+            train_db['img_path'].extend(train_db_pos_neg_[sample_idx]['img_path'])
+            train_db['bboxes'].extend(train_db_pos_neg_[sample_idx]['bboxes'])
+            train_db['labels'].extend(train_db_pos_neg_[sample_idx]['labels'])
+            train_db['score_labels'].extend(train_db_pos_neg_[sample_idx]['score_labels'])
 
         #     if len(train_db_pos_neg_[sample_idx]['bboxes'])!=20:
         #         print("len(train_db_pos_neg_[sample_idx]['bboxes']): %d, img path: %s"%(
@@ -200,7 +205,7 @@ def initialize_pos_neg_dataset(train_videos, opts,args, transform=None, multidom
                 datasets_pos_neg[0].train_db['bboxes'].extend(dataset_pos_neg.train_db['bboxes'])
                 datasets_pos_neg[0].train_db['labels'].extend(dataset_pos_neg.train_db['labels'])
                 datasets_pos_neg[0].train_db['score_labels'].extend(dataset_pos_neg.train_db['score_labels'])
-                datasets_pos_neg[0].train_db['vid_idx'].extend(dataset_pos_neg.train_db['vid_idx'])
+                # datasets_pos_neg[0].train_db['vid_idx'].extend(dataset_pos_neg.train_db['vid_idx'])
 
     t1 = time.time()
     all_time = t1 - t0

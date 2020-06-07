@@ -280,20 +280,20 @@ def adnet_train_sl(args, opts):
             else:
                 curr_domain = 0
             try:
-                images, bbox, action_label, score_label, vid_idx = next(batch_iterators[curr_domain])
+                images, bbox, action_label, score_label = next(batch_iterators[curr_domain])
                 images=images.reshape(-1,3,112,112)
                 bbox=bbox.reshape(-1,4)
                 action_label=action_label.reshape(-1,11)
                 score_label=score_label.reshape(-1)
-                vid_idx=vid_idx.reshape(-1)
+                # vid_idx=vid_idx.reshape(-1)
             except StopIteration:
                 batch_iterators[curr_domain] = iter(data_loader[curr_domain])
-                images, bbox, action_label, score_label, vid_idx = next(batch_iterators[curr_domain])
+                images, bbox, action_label, score_label = next(batch_iterators[curr_domain])
                 images = images.reshape(-1, 3, 112, 112)
                 bbox = bbox.reshape(-1, 4)
                 action_label = action_label.reshape(-1, 11)
                 score_label = score_label.reshape(-1)
-                vid_idx = vid_idx.reshape(-1)
+                # vid_idx = vid_idx.reshape(-1)
         # for images, bbox, action_label, score_label, vid_idx in data_loaders[curr_domain]:
             # TODO: check if this requires grad is really false like in Variable
             pos_idx=torch.where(score_label>0.3)
