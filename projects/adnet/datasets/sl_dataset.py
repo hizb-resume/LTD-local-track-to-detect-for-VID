@@ -4,7 +4,7 @@
 # reference:
 # https://github.com/amdegroot/ssd.pytorch/blob/master/data/voc0712.py
 
-import os,time
+import os,time,sys
 import cv2
 import numpy as np
 import torch
@@ -14,6 +14,7 @@ from datasets.get_train_dbs import get_train_dbs_ILSVR
 from datasets.get_train_dbs import get_train_dbs_ILSVR_consecutive_frame
 from datasets.get_train_dbs import get_train_dbs_mul_step
 from utils.get_video_infos import get_video_infos
+from utils.augmentations import ADNet_Augmentation,ADNet_Augmentation2
 
 
 class SLDataset(data.Dataset):
@@ -55,8 +56,9 @@ class SLDataset(data.Dataset):
             ims, _, _, _ = self.transform(frame2, bboxes, action_labels, score_labels)
             ims=ims.squeeze(0)
         # return im, bbox, action_label, score_label, vid_idx
-        bboxes = torch.Tensor(bboxes).cuda()
-        return ims, bboxes, action_labels, score_labels#, vid_idxs
+        # bboxes = torch.Tensor(bboxes).cuda()
+        # return ims, bboxes, action_labels, score_labels#, vid_idxs
+        return ims, action_labels, score_labels
 
     def __len__(self):
         return len(self.train_db['img_path'])
@@ -73,6 +75,25 @@ class SLDataset(data.Dataset):
         score_label = self.train_db['score_labels'][index]
         return action_label, score_label
 
+
+class SLDataset_db(data.Dataset):
+    def __init__(self, train_db):
+        # self.transform = transform
+        self.train_db = train_db
+
+    def __getitem__(self, index):
+        frame2 = cv2.imread(self.train_db['img_path'][index])
+        frame2 = frame2.astype(np.float32)
+        ims = torch.from_numpy(frame2).cuda()
+        action_labels = np.array(self.train_db['labels'][index], dtype=np.float32)
+        score_labels = np.array(self.train_db['score_labels'][index])
+
+        action_labels = torch.from_numpy(action_labels).cuda()
+        score_labels = torch.from_numpy(score_labels.astype(np.float32)).cuda()
+        return ims, action_labels, score_labels
+
+    def __len__(self):
+        return len(self.train_db['img_path'])
 
 def initialize_pos_neg_dataset(train_videos, opts,args, transform=None, multidomain=True):
     """
@@ -104,6 +125,11 @@ def initialize_pos_neg_dataset(train_videos, opts,args, transform=None, multidom
             'score_labels': [],  # list of scalar 0 (negative) or 1 (positive)
             # 'vid_idx': []  # list of int. Each video (or domain) index
         }
+        train_db_local = {
+            'img_path': [],  # list of string
+            'labels': [],  # list of ndarray #action elements. One hot vector
+            'score_labels': [],  # list of scalar 0 (negative) or 1 (positive)
+        }
         # train_db_neg = {
         #     'img_path': [],  # list of string
         #     'bboxes': [],  # list of ndarray left top coordinate [left top width height]
@@ -111,78 +137,153 @@ def initialize_pos_neg_dataset(train_videos, opts,args, transform=None, multidom
         #     'score_labels': [],  # list of scalar 0 (negative) or 1 (positive)
         #     'vid_idx': []  # list of int. Each video (or domain) index
         # }
+        if not args.store_data:
+            if train_videos == None:
+                print("generating dataset from ILSVR dataset...")
+                # train_db_pos_, train_db_neg_ = get_train_dbs_ILSVR(opts)
 
-        if train_videos == None:
-            print("generating dataset from ILSVR dataset...")
-            # train_db_pos_, train_db_neg_ = get_train_dbs_ILSVR(opts)
-            if args.train_consecutive:
-                train_db_pos_neg_ = get_train_dbs_ILSVR_consecutive_frame(opts)
-            elif args.train_mul_step:
-                train_db_pos_neg_ = get_train_dbs_mul_step(opts)
+                if args.train_consecutive:
+                    train_db_pos_neg_ = get_train_dbs_ILSVR_consecutive_frame(opts)
+                elif args.train_mul_step:
+                    train_db_pos_neg_ = get_train_dbs_mul_step(opts)
+                else:
+                    train_db_pos_neg_ = get_train_dbs_ILSVR(opts)
             else:
-                train_db_pos_neg_ = get_train_dbs_ILSVR(opts)
+                # print("generating dataset from video " + str(vid_idx + 1) + "/" + str(num_videos) +
+                #   "(current total data (pos-neg): " + str(len(train_db_pos['labels'])) +
+                #   "-" + str(len(train_db_neg['labels'])) + ")")
+                print("generating dataset from video " + str(vid_idx + 1) + "/" + str(num_videos) +
+                      "(current total data (pos+neg): " + str(len(train_db['labels']))  + ")")
+
+                bench_name = train_videos['bench_names'][vid_idx]
+                video_name = train_videos['video_names'][vid_idx]
+                video_path = train_videos['video_paths'][vid_idx]
+                vid_info = get_video_infos(bench_name, video_path, video_name)
+                train_db_pos_, train_db_neg_ = get_train_dbs(vid_info, opts)
+            # separate for each bboxes sample
+            print("before train_db_pos['img_path'].extend", end=' : ')
+            print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+            for sample_idx in range(len(train_db_pos_neg_)):
+                # # for img_path_idx in range(len(train_db_pos_[sample_idx]['score_labels'])):
+                # train_db['img_path'].append(train_db_pos_neg_[sample_idx]['img_path'])
+                # train_db['bboxes'].append(train_db_pos_neg_[sample_idx]['bboxes'])
+                # train_db['labels'].append(train_db_pos_neg_[sample_idx]['labels'])
+                # train_db['score_labels'].append(train_db_pos_neg_[sample_idx]['score_labels'])
+                # # train_db['vid_idx'].extend(np.repeat(vid_idx, len(train_db_pos_[sample_idx]['img_path'])))
+                # # train_db['vid_idx'].append(vid_idx)
+
+                train_db['img_path'].extend(train_db_pos_neg_[sample_idx]['img_path'])
+                train_db['bboxes'].extend(train_db_pos_neg_[sample_idx]['bboxes'])
+                train_db['labels'].extend(train_db_pos_neg_[sample_idx]['labels'])
+                train_db['score_labels'].extend(train_db_pos_neg_[sample_idx]['score_labels'])
+
+            #     if len(train_db_pos_neg_[sample_idx]['bboxes'])!=20:
+            #         print("len(train_db_pos_neg_[sample_idx]['bboxes']): %d, img path: %s"%(
+            #             len(train_db_pos_neg_[sample_idx]['bboxes']),train_db_pos_neg_[sample_idx]['img_path']))
+            #     if len(train_db_pos_neg_[sample_idx]['labels'])!=20:
+            #         print("len(train_db_pos_neg_[sample_idx]['labels']): %d, img path: %s"%(
+            #             len(train_db_pos_neg_[sample_idx]['labels']),train_db_pos_neg_[sample_idx]['img_path']))
+            #     if len(train_db_pos_neg_[sample_idx]['score_labels'])!=20:
+            #         print("len(train_db_pos_neg_[sample_idx]['score_labels']): %d, img path: %s"%(
+            #             len(train_db_pos_neg_[sample_idx]['score_labels']),train_db_pos_neg_[sample_idx]['img_path']))
+            # print('over debug.')
+            # print("\nFinish generating positive dataset... (current total data: " + str(len(train_db_pos['labels'])) + ")")
+
+            # for sample_idx in range(len(train_db_neg_)):
+            #     # for img_path_idx in range(len(train_db_neg_[sample_idx]['score_labels'])):
+            #     train_db['img_path'].append(train_db_neg_[sample_idx]['img_path'])
+            #     train_db['bboxes'].append(train_db_neg_[sample_idx]['bboxes'])
+            #     train_db['labels'].append(train_db_neg_[sample_idx]['labels'])
+            #     train_db['score_labels'].append(train_db_neg_[sample_idx]['score_labels'])
+            #     # train_db['vid_idx'].extend(np.repeat(vid_idx, len(train_db_neg_[sample_idx]['img_path'])))
+            #     train_db['vid_idx'].append(vid_idx)
+            # print("\nFinish generating negative dataset... (current total data: " + str(len(train_db_neg['labels'])) + ")")
+
+            print("after train_db_neg['img_path'].extend", end=' : ')
+            print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+
+            #dataset_pos = SLDataset(train_db_pos, transform=transform)
+            dataset_pos_neg = SLDataset(train_db, transform=transform)
+            print("after dataset_pos_neg = SLDataset(train_db", end=' : ')
+            print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+            # dataset_neg = SLDataset(train_db_neg, transform=transform)
+            # print("after dataset_neg = SLDataset(train_db_neg", end=' : ')
+            # print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+
         else:
-            # print("generating dataset from video " + str(vid_idx + 1) + "/" + str(num_videos) +
-            #   "(current total data (pos-neg): " + str(len(train_db_pos['labels'])) +
-            #   "-" + str(len(train_db_neg['labels'])) + ")")
-            print("generating dataset from video " + str(vid_idx + 1) + "/" + str(num_videos) +
-                  "(current total data (pos+neg): " + str(len(train_db['labels']))  + ")")
+            save_root = args.db_path
+            db_type=""
+            if args.generate_data:
+                print("generating dataset from ILSVR dataset...")
+                if args.train_consecutive:
+                    train_db_pos_neg_ = get_train_dbs_ILSVR_consecutive_frame(opts)
+                    db_type='train_consecutive'
+                elif args.train_mul_step:
+                    train_db_pos_neg_ = get_train_dbs_mul_step(opts)
+                    db_type = 'mul_step'
+                else:
+                    train_db_pos_neg_ = get_train_dbs_ILSVR(opts)
+                    db_type = 'random_box'
 
-            bench_name = train_videos['bench_names'][vid_idx]
-            video_name = train_videos['video_names'][vid_idx]
-            video_path = train_videos['video_paths'][vid_idx]
-            vid_info = get_video_infos(bench_name, video_path, video_name)
-            train_db_pos_, train_db_neg_ = get_train_dbs(vid_info, opts)
-        # separate for each bboxes sample
-        print("before train_db_pos['img_path'].extend", end=' : ')
-        print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
-        for sample_idx in range(len(train_db_pos_neg_)):
-            # # for img_path_idx in range(len(train_db_pos_[sample_idx]['score_labels'])):
-            # train_db['img_path'].append(train_db_pos_neg_[sample_idx]['img_path'])
-            # train_db['bboxes'].append(train_db_pos_neg_[sample_idx]['bboxes'])
-            # train_db['labels'].append(train_db_pos_neg_[sample_idx]['labels'])
-            # train_db['score_labels'].append(train_db_pos_neg_[sample_idx]['score_labels'])
-            # # train_db['vid_idx'].extend(np.repeat(vid_idx, len(train_db_pos_[sample_idx]['img_path'])))
-            # # train_db['vid_idx'].append(vid_idx)
+                print("before saving data to local...", end=' : ')
+                print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
 
-            train_db['img_path'].extend(train_db_pos_neg_[sample_idx]['img_path'])
-            train_db['bboxes'].extend(train_db_pos_neg_[sample_idx]['bboxes'])
-            train_db['labels'].extend(train_db_pos_neg_[sample_idx]['labels'])
-            train_db['score_labels'].extend(train_db_pos_neg_[sample_idx]['score_labels'])
+                args.db_path = os.path.join(save_root, db_type)
+                if not os.path.exists(args.db_path):
+                    os.makedirs(args.db_path)
 
-        #     if len(train_db_pos_neg_[sample_idx]['bboxes'])!=20:
-        #         print("len(train_db_pos_neg_[sample_idx]['bboxes']): %d, img path: %s"%(
-        #             len(train_db_pos_neg_[sample_idx]['bboxes']),train_db_pos_neg_[sample_idx]['img_path']))
-        #     if len(train_db_pos_neg_[sample_idx]['labels'])!=20:
-        #         print("len(train_db_pos_neg_[sample_idx]['labels']): %d, img path: %s"%(
-        #             len(train_db_pos_neg_[sample_idx]['labels']),train_db_pos_neg_[sample_idx]['img_path']))
-        #     if len(train_db_pos_neg_[sample_idx]['score_labels'])!=20:
-        #         print("len(train_db_pos_neg_[sample_idx]['score_labels']): %d, img path: %s"%(
-        #             len(train_db_pos_neg_[sample_idx]['score_labels']),train_db_pos_neg_[sample_idx]['img_path']))
-        # print('over debug.')
-        # print("\nFinish generating positive dataset... (current total data: " + str(len(train_db_pos['labels'])) + ")")
+                img_count=-1
+                mean = np.array(opts['means'], dtype=np.float32)
+                mean = torch.from_numpy(mean)#.cuda()
+                transform_db=ADNet_Augmentation2(opts,mean)
+                out_file = open('%s/%s.txt' % (save_root, db_type), 'w')
+                for sample_idx in range(len(train_db_pos_neg_)):
+                    #process img
+                    #save img
+                    #save img_path/label/scoe_label
+                    for iid in range(len(train_db_pos_neg_[sample_idx]['img_path'])):
+                        img_count+=1
+                        img_name=str(img_count).rjust(9,'0')+ '.jpg'
+                        filename=os.path.join(args.db_path,img_name)
 
-        # for sample_idx in range(len(train_db_neg_)):
-        #     # for img_path_idx in range(len(train_db_neg_[sample_idx]['score_labels'])):
-        #     train_db['img_path'].append(train_db_neg_[sample_idx]['img_path'])
-        #     train_db['bboxes'].append(train_db_neg_[sample_idx]['bboxes'])
-        #     train_db['labels'].append(train_db_neg_[sample_idx]['labels'])
-        #     train_db['score_labels'].append(train_db_neg_[sample_idx]['score_labels'])
-        #     # train_db['vid_idx'].extend(np.repeat(vid_idx, len(train_db_neg_[sample_idx]['img_path'])))
-        #     train_db['vid_idx'].append(vid_idx)
-        # print("\nFinish generating negative dataset... (current total data: " + str(len(train_db_neg['labels'])) + ")")
+                        frame2 = cv2.imread(train_db_pos_neg_[sample_idx]['img_path'][iid])
+                        frame2 = frame2.astype(np.float32)
+                        frame2 = torch.from_numpy(frame2)#.cuda()
+                        bbox = train_db_pos_neg_[sample_idx]['bboxes'][iid]
+                        ims, _, _, _ = transform_db(frame2, bbox)
+                        ims = ims.squeeze(0)
+                        curr_aera_crop=ims.numpy()
 
-        print("after train_db_neg['img_path'].extend", end=' : ')
-        print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+                        cv2.imwrite(filename, curr_aera_crop)
+                        # '%.2f' % (vid_pred['score_cls'][ti])
+                        # + str(int(gt[1])) + ',' + str(gt[2]) + '\n'
+                        action_l=
+                        score_l=
+                        out_file.write(str(filename) + ',' + str(action_l) + ',' + str(score_l) + '\n')
 
-        #dataset_pos = SLDataset(train_db_pos, transform=transform)
-        dataset_pos_neg = SLDataset(train_db, transform=transform)
-        print("after dataset_pos_neg = SLDataset(train_db", end=' : ')
-        print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
-        # dataset_neg = SLDataset(train_db_neg, transform=transform)
-        # print("after dataset_neg = SLDataset(train_db_neg", end=' : ')
-        # print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+                    # train_db['img_path'].extend(train_db_pos_neg_[sample_idx]['img_path'])
+                    # train_db['bboxes'].extend(train_db_pos_neg_[sample_idx]['bboxes'])
+                    # train_db['labels'].extend(train_db_pos_neg_[sample_idx]['labels'])
+                    # train_db['score_labels'].extend(train_db_pos_neg_[sample_idx]['score_labels'])
 
+                print("after saving data to local...", end=' : ')
+                print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+
+                if args.only_generate_data:
+                    sys.exit(0)
+                else:
+                    train_db_local[]
+
+                    dataset_pos_neg = SLDataset_db(train_db)
+                    print("after dataset_pos_neg = SLDataset(train_db", end=' : ')
+                    print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+            else:
+                if args.train_consecutive:
+                    args.db_path = os.path.join(save_root,'train_consecutive')
+                elif args.train_mul_step:
+                    args.db_path = os.path.join(save_root, 'mul_step')
+                else:
+                    args.db_path = os.path.join(save_root, 'random_box')
         if multidomain:
             datasets_pos_neg.append(dataset_pos_neg)
             #datasets_neg.append(dataset_neg)

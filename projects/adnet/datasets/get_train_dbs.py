@@ -511,7 +511,7 @@ def get_train_dbs_ILSVR_consecutive_frame(opts):
                         help='the num of imgs that picked from val.txt, 0 represent all imgs')
     parser.add_argument('--gt_skip', default=1, type=int, help='frame sampling frequency')
     parser.add_argument('--dataset_year', default=2222, type=int, help='dataset version, like ILSVRC2015, ILSVRC2017, 2222 means train.txt')
-    args2 = parser.parse_args(['--eval_imgs','20','--gt_skip','1','--dataset_year','2222'])
+    args2 = parser.parse_args(['--eval_imgs','0','--gt_skip','1','--dataset_year','2222'])
 
     videos_infos, _ = get_ILSVRC_eval_infos(args2)
     print('before process_data_ILSVR_consecutive_frame', end=' : ')
@@ -540,7 +540,7 @@ def get_train_dbs_ILSVR_consecutive_frame(opts):
     #t2 = time.time()
 
     # cpu_num=27
-    cpu_num = 1
+    cpu_num = 24
     if all_img_num<cpu_num:
         cpu_num=all_img_num
     every_gpu_img=all_img_num//cpu_num
