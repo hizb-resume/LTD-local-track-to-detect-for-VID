@@ -85,10 +85,11 @@ class SLDataset_db(data.Dataset):
         frame2 = cv2.imread(self.train_db['img_path'][index])
         frame2 = frame2.astype(np.float32)
         ims = torch.from_numpy(frame2).cuda()
-        action_labels = np.array(self.train_db['labels'][index], dtype=np.float32)
+        # action_labels = np.array(self.train_db['labels'][index], dtype=np.float32)
+        action_labels = self.train_db['labels'][index]
         score_labels = np.array(self.train_db['score_labels'][index], dtype=np.float32)
 
-        action_labels = torch.from_numpy(action_labels).cuda()
+        action_labels = torch.from_numpy(action_labels.astype(np.float32)).cuda()
         score_labels = torch.from_numpy(score_labels).cuda()
         return ims, action_labels, score_labels
 
@@ -251,7 +252,7 @@ def initialize_pos_neg_dataset(train_videos, opts,args, transform=None, multidom
                         frame2 = torch.from_numpy(frame2)#.cuda()
                         bbox = train_db_pos_neg_[sample_idx]['bboxes'][iid]
                         ims, _, _, _ = transform_db(frame2, bbox)
-                        ims = ims.squeeze(0)
+                        ims = ims.squeeze(0).permute(2,1,0)
                         curr_aera_crop=ims.numpy()
 
                         cv2.imwrite(filename, curr_aera_crop)
@@ -259,7 +260,9 @@ def initialize_pos_neg_dataset(train_videos, opts,args, transform=None, multidom
                         # + str(int(gt[1])) + ',' + str(gt[2]) + '\n'
                         score_l =train_db_pos_neg_[sample_idx]['score_labels'][iid]
                         if score_l>0.3:
-                            action_l=torch.max(train_db_pos_neg_[sample_idx]['labels'][iid], 1)[1]
+                            # action_l=torch.max(train_db_pos_neg_[sample_idx]['labels'][iid], 1)[1]
+                            lt=train_db_pos_neg_[sample_idx]['labels'][iid]
+                            action_l =lt.index(max(lt))
                         else:
                             action_l=-1
 
@@ -279,27 +282,25 @@ def initialize_pos_neg_dataset(train_videos, opts,args, transform=None, multidom
                     print("before load training data info...", end=' : ')
                     print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
 
-                    train_db_local[]
                     db_info_file = open('%s/%s.txt' % (save_root, db_type), 'r')
                     list1 = db_info_file.readlines()
                     for line in list1:
                         tsp = line.split(',')
                         labe=int(tsp[1])
                         if labe==-1:
-                            pass
+                            act_l=np.full((opts['num_actions']),fill_value=-1)
                         else:
-                            pass
+                            act_l=np.zeros(opts['num_actions'])
+                            act_l[labe]=1
                         train_db_local['img_path'].append(tsp[0])
-                        train_db_local['labels'].append()
+                        train_db_local['labels'].append(act_l)
                         train_db_local['score_labels'].append(float(tsp[2]))
-
-
                     db_info_file.close()
 
                     print("after load training data info...", end=' : ')
                     print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
 
-                    dataset_pos_neg = SLDataset_db(train_db)
+                    dataset_pos_neg = SLDataset_db(train_db_local)
                     print("after dataset_pos_neg = SLDataset(train_db", end=' : ')
                     print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
             else:
@@ -314,7 +315,25 @@ def initialize_pos_neg_dataset(train_videos, opts,args, transform=None, multidom
                 print("before load training data info...", end=' : ')
                 print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
 
+                db_info_file = open('%s/%s.txt' % (save_root, db_type), 'r')
+                list1 = db_info_file.readlines()
+                for line in list1:
+                    tsp = line.split(',')
+                    labe=int(tsp[1])
+                    if labe==-1:
+                        act_l=np.full((opts['num_actions']),fill_value=-1)
+                    else:
+                        act_l=np.zeros(opts['num_actions'])
+                        act_l[labe]=1
+                    train_db_local['img_path'].append(tsp[0])
+                    train_db_local['labels'].append(act_l)
+                    train_db_local['score_labels'].append(float(tsp[2]))
+                db_info_file.close()
+
                 print("after load training data info...", end=' : ')
+                print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+                dataset_pos_neg = SLDataset_db(train_db_local)
+                print("after dataset_pos_neg = SLDataset(train_db", end=' : ')
                 print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
         if multidomain:
             datasets_pos_neg.append(dataset_pos_neg)
