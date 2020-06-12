@@ -86,10 +86,10 @@ class SLDataset_db(data.Dataset):
         frame2 = frame2.astype(np.float32)
         ims = torch.from_numpy(frame2).cuda()
         action_labels = np.array(self.train_db['labels'][index], dtype=np.float32)
-        score_labels = np.array(self.train_db['score_labels'][index])
+        score_labels = np.array(self.train_db['score_labels'][index], dtype=np.float32)
 
         action_labels = torch.from_numpy(action_labels).cuda()
-        score_labels = torch.from_numpy(score_labels.astype(np.float32)).cuda()
+        score_labels = torch.from_numpy(score_labels).cuda()
         return ims, action_labels, score_labels
 
     def __len__(self):
@@ -255,35 +255,67 @@ def initialize_pos_neg_dataset(train_videos, opts,args, transform=None, multidom
                         curr_aera_crop=ims.numpy()
 
                         cv2.imwrite(filename, curr_aera_crop)
-                        # '%.2f' % (vid_pred['score_cls'][ti])
+                        # '%.2f' % (score_l)
                         # + str(int(gt[1])) + ',' + str(gt[2]) + '\n'
-                        action_l=
-                        score_l=
-                        out_file.write(str(filename) + ',' + str(action_l) + ',' + str(score_l) + '\n')
+                        score_l =train_db_pos_neg_[sample_idx]['score_labels'][iid]
+                        if score_l>0.3:
+                            action_l=torch.max(train_db_pos_neg_[sample_idx]['labels'][iid], 1)[1]
+                        else:
+                            action_l=-1
+
+                        out_file.write(str(filename) + ',' + str(int(action_l)) + ',' + '%.2f' % (score_l) + '\n')
 
                     # train_db['img_path'].extend(train_db_pos_neg_[sample_idx]['img_path'])
                     # train_db['bboxes'].extend(train_db_pos_neg_[sample_idx]['bboxes'])
                     # train_db['labels'].extend(train_db_pos_neg_[sample_idx]['labels'])
                     # train_db['score_labels'].extend(train_db_pos_neg_[sample_idx]['score_labels'])
-
+                out_file.close()
                 print("after saving data to local...", end=' : ')
                 print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
 
                 if args.only_generate_data:
                     sys.exit(0)
                 else:
+                    print("before load training data info...", end=' : ')
+                    print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+
                     train_db_local[]
+                    db_info_file = open('%s/%s.txt' % (save_root, db_type), 'r')
+                    list1 = db_info_file.readlines()
+                    for line in list1:
+                        tsp = line.split(',')
+                        labe=int(tsp[1])
+                        if labe==-1:
+                            pass
+                        else:
+                            pass
+                        train_db_local['img_path'].append(tsp[0])
+                        train_db_local['labels'].append()
+                        train_db_local['score_labels'].append(float(tsp[2]))
+
+
+                    db_info_file.close()
+
+                    print("after load training data info...", end=' : ')
+                    print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
 
                     dataset_pos_neg = SLDataset_db(train_db)
                     print("after dataset_pos_neg = SLDataset(train_db", end=' : ')
                     print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
             else:
                 if args.train_consecutive:
-                    args.db_path = os.path.join(save_root,'train_consecutive')
+                    db_type = 'train_consecutive'
                 elif args.train_mul_step:
-                    args.db_path = os.path.join(save_root, 'mul_step')
+                    db_type = 'mul_step'
                 else:
-                    args.db_path = os.path.join(save_root, 'random_box')
+                    db_type = 'random_box'
+                # args.db_path = os.path.join(save_root, db_type)
+
+                print("before load training data info...", end=' : ')
+                print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
+
+                print("after load training data info...", end=' : ')
+                print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
         if multidomain:
             datasets_pos_neg.append(dataset_pos_neg)
             #datasets_neg.append(dataset_neg)
