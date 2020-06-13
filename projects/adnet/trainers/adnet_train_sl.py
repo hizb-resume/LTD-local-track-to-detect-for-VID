@@ -25,13 +25,6 @@ import numpy as np
 
 from tensorboardX import SummaryWriter
 
-from torch.utils.data import DataLoader
-from prefetch_generator import BackgroundGenerator
-
-class DataLoaderX(DataLoader):
-
-    def __iter__(self):
-        return BackgroundGenerator(super().__iter__())
 
 def adnet_train_sl(args, opts):
 
@@ -278,32 +271,26 @@ def adnet_train_sl(args, opts):
         #         batch_iterators_neg[curr_domain] = iter(data_loaders_neg[curr_domain])
         #         images, bbox, action_label, score_label, vid_idx = next(batch_iterators_neg[curr_domain])
 
-        # batch_iterators = []
-        # for data_loader in data_loaders:
-        #     batch_iterators.append(iter(data_loader))
-        # for iteration in range(epoch_size):
-        if args.multidomain:
-            curr_domain = which_domain[iteration % len(which_domain)]
-        else:
-            curr_domain = 0
-        for iteration, batch in enumerate(BackgroundGenerator(data_loaders[curr_domain])):
-            # print(iteration)
+        batch_iterators = []
+        for data_loader in data_loaders:
+            batch_iterators.append(iter(data_loader))
+        for iteration in range(epoch_size):
+            if args.multidomain:
+                curr_domain = which_domain[iteration % len(which_domain)]
+            else:
+                curr_domain = 0
             try:
-                # images, bbox, action_label, score_label = next(batch_iterators[curr_domain])
-                # images, action_label, score_label = next(batch_iterators[curr_domain])
-                images, action_label, score_label =batch
-                # print("batch over")
+                images, bbox, action_label, score_label = next(batch_iterators[curr_domain])
                 images=images.reshape(-1,3,112,112)
-                # bbox=bbox.reshape(-1,4)
+                bbox=bbox.reshape(-1,4)
                 action_label=action_label.reshape(-1,11)
                 score_label=score_label.reshape(-1)
                 # vid_idx=vid_idx.reshape(-1)
             except StopIteration:
-                break
                 batch_iterators[curr_domain] = iter(data_loader[curr_domain])
-                images, action_label, score_label = next(batch_iterators[curr_domain])
+                images, bbox, action_label, score_label = next(batch_iterators[curr_domain])
                 images = images.reshape(-1, 3, 112, 112)
-                # bbox = bbox.reshape(-1, 4)
+                bbox = bbox.reshape(-1, 4)
                 action_label = action_label.reshape(-1, 11)
                 score_label = score_label.reshape(-1)
                 # vid_idx = vid_idx.reshape(-1)
