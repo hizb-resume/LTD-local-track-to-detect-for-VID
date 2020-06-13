@@ -15,6 +15,7 @@ from datasets.get_train_dbs import get_train_dbs_ILSVR_consecutive_frame
 from datasets.get_train_dbs import get_train_dbs_mul_step
 from utils.get_video_infos import get_video_infos
 from utils.augmentations import ADNet_Augmentation,ADNet_Augmentation2
+import multiprocessing
 
 
 class SLDataset(data.Dataset):
@@ -83,6 +84,11 @@ class SLDataset_db(data.Dataset):
 
     def __getitem__(self, index):
         frame2 = cv2.imread(self.train_db['img_path'][index])
+        while frame2 is None:
+            # print("nonetype")
+            index=index+1
+            frame2 = cv2.imread(self.train_db['img_path'][index])
+        # print(index,self.train_db['img_path'][index])
         frame2 = frame2.astype(np.float32)
         ims = torch.from_numpy(frame2).cuda()
         # action_labels = np.array(self.train_db['labels'][index], dtype=np.float32)
@@ -95,6 +101,43 @@ class SLDataset_db(data.Dataset):
 
     def __len__(self):
         return len(self.train_db['img_path'])
+
+
+def process_data_save(train_db_pos_neg_, args,path_no,transform_db):
+    # mean = np.array(opts['means'], dtype=np.float32)
+    # mean = torch.from_numpy(mean).cuda()
+    # transform_db=ADNet_Augmentation2(opts,mean)
+    # s1=0
+    # s2=0
+    # s3=0
+
+    for sample_idx in range(len(train_db_pos_neg_)):
+        img_count=-1
+        for iid in range(len(train_db_pos_neg_[sample_idx]['img_path'])):
+            img_count+=1
+            # t1=time.time()
+            img_name=str(path_no+sample_idx)+'_'+str(img_count).rjust(8,'0')+ '.jpg'
+            filename=os.path.join(args.db_path,img_name)
+
+            frame2 = cv2.imread(train_db_pos_neg_[sample_idx]['img_path'][iid])
+            frame2 = frame2.astype(np.float32)
+            frame2 = torch.from_numpy(frame2).cuda()
+            bbox = train_db_pos_neg_[sample_idx]['bboxes'][iid]
+            # t2=time.time()
+            ims, _, _, _ = transform_db(frame2, bbox)
+            ims = ims.squeeze(0).permute(2,1,0)
+            curr_aera_crop=ims.cpu().numpy()
+            # t3=time.time()
+
+            cv2.imwrite(filename, curr_aera_crop)
+            # t4=time.time()
+            # s1+=t2-t1
+            # s2+=t3-t2
+            # s3+=t4-t3
+            # if img_count%999==0:
+            #     print("time of frame read: %d"%s1)
+            #     print("time of transform: %d"%s2)
+            #     print("time of frame write: %d"%s3)
 
 def initialize_pos_neg_dataset(train_videos, opts,args, transform=None, multidomain=True):
     """
@@ -233,31 +276,16 @@ def initialize_pos_neg_dataset(train_videos, opts,args, transform=None, multidom
                 if not os.path.exists(args.db_path):
                     os.makedirs(args.db_path)
 
-                img_count=-1
-                mean = np.array(opts['means'], dtype=np.float32)
-                mean = torch.from_numpy(mean)#.cuda()
-                transform_db=ADNet_Augmentation2(opts,mean)
                 out_file = open('%s/%s.txt' % (save_root, db_type), 'w')
                 for sample_idx in range(len(train_db_pos_neg_)):
                     #process img
                     #save img
                     #save img_path/label/scoe_label
+                    img_count=-1
                     for iid in range(len(train_db_pos_neg_[sample_idx]['img_path'])):
                         img_count+=1
-                        img_name=str(img_count).rjust(9,'0')+ '.jpg'
+                        img_name=str(sample_idx)+'_'+str(img_count).rjust(8,'0')+ '.jpg'
                         filename=os.path.join(args.db_path,img_name)
-
-                        frame2 = cv2.imread(train_db_pos_neg_[sample_idx]['img_path'][iid])
-                        frame2 = frame2.astype(np.float32)
-                        frame2 = torch.from_numpy(frame2)#.cuda()
-                        bbox = train_db_pos_neg_[sample_idx]['bboxes'][iid]
-                        ims, _, _, _ = transform_db(frame2, bbox)
-                        ims = ims.squeeze(0).permute(2,1,0)
-                        curr_aera_crop=ims.numpy()
-
-                        cv2.imwrite(filename, curr_aera_crop)
-                        # '%.2f' % (score_l)
-                        # + str(int(gt[1])) + ',' + str(gt[2]) + '\n'
                         score_l =train_db_pos_neg_[sample_idx]['score_labels'][iid]
                         if score_l>0.3:
                             # action_l=torch.max(train_db_pos_neg_[sample_idx]['labels'][iid], 1)[1]
@@ -267,12 +295,36 @@ def initialize_pos_neg_dataset(train_videos, opts,args, transform=None, multidom
                             action_l=-1
 
                         out_file.write(str(filename) + ',' + str(int(action_l)) + ',' + '%.2f' % (score_l) + '\n')
-
-                    # train_db['img_path'].extend(train_db_pos_neg_[sample_idx]['img_path'])
-                    # train_db['bboxes'].extend(train_db_pos_neg_[sample_idx]['bboxes'])
-                    # train_db['labels'].extend(train_db_pos_neg_[sample_idx]['labels'])
-                    # train_db['score_labels'].extend(train_db_pos_neg_[sample_idx]['score_labels'])
                 out_file.close()
+
+                all_img_num=len(train_db_pos_neg_)
+                cpu_num = 24
+                if all_img_num<cpu_num:
+                    cpu_num=all_img_num
+                every_gpu_img=all_img_num//cpu_num
+
+                img_paths_as=[]
+                for gn in range(cpu_num-1):
+                    img_paths_as.append(train_db_pos_neg_[gn*every_gpu_img:(gn+1)*every_gpu_img])
+                img_paths_as.append(train_db_pos_neg_[(cpu_num-1) * every_gpu_img:])
+
+                # lock = multiprocessing.Manager().Lock()
+
+                mean = np.array(opts['means'], dtype=np.float32)
+                mean = torch.from_numpy(mean).cuda()
+                transform_db=ADNet_Augmentation2(opts,mean)
+                record = []
+                for i in range(cpu_num):
+                    if i==0:
+                        os.environ["CUDA_VISIBLE_DEVICES"]="2"
+                    if i==14:
+                        os.environ["CUDA_VISIBLE_DEVICES"]="3"
+                    process = multiprocessing.Process(target=process_data_save, args=(img_paths_as[i], args,i*every_gpu_img,transform_db))
+                    process.start()
+                    record.append(process)
+                for process in record:
+                    process.join()
+
                 print("after saving data to local...", end=' : ')
                 print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
 
