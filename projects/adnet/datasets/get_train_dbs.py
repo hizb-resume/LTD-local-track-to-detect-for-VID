@@ -577,6 +577,7 @@ def get_train_dbs_ILSVR_consecutive_frame(opts):
     # return train_db_pos, train_db_neg
     return train_db_pos_neg
 
+#random choose the highest iou steps
 def process_data_mul_step(img_paths, opt, train_db_pos_neg_all, lock):
     opts=opt.copy()
     # train_db_pos_neg_gpu = []
@@ -686,6 +687,141 @@ def process_data_mul_step(img_paths, opt, train_db_pos_neg_all, lock):
     finally:
         lock.release()
 
+
+#choose the highest iou steps
+def process_data_mul_step_3(img_paths, opt, train_db_pos_neg_all, lock):
+    opts=opt.copy()
+    # train_db_pos_neg_gpu = []
+    train_db_pos_neg = {
+        'img_path': [],  # train_i['img_files'][i],
+        'bboxes': [],
+        'labels': [],
+        'score_labels': []
+    }
+    for train_i in img_paths:
+        n_frames=len(train_i['gt'])
+        # max_dis=15
+        gt_file_path = '../datasets/data/ILSVRC/Annotations/VID/train/' + train_i['img_files'][0][39:-5] + '.xml'
+        imginfo = get_xml_img_info(gt_file_path)
+        opts['imgSize'] = imginfo['imgsize']
+
+        for i in range(0,n_frames-2,5):
+            for l in range(len(train_i['trackid'][i])):
+                # train_db_pos_neg = {
+                #     'img_path': train_i['img_files'][i + 1],
+                #     'bboxes': [],
+                #     'labels': [],
+                #     'score_labels': []
+                # }
+                for k in range(len(train_i['trackid'][i + 1])):
+                    if train_i['trackid'][i][l] == train_i['trackid'][i + 1][k]:
+                        gt_end = train_i['gt'][i + 1][k]
+                iou_max=0
+                step_max=[]
+                box_max=[]
+                curr_bbox = train_i['gt'][i][l]
+                for st in range(5):
+                    box_max.append(curr_bbox)
+                    t_iou_max=0
+                    t_box_max=[]
+                    t_act_max=-1
+                    for action in range(11):
+                        curr_bbox = do_action(curr_bbox, opts, action, opts['imgSize'])
+                        t_iou = cal_iou(curr_bbox, gt_end)
+                        if t_iou>t_iou_max:
+                            t_iou_max=t_iou
+                            t_act_max=action
+                            t_box_max=curr_bbox
+                    if t_act_max==-1:
+                        break
+                    iou_max=t_iou_max
+                    if t_act_max==opts['stop_action']:
+                        step_max.append(opts['stop_action'])
+                        break
+                    else:
+                        step_max.append(t_act_max)
+                        curr_bbox=t_box_max
+
+                # for lp in range(500):
+                #     curr_bbox = train_i['gt'][i][l]
+                #     step=[]
+                #     box=[]
+                #     for st in range(5): #step numbers
+                #         action=random.randint(0, 10)
+                #         # if st==0:
+                #         #     print(action)
+                #         step.append(action)
+                #         box.append(curr_bbox)
+                #         curr_bbox = do_action(curr_bbox, opts, action, opts['imgSize'])
+                #     box.append(curr_bbox)
+                #     step.append(opts['stop_action'])  #stop action
+                #     # c_iou=cal_iou(curr_bbox,gt_end)
+                #     t_iou_max=cal_iou(curr_bbox,gt_end)
+                #     t_max_n=-1
+                #     for st in range(5):
+                #         t_iou=cal_iou(box[st],gt_end)
+                #         if t_iou>t_iou_max:
+                #             t_iou_max=t_iou
+                #             t_max_n=st
+                #     if t_max_n>-1:
+                #         box=box[:t_max_n+1]
+                #         step=step[:t_max_n]
+                #         step.append(opts['stop_action'])
+                #     if t_iou_max>iou_max:
+                #         iou_max=t_iou_max
+                #         step_max=step
+                #         box_max=box
+                if iou_max>opts['stopIou']:  #save data to train_db
+                    for datai in range(len(step_max)):
+                        train_db_pos_neg['img_path'].append(train_i['img_files'][i+1])
+                        train_db_pos_neg['bboxes'].append(box_max[datai])
+                        action_t = np.zeros(opts['num_actions'])
+                        action_t[step_max[datai]] = 1
+                        action_label_pos=action_t.tolist()
+                        train_db_pos_neg['labels'].append(action_label_pos)
+                        train_db_pos_neg['score_labels'].extend(list(np.ones(1, dtype=int)))
+
+                        if (datai)%3==0:
+                            nct = -1
+                            while True:
+                                # in original code, this 1 line below use opts['nPos_train'] instead of opts['nNeg_train']
+                                nct += 1
+                                if nct == 20:
+                                    break
+                                neg = gen_samples('gaussian', gt_end, 5, opts, 2, 10)
+                                r = overlap_ratio(neg, np.matlib.repmat(gt_end, len(neg), 1))
+                                # neg = neg[np.array(r) < opts['consecutive_negThre_train']]
+                                neg = neg[np.array(r) < opts['consecutive_negThre_train']]
+                                if len(neg) == 0:
+                                    continue
+                                    # break
+                                else:
+                                    pos_neg_box = neg[0]
+                                    # print("neg[0]", end=": ")
+                                    # print(neg[0])
+                                    break
+                            train_db_pos_neg['img_path'].append(train_i['img_files'][i+1])
+                            train_db_pos_neg['bboxes'].append(pos_neg_box)
+                            action_label_neg = np.full((opts['num_actions'], 1), fill_value=-1)
+                            action_label_neg = np.transpose(action_label_neg).tolist()
+                            train_db_pos_neg['labels'].extend(action_label_neg)
+                            train_db_pos_neg['score_labels'].extend(list(np.zeros(1, dtype=int)))
+                        # train_db_pos_neg_gpu.append(train_db_pos_neg)
+
+                # if len(train_db_pos_neg['bboxes']) >0:
+                # print(iou_max,len(train_db_pos_neg['bboxes']))
+                # if len(train_db_pos_neg['bboxes']) == 20:
+                #     train_db_pos_neg_gpu.append(train_db_pos_neg)
+    try:
+        lock.acquire()
+        # train_db_pos_neg_all.extend(train_db_pos_neg_gpu)
+        train_db_pos_neg_all.append(train_db_pos_neg)
+    except Exception as err:
+        raise err
+    finally:
+        lock.release()
+
+#teacher Zhong: choose every first step of a loop to combine to a step list
 def process_data_mul_step_2(img_paths, opt, train_db_pos_neg_all, lock):
     opts=opt.copy()
     train_db_pos_neg_gpu = []
