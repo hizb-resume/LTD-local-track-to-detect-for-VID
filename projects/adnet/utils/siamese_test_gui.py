@@ -25,7 +25,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
-from PyQt5.QtWidgets import QApplication, QWidget
+from PyQt5.QtWidgets import QApplication, QWidget,QRadioButton,QButtonGroup
 
 def testsiamese(siamesenet,videos_infos):
     transform3_adition = transforms.Compose([transforms.Resize((100, 100)),
@@ -1052,3 +1052,219 @@ class siamese_test(QWidget):
         self.output_console.append("path: %s"%p1)
         self.output_console.append("object1 category: %s, siamese distance: %.2f"%(category_name1,sia_value))
         # self.output_console.append("siamese distance: %f"%sia_value)
+
+class img_box(QWidget):
+    def __init__(self,):
+        super(img_box, self).__init__()
+        # self.videos_infos = videos_infos
+        self.initUI()
+
+    def initUI(self):
+        ft=QFont("Roman times", 20, QFont.Bold)
+        pe = QPalette()
+        pe.setColor(QPalette.WindowText, Qt.red)
+
+        self.resize(1300, 650)
+        self.setFixedSize(1300, 650)
+        self.center()
+        self.setWindowTitle("img_box")
+        grid = QGridLayout()
+
+        self.setLayout(grid)
+        grid.setColumnStretch(0, 0.4)
+        grid.setColumnStretch(1, 0.7)
+        grid.setColumnStretch(2, 1)
+        grid.setColumnStretch(3, 1)
+        grid.setColumnStretch(4, 1)
+        grid.setColumnStretch(5, 1)
+        grid.setColumnStretch(6, 1)
+        grid.setColumnStretch(7, 1)
+        grid.setColumnStretch(8, 1)
+        grid.setColumnStretch(9, 1)
+        grid.setColumnStretch(10, 0.4)
+        grid.setRowStretch(0, 0.5)
+        grid.setRowStretch(1,1)
+        grid.setRowStretch(2,1)
+        grid.setRowStretch(3,1)
+        grid.setRowStretch(4,9)
+        grid.setRowStretch(5,0.5)
+
+        path_input_tip = QLabel("input_path:")
+        frameid_tip = QLabel("frameid:")
+        full_path_tip= QLabel("full_path:")
+        box_tip1=QLabel("x0:")
+        box_tip2=QLabel("y0:")
+        box_tip3=QLabel("width:")
+        box_tip4=QLabel("height:")
+
+        self.train_or_val = 'val'
+        self.rb11 = QRadioButton('train',self)
+        self.rb12 = QRadioButton('val',self)
+        self.rb12.setChecked(True)
+        # self.rb13 = QRadioButton('test',self)
+        self.bg1 = QButtonGroup(self)
+        self.bg1.addButton(self.rb11,11)
+        self.bg1.addButton(self.rb12,12)
+        # self.bg1.addButton(self.rb13,13)
+        self.bg1.buttonClicked.connect(self.rbclicked)
+
+        self.input_path1=QLineEdit(self)
+        self.input_path1.setFixedSize(450, 30)
+        self.input_path1.setPlaceholderText("eg: ILSVRC2015_val_00000001")
+        # self.input_path1.isClearButtonEnabled()
+        self.frameid1 = QLineEdit(self)
+        self.frameid1.setFixedSize(60, 30)
+        self.frameid1.setPlaceholderText("eg:12")
+        self.full_path=QLineEdit(self)
+        self.full_path.setFixedSize(750, 30)
+        self.full_path.setText('../datasets/data/ILSVRC/Data/VID/val/')
+        # self.full_path.setPlaceholderText("eg: ILSVRC2015_val_00000001")
+
+        self.box1 = QLineEdit(self)
+        self.box1.setFixedSize(45, 30)
+        self.box2 = QLineEdit(self)
+        self.box2.setFixedSize(45, 30)
+        self.box3 = QLineEdit(self)
+        self.box3.setFixedSize(45, 30)
+        self.box4 = QLineEdit(self)
+        self.box4.setFixedSize(45, 30)
+
+
+        button_start = QPushButton("show img_box")
+        # button_start.setFont(ft)
+        button_start.setFixedSize(100, 50)
+        button_start.clicked.connect(self.show_img_box)
+
+        hbox1 = QHBoxLayout()
+        hbox1.addStretch(1)
+        hbox1.addWidget(path_input_tip)
+        hbox1.addWidget(self.input_path1)
+        hbox1.addStretch(1)
+        hbox1.addWidget(frameid_tip)
+        hbox1.addWidget(self.frameid1)
+        hbox1.addStretch(1)
+        # hbox1.addWidget(full_path_tip)
+        # hbox1.addWidget(self.full_path)
+        # hbox1.addStretch(1)
+        hwg1 = QtWidgets.QWidget()
+        hwg1.setLayout(hbox1)
+        # hwg1.setSpacing(10)
+
+        hbox2 = QHBoxLayout()
+        hbox2.addStretch(1)
+        hbox2.addWidget(box_tip1)
+        hbox2.addWidget(self.box1)
+        hbox2.addStretch(1)
+        hbox2.addWidget(box_tip2)
+        hbox2.addWidget(self.box2)
+        hbox2.addStretch(1)
+        hbox2.addWidget(box_tip3)
+        hbox2.addWidget(self.box3)
+        hbox2.addStretch(1)
+        hbox2.addWidget(box_tip4)
+        hbox2.addWidget(self.box4)
+        hbox2.addStretch(1)
+        hwg2 = QtWidgets.QWidget()
+        hwg2.setLayout(hbox2)
+        # hwg2.setSpacing(10)
+
+        vbox=QVBoxLayout()
+        vbox.addWidget(hwg1)
+        vbox.addWidget(hwg2)
+
+        hwg = QtWidgets.QWidget()
+        hwg.setLayout(vbox)
+
+        # hwgd = QtWidgets.QWidget()
+        # hwgd.setLayout(self.bg1)
+
+        grid.addWidget(self.rb11, 1, 1, 1, 1,Qt.AlignRight)
+        grid.addWidget(self.rb12, 2, 1, 1, 1,Qt.AlignRight)
+        grid.addWidget(full_path_tip, 1, 2, 1, 1,Qt.AlignRight)
+        grid.addWidget(self.full_path, 1, 3, 1, 7)
+        grid.addWidget(hwg, 2, 2, 2, 7)
+        grid.addWidget(button_start, 2, 9, 2, 1,Qt.AlignLeft)
+
+        self.pic1=QLabel("image area")
+        self.pic1.setAlignment(Qt.AlignCenter)
+        self.pic1.setFont(ft)
+        self.pic1.setPalette(pe)
+        # self.pic1.setStyleSheet("border: 2px solid red")
+        self.pic1.setStyleSheet("background: yellow")
+        # self.pic1.setFixedSize(495, 330)
+        self.pic1.setScaledContents(True)
+        grid.addWidget(self.pic1, 4, 1,1,9)
+
+        grid.setSpacing(5)
+
+    def center(self):
+        qr = self.frameGeometry()
+        cp = QDesktopWidget().availableGeometry().center()
+        qr.moveCenter(cp)
+        self.move(qr.topLeft())
+
+    def rbclicked(self):
+        sender = self.sender()
+        if sender == self.bg1:
+            if self.bg1.checkedId() == 11:
+                self.train_or_val = 'train'
+            elif self.bg1.checkedId() == 12:
+                self.train_or_val = 'val'
+            # elif self.bg1.checkedId() == 13:
+            #     self.train_or_val = 'test'
+            else:
+                pass
+
+    def show_img_box(self):
+        # try:
+        p1 = self.input_path1.text()
+        f1 = self.frameid1.text()
+        box1=self.box1.text()
+        box2=self.box2.text()
+        box3=self.box3.text()
+        box4=self.box4.text()
+
+        isint = '^-?[0-9]\d*$'
+        rr1 = re.compile(isint)
+        if rr1.match(f1) is None or rr1.match(box1) is None or \
+                rr1.match(box2) is None or  rr1.match(box3) is None or  rr1.match(box4) is None:
+            QMessageBox.information(self, "message box", "Please enter an integer ",
+                                QMessageBox.Yes)
+            return
+
+        f1 = int(f1)
+        box1=int(box1)
+        box2=int(box2)
+        box3=int(box3)
+        box4=int(box4)
+
+        if self.full_path.text()=='../datasets/data/ILSVRC/Data/VID/val/':
+            path1='../datasets/data/ILSVRC/Data/VID/'+self.train_or_val+'/'+p1+'/'+str(f1).rjust(6,'0')+'.JPEG'
+        elif self.full_path.text()=='reset':
+            self.full_path.setText('../datasets/data/ILSVRC/Data/VID/val/')
+            return
+        else:
+            path1=self.full_path.text()
+
+        frame1 = cv2.imread(path1)
+        try:
+            frame1.shape 
+        except:
+        # if frame1==None:
+            QMessageBox.information(self, "message box", "wrong address: %s"%path1,
+                                QMessageBox.Yes)
+            return
+
+        gt1=[box1,box2,box3,box4]
+        category_name1=''
+
+        im_with_bb1 = draw_box_bigline(frame1, gt1, category_name1)
+        im_with_bb1 = cv2.resize(im_with_bb1, (self.pic1.width(), self.pic1.height()),
+                                 interpolation=cv2.INTER_CUBIC)
+        im_with_bb1 = cv2.cvtColor(im_with_bb1, cv2.COLOR_BGR2RGB)
+        height, width, bytesPerComponent = im_with_bb1.shape
+        bytesPerLine = bytesPerComponent * width
+        img1 = QtGui.QImage(im_with_bb1.data, width, height, bytesPerLine, QtGui.QImage.Format_RGB888)
+        self.pic1.setPixmap(QtGui.QPixmap.fromImage(img1).scaled(self.pic1.width(), self.pic1.height()))
+        # except Exception as err:
+        #     raise err

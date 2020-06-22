@@ -18,7 +18,7 @@ from models.ADNet import adnet
 from utils.get_train_videos import get_train_videos
 from utils.ADNet_evalTools import gen_pred_file
 from utils.my_util import get_ILSVRC_eval_infos
-from utils.siamese_test_gui import siamese_test
+from utils.siamese_test_gui import siamese_test,img_box
 from utils.gen_samples import gen_samples
 from utils.display import draw_box,draw_box_bigline
 from utils.augmentations import ADNet_Augmentation3,ADNet_Augmentation2
@@ -72,6 +72,7 @@ parser.add_argument('--checktrackid', default=False, type=str2bool, help='if obj
 parser.add_argument('--testFixTrackFrequency', default=False, type=str2bool, help='fix the track frequency to 20')
 parser.add_argument('--multi_cpu_eval', default=False, type=str2bool, help='mutiple cpu or not when evaluate')
 parser.add_argument('--testSiamese', default=False, type=str2bool, help='test siamese or not')
+parser.add_argument('--img_box', default=False, type=str2bool, help='img_box or not')
 parser.add_argument('--test1vid', default=False, type=str2bool, help='only test 1 video')
 parser.add_argument('--testVidPath', default='../datasets/data/ILSVRC/Data/VID/val/ILSVRC2015_val_00136000/',
                     type=str, help='test video path, only turn on when --test1vid is True')
@@ -182,7 +183,13 @@ if __name__ == "__main__":
     # cfg.MODEL.WEIGHTS = "../../../demo/faster_rcnn_R_101_FPN_3x.pkl"
     # metalog=MetadataCatalog.get(cfg.DATASETS.TRAIN[0])
 
-    
+    if args.img_box:
+        from PyQt5 import QtWidgets
+        app = QtWidgets.QApplication(sys.argv)
+        st = img_box()
+        st.show()
+        sys.exit(app.exec_())
+        sys.exit(0)
     siamesenet=''
     if args.useSiamese:
         if not args.multi_cpu_eval:
