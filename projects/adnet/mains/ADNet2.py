@@ -50,7 +50,7 @@ if __name__ == "__main__":
     # Supervised Learning part
     if args.run_supervised:
         #opts['minibatch_size'] = 128
-        opts['minibatch_size'] = 64
+        opts['minibatch_size'] = 256
         # train with supervised learning
         _, _, train_videos = adnet_train_sl(args, opts)
         args.resume = os.path.join(args.save_folder, args.save_file) + '.pth'

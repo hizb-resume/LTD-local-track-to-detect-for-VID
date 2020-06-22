@@ -579,7 +579,13 @@ def get_train_dbs_ILSVR_consecutive_frame(opts):
 
 def process_data_mul_step(img_paths, opt, train_db_pos_neg_all, lock):
     opts=opt.copy()
-    train_db_pos_neg_gpu = []
+    # train_db_pos_neg_gpu = []
+    train_db_pos_neg = {
+        'img_path': [],  # train_i['img_files'][i],
+        'bboxes': [],
+        'labels': [],
+        'score_labels': []
+    }
     for train_i in img_paths:
         n_frames=len(train_i['gt'])
         # max_dis=15
@@ -589,12 +595,12 @@ def process_data_mul_step(img_paths, opt, train_db_pos_neg_all, lock):
 
         for i in range(0,n_frames-2,5):
             for l in range(len(train_i['trackid'][i])):
-                train_db_pos_neg = {
-                    'img_path': train_i['img_files'][i + 1],
-                    'bboxes': [],
-                    'labels': [],
-                    'score_labels': []
-                }
+                # train_db_pos_neg = {
+                #     'img_path': train_i['img_files'][i + 1],
+                #     'bboxes': [],
+                #     'labels': [],
+                #     'score_labels': []
+                # }
                 for k in range(len(train_i['trackid'][i + 1])):
                     if train_i['trackid'][i][l] == train_i['trackid'][i + 1][k]:
                         gt_end = train_i['gt'][i + 1][k]
@@ -605,20 +611,32 @@ def process_data_mul_step(img_paths, opt, train_db_pos_neg_all, lock):
                     curr_bbox = train_i['gt'][i][l]
                     step=[]
                     box=[]
-                    for st in range(14): #step numbers
+                    for st in range(6): #step numbers
                         action=random.randint(0, 10)
                         step.append(action)
                         box.append(curr_bbox)
                         curr_bbox = do_action(curr_bbox, opts, action, opts['imgSize'])
                     box.append(curr_bbox)
                     step.append(opts['stop_action'])  #stop action
-                    c_iou=cal_iou(curr_bbox,gt_end)
-                    if c_iou>iou_max:
-                        iou_max=c_iou
+                    # c_iou=cal_iou(curr_bbox,gt_end)
+                    t_iou_max=cal_iou(curr_bbox,gt_end)
+                    t_max_n=-1
+                    for st in range(5):
+                        t_iou=cal_iou(box[st],gt_end)
+                        if t_iou>t_iou_max:
+                            t_iou_max=t_iou
+                            t_max_n=st
+                    if t_max_n>-1:
+                        box=box[:t_max_n+1]
+                        step=step[:t_max_n]
+                        step.append(opts['stop_action'])
+                    if t_iou_max>iou_max:
+                        iou_max=t_iou_max
                         step_max=step
                         box_max=box
                 if iou_max>opts['stopIou']:  #save data to train_db
                     for datai in range(len(step_max)):
+                        train_db_pos_neg['img_path'].append(train_i['img_files'][i+1])
                         train_db_pos_neg['bboxes'].append(box_max[datai])
                         action_t = np.zeros(opts['num_actions'])
                         action_t[step_max[datai]] = 1
@@ -645,6 +663,7 @@ def process_data_mul_step(img_paths, opt, train_db_pos_neg_all, lock):
                                     # print("neg[0]", end=": ")
                                     # print(neg[0])
                                     break
+                            train_db_pos_neg['img_path'].append(train_i['img_files'][i+1])
                             train_db_pos_neg['bboxes'].append(pos_neg_box)
                             action_label_neg = np.full((opts['num_actions'], 1), fill_value=-1)
                             action_label_neg = np.transpose(action_label_neg).tolist()
@@ -654,11 +673,12 @@ def process_data_mul_step(img_paths, opt, train_db_pos_neg_all, lock):
 
                 # if len(train_db_pos_neg['bboxes']) >0:
                 # print(iou_max,len(train_db_pos_neg['bboxes']))
-                if len(train_db_pos_neg['bboxes']) == 20:
-                    train_db_pos_neg_gpu.append(train_db_pos_neg)
+                # if len(train_db_pos_neg['bboxes']) == 20:
+                #     train_db_pos_neg_gpu.append(train_db_pos_neg)
     try:
         lock.acquire()
-        train_db_pos_neg_all.extend(train_db_pos_neg_gpu)
+        # train_db_pos_neg_all.extend(train_db_pos_neg_gpu)
+        train_db_pos_neg_all.append(train_db_pos_neg)
     except Exception as err:
         raise err
     finally:
