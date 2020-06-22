@@ -611,8 +611,10 @@ def process_data_mul_step(img_paths, opt, train_db_pos_neg_all, lock):
                     curr_bbox = train_i['gt'][i][l]
                     step=[]
                     box=[]
-                    for st in range(6): #step numbers
+                    for st in range(5): #step numbers
                         action=random.randint(0, 10)
+                        # if st==0:
+                        #     print(action)
                         step.append(action)
                         box.append(curr_bbox)
                         curr_bbox = do_action(curr_bbox, opts, action, opts['imgSize'])
@@ -817,7 +819,7 @@ def get_train_dbs_mul_step(opts):
     lock = multiprocessing.Manager().Lock()
     record = []
     for i in range(cpu_num):
-        process = multiprocessing.Process(target=process_data_mul_step_2, args=(img_paths_as[i], opts,train_db_pos_neg,lock))
+        process = multiprocessing.Process(target=process_data_mul_step, args=(img_paths_as[i], opts,train_db_pos_neg,lock))
         process.start()
         record.append(process)
     for process in record:
