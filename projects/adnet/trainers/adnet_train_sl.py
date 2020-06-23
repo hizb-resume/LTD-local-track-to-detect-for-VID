@@ -24,7 +24,7 @@ import time
 import numpy as np
 
 from tensorboardX import SummaryWriter
-
+from prefetch_generator import BackgroundGenerator
 
 def adnet_train_sl(args, opts):
 
@@ -271,16 +271,22 @@ def adnet_train_sl(args, opts):
         #         batch_iterators_neg[curr_domain] = iter(data_loaders_neg[curr_domain])
         #         images, bbox, action_label, score_label, vid_idx = next(batch_iterators_neg[curr_domain])
 
-        batch_iterators = []
-        for data_loader in data_loaders:
-            batch_iterators.append(iter(data_loader))
-        for iteration in range(epoch_size):
-            if args.multidomain:
-                curr_domain = which_domain[iteration % len(which_domain)]
-            else:
-                curr_domain = 0
+        # batch_iterators = []
+        # for data_loader in data_loaders:
+        #     batch_iterators.append(iter(data_loader))
+        if args.multidomain:
+            curr_domain = which_domain[iteration % len(which_domain)]
+        else:
+            curr_domain = 0
+        # for iteration in range(epoch_size):
+        for iteration, batch in enumerate(BackgroundGenerator(data_loaders[curr_domain])):
+            # if args.multidomain:
+            #     curr_domain = which_domain[iteration % len(which_domain)]
+            # else:
+            #     curr_domain = 0
             try:
-                images, bbox, action_label, score_label = next(batch_iterators[curr_domain])
+                # images, bbox, action_label, score_label = next(batch_iterators[curr_domain])
+                images, bbox, action_label, score_label =batch
                 images=images.reshape(-1,3,112,112)
                 bbox=bbox.reshape(-1,4)
                 action_label=action_label.reshape(-1,11)
