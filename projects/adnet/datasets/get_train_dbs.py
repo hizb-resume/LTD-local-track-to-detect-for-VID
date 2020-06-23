@@ -587,6 +587,7 @@ def process_data_mul_step(img_paths, opt, train_db_pos_neg_all, lock):
         'labels': [],
         'score_labels': []
     }
+    distan=1
     for train_i in img_paths:
         n_frames=len(train_i['gt'])
         # max_dis=15
@@ -594,17 +595,17 @@ def process_data_mul_step(img_paths, opt, train_db_pos_neg_all, lock):
         imginfo = get_xml_img_info(gt_file_path)
         opts['imgSize'] = imginfo['imgsize']
 
-        for i in range(0,n_frames-2,5):
+        for i in range(0,n_frames-distan-1,5):
             for l in range(len(train_i['trackid'][i])):
                 # train_db_pos_neg = {
-                #     'img_path': train_i['img_files'][i + 1],
+                #     'img_path': train_i['img_files'][i + distan],
                 #     'bboxes': [],
                 #     'labels': [],
                 #     'score_labels': []
                 # }
-                for k in range(len(train_i['trackid'][i + 1])):
-                    if train_i['trackid'][i][l] == train_i['trackid'][i + 1][k]:
-                        gt_end = train_i['gt'][i + 1][k]
+                for k in range(len(train_i['trackid'][i + distan])):
+                    if train_i['trackid'][i][l] == train_i['trackid'][i + distan][k]:
+                        gt_end = train_i['gt'][i + distan][k]
                 iou_max=0
                 step_max=[]
                 box_max=[]
@@ -639,7 +640,7 @@ def process_data_mul_step(img_paths, opt, train_db_pos_neg_all, lock):
                         box_max=box
                 if iou_max>opts['stopIou']:  #save data to train_db
                     for datai in range(len(step_max)):
-                        train_db_pos_neg['img_path'].append(train_i['img_files'][i+1])
+                        train_db_pos_neg['img_path'].append(train_i['img_files'][i+distan])
                         train_db_pos_neg['bboxes'].append(box_max[datai])
                         action_t = np.zeros(opts['num_actions'])
                         action_t[step_max[datai]] = 1
@@ -666,7 +667,7 @@ def process_data_mul_step(img_paths, opt, train_db_pos_neg_all, lock):
                                     # print("neg[0]", end=": ")
                                     # print(neg[0])
                                     break
-                            train_db_pos_neg['img_path'].append(train_i['img_files'][i+1])
+                            train_db_pos_neg['img_path'].append(train_i['img_files'][i+distan])
                             train_db_pos_neg['bboxes'].append(pos_neg_box)
                             action_label_neg = np.full((opts['num_actions'], 1), fill_value=-1)
                             action_label_neg = np.transpose(action_label_neg).tolist()
@@ -698,6 +699,7 @@ def process_data_mul_step_3(img_paths, opt, train_db_pos_neg_all, lock):
         'labels': [],
         'score_labels': []
     }
+    distan=1
     for train_i in img_paths:
         n_frames=len(train_i['gt'])
         # max_dis=15
@@ -705,36 +707,49 @@ def process_data_mul_step_3(img_paths, opt, train_db_pos_neg_all, lock):
         imginfo = get_xml_img_info(gt_file_path)
         opts['imgSize'] = imginfo['imgsize']
 
-        for i in range(0,n_frames-2,5):
+        for i in range(0,n_frames-distan-1,5):
             for l in range(len(train_i['trackid'][i])):
                 # train_db_pos_neg = {
-                #     'img_path': train_i['img_files'][i + 1],
+                #     'img_path': train_i['img_files'][i + distan],
                 #     'bboxes': [],
                 #     'labels': [],
                 #     'score_labels': []
                 # }
-                for k in range(len(train_i['trackid'][i + 1])):
-                    if train_i['trackid'][i][l] == train_i['trackid'][i + 1][k]:
-                        gt_end = train_i['gt'][i + 1][k]
+                for k in range(len(train_i['trackid'][i + distan])):
+                    if train_i['trackid'][i][l] == train_i['trackid'][i + distan][k]:
+                        gt_end = train_i['gt'][i + distan][k]
                 iou_max=0
                 step_max=[]
                 box_max=[]
                 curr_bbox = train_i['gt'][i][l]
-                for st in range(5):
+                # if i==5:
+                #     print("debug")
+                for st in range(15):
                     box_max.append(curr_bbox)
                     t_iou_max=0
                     t_box_max=[]
                     t_act_max=-1
                     for action in range(11):
-                        curr_bbox = do_action(curr_bbox, opts, action, opts['imgSize'])
-                        t_iou = cal_iou(curr_bbox, gt_end)
+                        curr_bbox_t = do_action(curr_bbox, opts, action, opts['imgSize'])
+                        t_iou = cal_iou(curr_bbox_t, gt_end)
+                        if action == opts['stop_action']:
+                            t_iou_act_stop = t_iou
+                            t_box_act_stop = curr_bbox_t
                         if t_iou>t_iou_max:
                             t_iou_max=t_iou
                             t_act_max=action
-                            t_box_max=curr_bbox
+                            t_box_max=curr_bbox_t
+                    if abs(t_iou_act_stop - t_iou_max) < 0.005 and t_act_max != opts['stop_action']:
+                        t_iou_max = t_iou_act_stop
+                        t_act_max = opts['stop_action']
+                        t_box_max = t_box_act_stop
                     if t_act_max==-1:
                         break
                     iou_max=t_iou_max
+                    # if st==0:
+                    #     print("")
+                    #     print("start iou: %f,"%(t_iou_act_stop),end='  ')
+                    # print("do %d -> %f,"%(t_act_max,iou_max),end='  ')
                     if t_act_max==opts['stop_action']:
                         step_max.append(opts['stop_action'])
                         break
@@ -773,7 +788,7 @@ def process_data_mul_step_3(img_paths, opt, train_db_pos_neg_all, lock):
                 #         box_max=box
                 if iou_max>opts['stopIou']:  #save data to train_db
                     for datai in range(len(step_max)):
-                        train_db_pos_neg['img_path'].append(train_i['img_files'][i+1])
+                        train_db_pos_neg['img_path'].append(train_i['img_files'][i+distan])
                         train_db_pos_neg['bboxes'].append(box_max[datai])
                         action_t = np.zeros(opts['num_actions'])
                         action_t[step_max[datai]] = 1
@@ -800,7 +815,7 @@ def process_data_mul_step_3(img_paths, opt, train_db_pos_neg_all, lock):
                                     # print("neg[0]", end=": ")
                                     # print(neg[0])
                                     break
-                            train_db_pos_neg['img_path'].append(train_i['img_files'][i+1])
+                            train_db_pos_neg['img_path'].append(train_i['img_files'][i+distan])
                             train_db_pos_neg['bboxes'].append(pos_neg_box)
                             action_label_neg = np.full((opts['num_actions'], 1), fill_value=-1)
                             action_label_neg = np.transpose(action_label_neg).tolist()
