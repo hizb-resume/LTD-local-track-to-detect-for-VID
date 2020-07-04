@@ -5,6 +5,7 @@ import torch
 
 def get_args():
     parser = argparse.ArgumentParser(description='RL')
+    parser.add_argument('--resume', default='', type=str, help='Resume from checkpoint')
     parser.add_argument(
         '--algo', default='a2c', help='algorithm to use: a2c | ppo | acktr')
     parser.add_argument(
@@ -119,11 +120,11 @@ def get_args():
         help='number of environment steps to train (default: 10e6)')
     parser.add_argument(
         '--env-name',
-        default='PongNoFrameskip-v4',
+        default='vid_action-v0',
         help='environment to train on (default: PongNoFrameskip-v4)')
     parser.add_argument(
         '--log-dir',
-        default='/tmp/gym/',
+        default='./log_gym',
         help='directory to save agent logs (default: /tmp/gym)')
     parser.add_argument(
         '--save-dir',

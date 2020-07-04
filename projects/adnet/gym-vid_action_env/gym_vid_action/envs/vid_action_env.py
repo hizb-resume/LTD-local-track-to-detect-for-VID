@@ -4,6 +4,10 @@ from gym import error, spaces
 from gym import utils
 from gym.utils import seeding
 
+import numpy as np
+import cv2
+import torch
+
 try:
     import hfo_py
 except ImportError as e:
@@ -14,13 +18,187 @@ logger = logging.getLogger(__name__)
 
 class ActionEnv(gym.Env, utils.EzPickle):
     def __init__(self):
-        pass
+        self.action_space = spaces.Discrete(11)
+        self.observation_space = spaces.Tuple((
+            spaces.Discrete(112),
+            spaces.Discrete(112),
+            spaces.Discrete(3)))
+        self.seed()
 
-    def step(self):
-        pass
+    def init_data(self,videos_infos, opts, transform, do_action,overlap_ratio):
+        self.videos_infos=videos_infos
+        self.opts = opts
+        self.transform = transform
+        # self.args = args
+        self.do_action = do_action
+        self.overlap_ratio = overlap_ratio
+
+        self.videos = []  # list of clips dict
+
+        self.RL_steps = self.opts['train']['RL_steps']  # clip length
+
+        vid_idxs = np.random.permutation(len(self.videos_infos))
+        # print("num videos: %d "%len(vid_idxs))
+        for vid_idx in vid_idxs:
+            # dict consist of set of clips in ONE video
+            clips = {
+                'img_path': [],
+                'frame_start': [],
+                'frame_end': [],
+                'init_bbox': [],
+                'end_bbox': [],
+                'vid_idx': [],
+            }
+            vid_info = self.videos_infos[vid_idx]
+            if self.RL_steps is None:
+                self.RL_steps = len(vid_info['gt']) - 1
+                vid_clip_starts = [0]
+                vid_clip_ends = [len(vid_info['gt']) - 1]
+            else:
+                vid_clip_starts = np.array(range(len(vid_info['gt']) - self.RL_steps))
+                vid_clip_starts = np.random.permutation(vid_clip_starts)
+                vid_clip_ends = vid_clip_starts + self.RL_steps
+
+            # number of clips in one video
+            num_train_clips = min(self.opts['train']['rl_num_batches'], len(vid_clip_starts))
+
+            # print("num_train_clips of vid " + str(vid_idx) + ": ", str(num_train_clips))
+
+            for clipIdx in range(num_train_clips):
+                frameStart = vid_clip_starts[clipIdx]
+                frameEnd = vid_clip_ends[clipIdx]
+
+                clips['img_path'].append(vid_info['img_files'][frameStart:frameEnd])
+                clips['frame_start'].append(frameStart)
+                clips['frame_end'].append(frameEnd)
+                clips['init_bbox'].append(vid_info['gt'][frameStart])
+                clips['end_bbox'].append(vid_info['gt'][frameEnd])
+                clips['vid_idx'].append(vid_idx)
+
+            if num_train_clips > 0:  # small hack
+                self.videos.append(clips)
+        self.clip_idx = -1  # hack for reset function
+        self.vid_idx = 0
+
+        self.state = None  # current bbox
+        self.gt = None  # end bbox
+        self.current_img = None  # current image frame
+        self.current_img_cuda = None
+        self.current_patch = None  # current patch (transformed)
+        self.current_patch_cuda = None
+        self.current_img_idx = 0
+        self.finish_epoch=False
+
+    def seed(self, seed=None):
+        self.np_random, seed = seeding.np_random(seed)
+        return [seed]
+
+    def step(self,action):
+        info = {
+            'finish_epoch': False
+        }
+        if action == self.opts['stop_action']:
+            reward, done = self.go_to_next_frame()
+
+            info['finish_epoch'] = self.finish_epoch
+
+        else:   # just go to the next patch (still same frame/current_img)
+            reward = 0
+            done = False
+            # do action
+            self.state = self.do_action(self.state, self.opts, action, self.current_img.shape)
+            self.current_patch, _, _, _ = self.transform(self.current_img, self.state)
+
+        return self.state, reward, done, info
 
     def reset(self):
-        pass
+        while True:
+            self.clip_idx += 1
+
+            # if the clips in a video are finished... go to the next video
+            if self.clip_idx >= len(self.videos[self.vid_idx]['frame_start']):
+                self.vid_idx += 1
+                self.clip_idx = 0
+                if self.vid_idx >= len(self.videos):
+                    self.vid_idx = 0
+                    # one epoch finish... need to reinitialize the class to use this again randomly
+                    self.finish_epoch=True
+                    return None
+
+            # initialize state, gt, current_img_idx, current_img, and current_patch with new clip
+            self.state = self.videos[self.vid_idx]['init_bbox'][self.clip_idx]
+            self.gt = self.videos[self.vid_idx]['end_bbox'][self.clip_idx]
+            # if self.state==[0,0,0,0]:
+            #     print("debug")
+
+            # frameStart = self.videos[self.vid_idx]['frame_start'][self.clip_idx]
+            #self.current_img_idx = 1  # self.current_img_idx = frameStart + 1
+            self.current_img_idx = 1   #the frameStart(the 0th img,idx:0) is for initial, the current_img(idx:1) is for training.
+            self.current_img = cv2.imread(self.videos[self.vid_idx]['img_path'][self.clip_idx][self.current_img_idx])
+            # imgcuda = self.current_img.copy()
+            imgcuda = self.current_img.astype(np.float32)
+            self.current_img=torch.from_numpy(imgcuda).cuda()
+            self.current_patch, _, _, _ = self.transform(self.current_img, np.array(self.state))
+            #Modified by zb --- 2019-11-16 22:11:16 --- to check : at this step ,the data of patch seems have some problem\
+            #because some data results are under zero
+
+            if self.gt != '':  # small hack
+                break
+        return self.current_patch
+
+    def get_current_patch(self):
+        return self.current_patch
+
+    def get_current_train_vid_idx(self):
+        return self.videos[self.vid_idx]['vid_idx'][0]
+
+    def get_state(self):
+        return self.state
+
+    def get_current_img(self):
+        return self.current_img
+
+    def go_to_next_frame(self):
+        self.current_img_idx += 1
+        # finish_epoch = False
+
+        # if already in the end of a clip...
+        #aaa=self.current_img_idx
+        #bbb=len(self.videos[self.vid_idx]['img_path'][self.clip_idx])
+        if self.current_img_idx >= len(self.videos[self.vid_idx]['img_path'][self.clip_idx]):
+            # calculate reward before reset
+            reward = self.reward_original(np.array(self.gt), np.array(self.state))
+
+            # print("reward=" + str(reward))
+
+            # reset (reset state, gt, current_img_idx, current_img and current_img_patch)
+            # self.finish_epoch,_ = self.reset()  # go to the next clip (or video)
+            self.reset()
+
+            done = True  # done means one clip is finished
+
+        # just go to the next frame (means new patch and new image)
+        else:
+            reward = 0
+            done = False
+            # note: reset already read the current_img and current_img_patch
+            self.current_img = cv2.imread(self.videos[self.vid_idx]['img_path'][self.clip_idx][self.current_img_idx])
+            imgcuda = self.current_img.astype(np.float32)
+            self.current_img = torch.from_numpy(imgcuda).cuda()
+            self.current_patch, _, _, _ = self.transform(self.current_img, self.state)
+
+        return reward, done
+
+    def reward_original(self,gt, box):
+        iou = self.overlap_ratio(gt, box)
+        if iou > 0.7:
+            reward = 1
+        else:
+            reward = -1
+
+        return reward
+
+
 
 
 

@@ -31,16 +31,17 @@ except ImportError:
 
 def make_env(env_id, seed, rank, log_dir, allow_early_resets):
     def _thunk():
-        if env_id.startswith("dm"):
-            _, domain, task = env_id.split('.')
-            env = dm_control2gym.make(domain_name=domain, task_name=task)
-        else:
-            env = gym.make(env_id)
+        # if env_id.startswith("dm"):
+        #     _, domain, task = env_id.split('.')
+        #     env = dm_control2gym.make(domain_name=domain, task_name=task)
+        # else:
+        #     env = gym.make(env_id)#.unwrapped
+        env = gym.make(env_id)  # .unwrapped
 
-        is_atari = hasattr(gym.envs, 'atari') and isinstance(
-            env.unwrapped, gym.envs.atari.atari_env.AtariEnv)
-        if is_atari:
-            env = make_atari(env_id)
+        # is_atari = hasattr(gym.envs, 'atari') and isinstance(
+        #     env.unwrapped, gym.envs.atari.atari_env.AtariEnv)
+        # if is_atari:
+        #     env = make_atari(env_id)
 
         env.seed(seed + rank)
 
@@ -53,14 +54,14 @@ def make_env(env_id, seed, rank, log_dir, allow_early_resets):
                 os.path.join(log_dir, str(rank)),
                 allow_early_resets=allow_early_resets)
 
-        if is_atari:
-            if len(env.observation_space.shape) == 3:
-                env = wrap_deepmind(env)
-        elif len(env.observation_space.shape) == 3:
-            raise NotImplementedError(
-                "CNN models work only for atari,\n"
-                "please use a custom wrapper for a custom pixel input env.\n"
-                "See wrap_deepmind for an example.")
+        # if is_atari:
+        #     if len(env.observation_space.shape) == 3:
+        #         env = wrap_deepmind(env)
+        # elif len(env.observation_space.shape) == 3:
+        #     raise NotImplementedError(
+        #         "CNN models work only for atari,\n"
+        #         "please use a custom wrapper for a custom pixel input env.\n"
+        #         "See wrap_deepmind for an example.")
 
         # If the input has shape (W,H,3), wrap for PyTorch convolutions
         obs_shape = env.observation_space.shape
@@ -90,18 +91,18 @@ def make_vec_envs(env_name,
     else:
         envs = DummyVecEnv(envs)
 
-    if len(envs.observation_space.shape) == 1:
-        if gamma is None:
-            envs = VecNormalize(envs, ret=False)
-        else:
-            envs = VecNormalize(envs, gamma=gamma)
+    # if len(envs.observation_space.shape) == 1:
+    #     if gamma is None:
+    #         envs = VecNormalize(envs, ret=False)
+    #     else:
+    #         envs = VecNormalize(envs, gamma=gamma)
 
     envs = VecPyTorch(envs, device)
 
-    if num_frame_stack is not None:
-        envs = VecPyTorchFrameStack(envs, num_frame_stack, device)
-    elif len(envs.observation_space.shape) == 3:
-        envs = VecPyTorchFrameStack(envs, 4, device)
+    # if num_frame_stack is not None:
+    #     envs = VecPyTorchFrameStack(envs, num_frame_stack, device)
+    # elif len(envs.observation_space.shape) == 3:
+    #     envs = VecPyTorchFrameStack(envs, 4, device)
 
     return envs
 

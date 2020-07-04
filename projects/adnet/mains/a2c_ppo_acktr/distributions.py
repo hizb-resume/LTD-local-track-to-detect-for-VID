@@ -57,19 +57,20 @@ class FixedBernoulli(torch.distributions.Bernoulli):
 
 
 class Categorical(nn.Module):
-    def __init__(self, num_inputs, num_outputs):
+    # def __init__(self, num_inputs, num_outputs):
+    def __init__(self, ):
         super(Categorical, self).__init__()
 
-        init_ = lambda m: init(
-            m,
-            nn.init.orthogonal_,
-            lambda x: nn.init.constant_(x, 0),
-            gain=0.01)
-
-        self.linear = init_(nn.Linear(num_inputs, num_outputs))
+        # init_ = lambda m: init(
+        #     m,
+        #     nn.init.orthogonal_,
+        #     lambda x: nn.init.constant_(x, 0),
+        #     gain=0.01)
+        #
+        # self.linear = init_(nn.Linear(num_inputs, num_outputs))
 
     def forward(self, x):
-        x = self.linear(x)
+        # x = self.linear(x)
         return FixedCategorical(logits=x)
 
 
