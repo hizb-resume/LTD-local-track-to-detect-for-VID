@@ -8,10 +8,10 @@ import numpy as np
 import cv2
 import torch
 
-try:
-    import hfo_py
-except ImportError as e:
-    raise error.DependencyNotInstalled("{}. (HINT: you can install HFO dependencies with 'pip install gym[soccer].)'".format(e))
+# try:
+#     import hfo_py
+# except ImportError as e:
+#     raise error.DependencyNotInstalled("{}. (HINT: you can install HFO dependencies with 'pip install gym[soccer].)'".format(e))
 
 import logging
 logger = logging.getLogger(__name__)

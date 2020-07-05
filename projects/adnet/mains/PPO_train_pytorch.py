@@ -6,6 +6,7 @@ import time
 from collections import deque
 
 import gym
+import gym_vid_action
 import numpy as np
 import torch
 import torch.nn as nn
@@ -26,6 +27,7 @@ from utils.do_action import do_action
 from utils.overlap_ratio import overlap_ratio
 from utils.augmentations import ADNet_Augmentation2
 from utils.my_util import get_ILSVRC_videos_infos
+
 def main():
     args = get_args()
 
