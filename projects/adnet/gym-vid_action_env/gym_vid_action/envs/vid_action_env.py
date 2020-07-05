@@ -106,8 +106,16 @@ class ActionEnv(gym.Env, utils.EzPickle):
         else:   # just go to the next patch (still same frame/current_img)
             reward = 0
             done = False
+            iou_bef=self.overlap_ratio(self.gt, self.state)
             # do action
             self.state = self.do_action(self.state, self.opts, action, self.current_img.shape)
+            iou_aft=self.overlap_ratio(self.gt, self.state)
+            iou_change=iou_aft-iou_bef
+            iou_ratio=20
+            if iou_change>0.01:
+                reward=iou_change*iou_ratio-0.1
+            elif iou_change<0.01:
+                reward=iou_change*iou_ratio-0.1
             self.current_patch, _, _, _ = self.transform(self.current_img, self.state)
 
         return self.current_patch,self.state, reward, done, info
