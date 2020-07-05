@@ -32,7 +32,8 @@ class PPO():
         self.optimizer = optim.Adam(actor_critic.parameters(), lr=lr, eps=eps)
 
     def update(self, rollouts):
-        advantages = rollouts.returns[:-1] - rollouts.value_preds[:-1]
+        # advantages = rollouts.returns[:-1] - rollouts.value_preds[:-1]
+        advantages = rollouts.returns[:rollouts.get_step()] - rollouts.value_preds[:rollouts.get_step()]
         advantages = (advantages - advantages.mean()) / (
             advantages.std() + 1e-5)
 

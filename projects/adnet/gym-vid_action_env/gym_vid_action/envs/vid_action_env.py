@@ -88,6 +88,7 @@ class ActionEnv(gym.Env, utils.EzPickle):
         self.current_patch_cuda = None
         self.current_img_idx = 0
         self.finish_epoch=False
+        # self.box_history_clip=[]
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -98,7 +99,7 @@ class ActionEnv(gym.Env, utils.EzPickle):
             'finish_epoch': False
         }
         if action == self.opts['stop_action']:
-            reward, done = self.go_to_next_frame()
+            reward, done,_ = self.go_to_next_frame()
 
             info['finish_epoch'] = self.finish_epoch
 
@@ -109,7 +110,7 @@ class ActionEnv(gym.Env, utils.EzPickle):
             self.state = self.do_action(self.state, self.opts, action, self.current_img.shape)
             self.current_patch, _, _, _ = self.transform(self.current_img, self.state)
 
-        return self.state, reward, done, info
+        return self.current_patch,self.state, reward, done, info
 
     def reset(self):
         while True:
@@ -159,6 +160,7 @@ class ActionEnv(gym.Env, utils.EzPickle):
         return self.current_img
 
     def go_to_next_frame(self):
+        # self.box_history_clip = []
         self.current_img_idx += 1
         # finish_epoch = False
 
@@ -187,7 +189,7 @@ class ActionEnv(gym.Env, utils.EzPickle):
             self.current_img = torch.from_numpy(imgcuda).cuda()
             self.current_patch, _, _, _ = self.transform(self.current_img, self.state)
 
-        return reward, done
+        return reward, done,self.finish_epoch
 
     def reward_original(self,gt, box):
         iou = self.overlap_ratio(gt, box)
