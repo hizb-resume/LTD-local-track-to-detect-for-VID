@@ -16,12 +16,12 @@ from torch import optim
 import torch.nn.functional as F
 
 class Config():
-    training_dir = "./data/faces/training/"
-    testing_dir = "./data/faces/testing/"
-    weight_dir="siameseWeight3/"
+    # training_dir = "./data/faces/training/"
+    # testing_dir = "./data/faces/testing/"
+    weight_dir="siameseWeight4/" #the path to save model file
     start_epoch=0
-    train_batch_size = 256
-    train_number_epochs = 100
+    train_batch_size = 512
+    train_number_epochs = 30
 
 class SiameseNetworkDataset(Dataset):
 
@@ -31,8 +31,10 @@ class SiameseNetworkDataset(Dataset):
         self.transform = transform
         self.should_invert = should_invert
         self.lens=len(self.train_db['gt'])
+        # self.expand_lens=self.lens*10
 
     def __getitem__(self, index):
+        # index=index%self.lens
 
         # img0_tuple = random.choice(self.imageFolderDataset.imgs)
         img0_path=self.train_db['img_files'][index]
@@ -42,11 +44,11 @@ class SiameseNetworkDataset(Dataset):
 
         # we need to make sure approx 50% of images are in the same class
         should_get_same_class = random.randint(0, 1)
-        label=0
+        label=1
         if should_get_same_class:
-            label=1
-            letf_bd = index - 1000
-            right_bd = index + 1000
+            label=0
+            letf_bd = index - 30
+            right_bd = index + 30
             if letf_bd < 0:
                 letf_bd = 0
             if right_bd > (self.lens - 2):
@@ -65,12 +67,12 @@ class SiameseNetworkDataset(Dataset):
                     img1_path = self.train_db['img_files'][idx]
                     img1_gt = self.train_db['gt'][idx]
                     break
-                elif ij<1000:
+                elif ij<10:
                     continue
                 else:
                     img1_path = self.train_db['img_files'][idx]
                     img1_gt = self.train_db['gt'][idx]
-                    label=0
+                    label=1
                     break
         else:
             while True:
@@ -131,6 +133,7 @@ class SiameseNetworkDataset(Dataset):
 
     def __len__(self):
         return self.lens
+        # return self.expand_lens
 
 if __name__ == "__main__" :
     # folder_dataset = dset.ImageFolder(root=Config.training_dir)

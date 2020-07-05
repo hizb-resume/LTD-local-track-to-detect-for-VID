@@ -99,7 +99,7 @@ def vggm(num_classes=1000, pretrained='imagenet'):
             "num_classes should be {}, but is {}".format(settings['num_classes'], num_classes)
 
         model = VGGM(num_classes=num_classes)
-        model.load_state_dict(torch.load('../vggm.pth', map_location=lambda storage, loc: storage))
+        # model.load_state_dict(torch.load('../vggm.pth', map_location=lambda storage, loc: storage))
 
         model.input_space = settings['input_space']
         model.input_size = settings['input_size']

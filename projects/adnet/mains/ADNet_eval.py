@@ -1,8 +1,11 @@
 import argparse
 import sys
 import os
+import multiprocessing
 import tensorflow as tf
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+import warnings
+warnings.filterwarnings("ignore")
 # sys.path.append("..")
 # import _init_paths
 
@@ -15,7 +18,10 @@ from models.ADNet import adnet
 from utils.get_train_videos import get_train_videos
 from utils.ADNet_evalTools import gen_pred_file
 from utils.my_util import get_ILSVRC_eval_infos
-from utils.augmentations import ADNet_Augmentation3
+from utils.siamese_test_gui import siamese_test,img_box
+from utils.gen_samples import gen_samples
+from utils.display import draw_box,draw_box_bigline
+from utils.augmentations import ADNet_Augmentation3,ADNet_Augmentation2
 from trainers.adnet_test import adnet_test
 from datasets.ILSVRC import register_ILSVRC
 from models.SiameseNet import SiameseNetwork
@@ -23,6 +29,7 @@ import torch
 torch.multiprocessing.set_start_method('spawn', force=True)
 import torch.backends.cudnn as cudnn
 import torch.nn as nn
+import numpy as np
 import time
 import cv2
 import random
@@ -35,6 +42,12 @@ from detectron2.engine import DefaultPredictor
 from detectron2.config import get_cfg
 # from detectron2.utils.visualizer import Visualizer
 from detectron2.data import MetadataCatalog
+
+# from PyQt5 import QtWidgets, QtCore, QtGui
+# from PyQt5.QtGui import *
+# from PyQt5.QtWidgets import *
+# from PyQt5.QtCore import *
+# from PyQt5.QtWidgets import QApplication, QWidget
 
 def str2bool(v):
     return v.lower() in ("yes", "true", "t", "1")
@@ -56,7 +69,10 @@ parser.add_argument('--dataset_year', default=2015, type=int, help='dataset vers
 parser.add_argument('--useSiamese', default=True, type=str2bool, help='use siamese or not')
 parser.add_argument('--checktrackid', default=False, type=str2bool, help='if objects in different frames are the same instance, trackid should be same too')
 
-
+parser.add_argument('--testFixTrackFrequency', default=False, type=str2bool, help='fix the track frequency to 20')
+parser.add_argument('--multi_cpu_eval', default=False, type=str2bool, help='mutiple cpu or not when evaluate')
+parser.add_argument('--testSiamese', default=False, type=str2bool, help='test siamese or not')
+parser.add_argument('--img_box', default=False, type=str2bool, help='img_box or not')
 parser.add_argument('--test1vid', default=False, type=str2bool, help='only test 1 video')
 parser.add_argument('--testVidPath', default='../datasets/data/ILSVRC/Data/VID/val/ILSVRC2015_val_00136000/',
                     type=str, help='test video path, only turn on when --test1vid is True')
@@ -87,47 +103,29 @@ parser.add_argument('--believe_score_result', default=0, type=int, help='Believe
 #                     help='The ratio of positive in all samples for online adaptation. Rest of it will be negative samples. Default: 0.5')
 
 
-def testsiamese(siamesenet,videos_infos):
-    transform3_adition = transforms.Compose([transforms.Resize((100, 100)),
-                                             transforms.ToTensor()
-                                             ])
-    transform3 = ADNet_Augmentation3(transform3_adition)
-    vlen=len(videos_infos)
-    for i in range(500):
-        vidx1 = random.randint(0, vlen-1)
-        fidx1=random.randint(0,videos_infos[vidx1]['nframes']-1)
-        frame_path1 = videos_infos[vidx1]['img_files'][fidx1]
-        frame1 = cv2.imread(frame_path1)
-        gt1=videos_infos[vidx1]['gt'][fidx1][0]
-        t_aera1, _, _ = transform3(frame1, gt1)
+def process_adnet_test(videos_infos,dataset_start_id, v_start_id,v_end_id,train_videos,save_root,
+                        spend_times_share,vid_preds, opts,args, lock):
+    siamesenet=''
+    if args.useSiamese:
+        siamesenet = SiameseNetwork().cuda()
+        resume = args.weight_siamese
+        # resume = False
+        if resume:
+            siamesenet.load_weights(resume)
 
-        while True:
-            vidx2 = random.randint(0, vlen-1)
-            if vidx2 != vidx1:
-                break
-        fidx2 = random.randint(0, videos_infos[vidx2]['nframes']-1)
-        frame_path2 = videos_infos[vidx2]['img_files'][fidx2]
-        frame2 = cv2.imread(frame_path2)
-        gt2 = videos_infos[vidx2]['gt'][fidx2][0]
-        t_aera2, _, _ = transform3(frame2, gt2)
-
-        output1, output2 = siamesenet(Variable(t_aera1).cuda(), Variable(t_aera2).cuda())
-        euclidean_distance = F.pairwise_distance(output1, output2)
-        print(' \n%.2f ' % (euclidean_distance.item()),end='  ')
-        if euclidean_distance.item()<0.8:
-            print("vid1: %d, name1: %s; vid2: %d , name2: %s."%(
-                vidx1,videos_infos[vidx1]['name'][fidx1][0],vidx2,videos_infos[vidx2]['name'][fidx2][0]),end='  ')
-
-
-if __name__ == "__main__":
-    args = parser.parse_args()
-
-    # cfg = get_cfg()
-    # cfg.merge_from_file("../../../configs/COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml")
-    # cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # set threshold for this model
-    # Find a model from detectron2's model zoo. You can either use the https://dl.fbaipublicfiles.... url, or use the following shorthand
-    # cfg.MODEL.WEIGHTS = "../../../demo/faster_rcnn_R_101_FPN_3x.pkl"
-    # metalog=MetadataCatalog.get(cfg.DATASETS.TRAIN[0])
+    # print('Loading {}...'.format(args.weight_file))
+            
+    net, domain_nets = adnet(opts, trained_file=args.weight_file, random_initialize_domain_specific=False)
+    net.eval()
+    if args.cuda:
+        net = nn.DataParallel(net)
+        cudnn.benchmark = True
+    if args.cuda:
+        net = net.cuda()
+    if args.cuda:
+        net.module.set_phase('test')
+    else:
+        net.set_phase('test')
 
     register_ILSVRC()
     cfg = get_cfg()
@@ -141,14 +139,92 @@ if __name__ == "__main__":
 
     predictor = DefaultPredictor(cfg)
     class_names = metalog.get("thing_classes", None)
+    for vidx in range(v_start_id, v_end_id):
+        # for vidx in range(20):
+        vid_folder = videos_infos[vidx]
 
-    siamesenet = SiameseNetwork().cuda()
-    resume = args.weight_siamese
-    # resume = False
-    if resume:
-        siamesenet.load_weights(resume)
-        checkpoint = torch.load(resume)
+        if args.save_result_images_bool:
+            args.save_result_images = os.path.join(save_root, train_videos['video_names'][vidx])
+            if not os.path.exists(args.save_result_images):
+                os.makedirs(args.save_result_images)
+
+        vid_pred,spend_time = adnet_test(net,predictor,siamesenet,metalog,class_names, vidx,vid_folder['img_files'], opts, args)
+        try:
+            lock.acquire()
+            spend_times=spend_times_share[0].copy()
+            spend_times['predict']+=spend_time['predict']
+            spend_times['n_predict_frames'] += spend_time['n_predict_frames']
+            spend_times['track'] += spend_time['track']
+            spend_times['n_track_frames'] += spend_time['n_track_frames']
+            spend_times['readframe'] += spend_time['readframe']
+            spend_times['n_readframe'] += spend_time['n_readframe']
+            spend_times['append'] += spend_time['append']
+            spend_times['n_append'] += spend_time['n_append']
+            spend_times['transform'] += spend_time['transform']
+            spend_times['n_transform'] += spend_time['n_transform']
+            spend_times['argmax_after_forward'] += spend_time['argmax_after_forward']
+            spend_times['n_argmax_after_forward'] += spend_time['n_argmax_after_forward']
+            spend_times['do_action'] += spend_time['do_action']
+            spend_times['n_do_action'] += spend_time['n_do_action']
+            spend_times_share[0]=spend_times
+            vid_preds[vidx-dataset_start_id]=vid_pred
+        except Exception as err:
+            raise err
+        finally:
+            lock.release()
+
+if __name__ == "__main__":
+    args = parser.parse_args()
+
+    # cfg = get_cfg()
+    # cfg.merge_from_file("../../../configs/COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml")
+    # cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # set threshold for this model
+    # Find a model from detectron2's model zoo. You can either use the https://dl.fbaipublicfiles.... url, or use the following shorthand
+    # cfg.MODEL.WEIGHTS = "../../../demo/faster_rcnn_R_101_FPN_3x.pkl"
+    # metalog=MetadataCatalog.get(cfg.DATASETS.TRAIN[0])
+
+    if args.img_box:
+        from PyQt5 import QtWidgets
+        app = QtWidgets.QApplication(sys.argv)
+        st = img_box()
+        st.show()
+        sys.exit(app.exec_())
+        sys.exit(0)
+    siamesenet=''
+    if args.useSiamese:
+        if not args.multi_cpu_eval:
+            siamesenet = SiameseNetwork().cuda()
+            resume = args.weight_siamese
+            # resume = False
+            if resume:
+                siamesenet.load_weights(resume)
+        # checkpoint = torch.load(resume)
         # optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+
+    if torch.cuda.is_available():
+        if args.cuda:
+            torch.set_default_tensor_type('torch.cuda.FloatTensor')
+        if not args.cuda:
+            print(
+                "WARNING: It looks like you have a CUDA device, but aren't " + "using CUDA.\nRun with --cuda for optimal training speed.")
+            torch.set_default_tensor_type('torch.FloatTensor')
+    else:
+        torch.set_default_tensor_type('torch.FloatTensor')
+
+    if not args.testSiamese:
+        if not args.multi_cpu_eval:
+            register_ILSVRC()
+            cfg = get_cfg()
+            cfg.merge_from_file("../../../configs/COCO-Detection/faster_rcnn_R_101_FPN_3x.yaml")
+            cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5  # set threshold for this model
+            # Find a model from detectron2's model zoo. You can either use the https://dl.fbaipublicfiles.... url, or use the following shorthand
+            # cfg.MODEL.WEIGHTS ="../datasets/tem/train_output/model_0449999.pth"
+            cfg.MODEL.WEIGHTS = args.weight_detector
+            cfg.MODEL.ROI_HEADS.NUM_CLASSES = 30
+            metalog = MetadataCatalog.get("ILSVRC_VID_val")
+
+            predictor = DefaultPredictor(cfg)
+            class_names = metalog.get("thing_classes", None)
 
     # assert 0 < args.pos_samples_ratio <= 1, "the pos_samples_ratio valid range is (0, 1]"
 
@@ -171,26 +247,18 @@ if __name__ == "__main__":
     # opts['finetune_iters_online'] = args.online_iteration
     # opts['redet_samples'] = args.redetection_samples
 
-    if args.save_result_images_bool:
-        args.save_result_images = os.path.join(args.save_result_images,
-                                               os.path.basename(args.weight_file)[:-4])
-        if not os.path.exists(args.save_result_images):
-            os.makedirs(args.save_result_images)
+        if args.save_result_images_bool:
+            args.save_result_images = os.path.join(args.save_result_images,
+                                                   os.path.basename(args.weight_file)[:-4])
+            if not os.path.exists(args.save_result_images):
+                os.makedirs(args.save_result_images)
 
     # args.save_result_npy = os.path.join(args.save_result_npy, os.path.basename(args.weight_file)[:-4] + '-' +
     #                                     str(args.pos_samples_ratio))
     # if not os.path.exists(args.save_result_npy):
     #     os.makedirs(args.save_result_npy)
 
-    if torch.cuda.is_available():
-        if args.cuda:
-            torch.set_default_tensor_type('torch.cuda.FloatTensor')
-        if not args.cuda:
-            print(
-                "WARNING: It looks like you have a CUDA device, but aren't " + "using CUDA.\nRun with --cuda for optimal training speed.")
-            torch.set_default_tensor_type('torch.FloatTensor')
-    else:
-        torch.set_default_tensor_type('torch.FloatTensor')
+    
 
 
 
@@ -202,22 +270,24 @@ if __name__ == "__main__":
     # vid_folders.sort(key=str.lower)
     # all_precisions = []
 
-    save_root = args.save_result_images
+        save_root = args.save_result_images
     # save_root_npy = args.save_result_npy
 
-    print('Loading {}...'.format(args.weight_file))
     opts['num_videos'] = 1
-    net, domain_nets = adnet(opts, trained_file=args.weight_file, random_initialize_domain_specific=False)
-    net.eval()
-    if args.cuda:
-        net = nn.DataParallel(net)
-        cudnn.benchmark = True
-    if args.cuda:
-        net = net.cuda()
-    if args.cuda:
-        net.module.set_phase('test')
-    else:
-        net.set_phase('test')
+    if not args.multi_cpu_eval:
+        print('Loading {}...'.format(args.weight_file))
+
+        net, domain_nets = adnet(opts, trained_file=args.weight_file, random_initialize_domain_specific=False)
+        net.eval()
+        if args.cuda:
+            net = nn.DataParallel(net)
+            cudnn.benchmark = True
+        if args.cuda:
+            net = net.cuda()
+        if args.cuda:
+            net.module.set_phase('test')
+        else:
+            net.set_phase('test')
 
     if args.test1vid:
         vid_path = args.testVidPath
@@ -229,6 +299,20 @@ if __name__ == "__main__":
             if not os.path.exists(args.save_result_images):
                 os.makedirs(args.save_result_images)
         vid_pred = adnet_test(net, predictor, siamesenet, metalog, class_names, 0, vid_path, opts, args)
+    elif args.testSiamese:
+        videos_infos, train_videos = get_ILSVRC_eval_infos(args)
+        transform3_adition = transforms.Compose([transforms.Resize((100, 100)),
+                                                 transforms.ToTensor()
+                                                 ])
+        transform3 = ADNet_Augmentation3(transform3_adition)
+        mean = np.array(opts['means'], dtype=np.float32)
+        mean = torch.from_numpy(mean).cuda()
+        transform = ADNet_Augmentation2(opts, mean)
+        from PyQt5 import QtWidgets
+        app = QtWidgets.QApplication(sys.argv)
+        st = siamese_test(siamesenet,net,videos_infos,transform3,transform)
+        st.show()
+        sys.exit(app.exec_())
     else:
         videos_infos, train_videos = get_ILSVRC_eval_infos(args)
 
@@ -265,47 +349,98 @@ if __name__ == "__main__":
         }
 
         t_eval0=time.time()
-        # for vidx,vid_folder in enumerate(videos_infos):
-        for vidx  in range(v_start_id,v_end_id):
-        # for vidx in range(20):
-            vid_folder=videos_infos[vidx]
 
-            # net, domain_nets = adnet(opts, trained_file=args.weight_file, random_initialize_domain_specific=True)
-            # net.train()
-            if args.save_result_images_bool:
-                args.save_result_images = os.path.join(save_root, train_videos['video_names'][vidx])
-                if not os.path.exists(args.save_result_images):
-                    os.makedirs(args.save_result_images)
+        if args.multi_cpu_eval:
+            all_vid_num=v_end_id-v_start_id
+            cpu_num = 28
+            if all_vid_num < cpu_num:
+                cpu_num = all_vid_num
+            every_cpu_vid = all_vid_num // cpu_num
+            start_vid=[]
+            end_vid=[]
+            for gn in range(cpu_num - 1):
+                # gn * every_gpu_img: (gn + 1) * every_gpu_img
+                start_vid.append(gn * every_cpu_vid+v_start_id)
+                end_vid.append((gn + 1) * every_cpu_vid+v_start_id)
+            start_vid.append((cpu_num-1) * every_cpu_vid+v_start_id)
+            end_vid.append(v_end_id)
 
-            # args.save_result_npy = os.path.join(save_root_npy, train_videos['video_names'][vidx])
+            vid_preds = multiprocessing.Manager().list()
+            spend_times_mul = multiprocessing.Manager().list()
+            spend_times_mul.append(spend_times)
+            for i in range(all_vid_num):
+                vid_preds.append([])
 
-            # vid_path = os.path.join(train_videos['video_paths'][vidx], train_videos['video_names'][vidx])
+            lock = multiprocessing.Manager().Lock()
+            record = []
+            for i in range(cpu_num):
+                if i==0:
+                    os.environ["CUDA_VISIBLE_DEVICES"]="0"
+                if i==9:
+                    os.environ["CUDA_VISIBLE_DEVICES"]="1"
+                if i==18:
+                    os.environ["CUDA_VISIBLE_DEVICES"]="2"
+                if i==24:
+                    os.environ["CUDA_VISIBLE_DEVICES"]="3"
+                # print("fragment %d: start_vid: %d, end_vid: %d."%(i,start_vid[i],end_vid[i]))
+                process = multiprocessing.Process(target=process_adnet_test,
+                                                  args=(videos_infos, v_start_id,start_vid[i],end_vid[i],train_videos,save_root,
+                                                        spend_times_mul,vid_preds, opts,args, lock))
+                process.start()
+                record.append(process)
+            for process in record:
+                process.join()
 
-            # load ADNetDomainSpecific
+            vid_preds=list(vid_preds)
+            spend_times=list(spend_times_mul)[0]
+            # print("len(vid_preds): %d"%(len(vid_preds)))
+            for i in range(len(vid_preds)):
+                isstart = i == 0
+                # print(i,type(vid_preds[i]))
+                # print("len vid_preds[%d]: %d"%(i,len(vid_preds[i])))
+                gen_pred_file(args.results_file, vid_preds[i], isstart)
+        else:
+            # for vidx,vid_folder in enumerate(videos_infos):
+            for vidx  in range(v_start_id,v_end_id):
+            # for vidx in range(20):
+                vid_folder=videos_infos[vidx]
 
-            # if args.cuda:
-            #     net.module.load_domain_specific(domain_nets[0])
-            # else:
-            #     net.load_domain_specific(domain_nets[0])
+                # net, domain_nets = adnet(opts, trained_file=args.weight_file, random_initialize_domain_specific=True)
+                # net.train()
+                if args.save_result_images_bool:
+                    args.save_result_images = os.path.join(save_root, train_videos['video_names'][vidx])
+                    if not os.path.exists(args.save_result_images):
+                        os.makedirs(args.save_result_images)
 
-            vid_pred,spend_time = adnet_test(net,predictor,siamesenet,metalog,class_names, vidx,vid_folder['img_files'], opts, args)
-            isstart=vidx==v_start_id
-            gen_pred_file(args.results_file,vid_pred,isstart)
+                # args.save_result_npy = os.path.join(save_root_npy, train_videos['video_names'][vidx])
 
-            spend_times['predict']+=spend_time['predict']
-            spend_times['n_predict_frames'] += spend_time['n_predict_frames']
-            spend_times['track'] += spend_time['track']
-            spend_times['n_track_frames'] += spend_time['n_track_frames']
-            spend_times['readframe'] += spend_time['readframe']
-            spend_times['n_readframe'] += spend_time['n_readframe']
-            spend_times['append'] += spend_time['append']
-            spend_times['n_append'] += spend_time['n_append']
-            spend_times['transform'] += spend_time['transform']
-            spend_times['n_transform'] += spend_time['n_transform']
-            spend_times['argmax_after_forward'] += spend_time['argmax_after_forward']
-            spend_times['n_argmax_after_forward'] += spend_time['n_argmax_after_forward']
-            spend_times['do_action'] += spend_time['do_action']
-            spend_times['n_do_action'] += spend_time['n_do_action']
+                # vid_path = os.path.join(train_videos['video_paths'][vidx], train_videos['video_names'][vidx])
+
+                # load ADNetDomainSpecific
+
+                # if args.cuda:
+                #     net.module.load_domain_specific(domain_nets[0])
+                # else:
+                #     net.load_domain_specific(domain_nets[0])
+
+                vid_pred,spend_time = adnet_test(net,predictor,siamesenet,metalog,class_names, vidx,vid_folder['img_files'], opts, args)
+                isstart=vidx==v_start_id
+                gen_pred_file(args.results_file,vid_pred,isstart)
+
+                spend_times['predict']+=spend_time['predict']
+                spend_times['n_predict_frames'] += spend_time['n_predict_frames']
+                spend_times['track'] += spend_time['track']
+                spend_times['n_track_frames'] += spend_time['n_track_frames']
+                spend_times['readframe'] += spend_time['readframe']
+                spend_times['n_readframe'] += spend_time['n_readframe']
+                spend_times['append'] += spend_time['append']
+                spend_times['n_append'] += spend_time['n_append']
+                spend_times['transform'] += spend_time['transform']
+                spend_times['n_transform'] += spend_time['n_transform']
+                spend_times['argmax_after_forward'] += spend_time['argmax_after_forward']
+                spend_times['n_argmax_after_forward'] += spend_time['n_argmax_after_forward']
+                spend_times['do_action'] += spend_time['do_action']
+                spend_times['n_do_action'] += spend_time['n_do_action']
 
         #     all_precisions.append(precisions)
         #

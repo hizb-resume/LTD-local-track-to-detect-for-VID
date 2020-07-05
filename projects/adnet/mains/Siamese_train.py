@@ -34,12 +34,12 @@ if __name__ == "__main__" :
                                             should_invert=False)
     train_dataloader = DataLoader(siamese_dataset,
                                   shuffle=True,
-                                  num_workers=8,
+                                  num_workers=24,
                                   batch_size=Config.train_batch_size)
     net = SiameseNetwork().cuda()
     criterion = ContrastiveLoss()
     optimizer = optim.Adam(net.parameters(), lr=0.0005)
-    resume = 'siameseWeight/SiameseNet_epoch16_final.pth'
+    resume = 'siameseWeight_del/SiameseNet_epoch1_final.pth'
     # resume=False
     if resume:
         net.load_weights(resume)

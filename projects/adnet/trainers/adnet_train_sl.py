@@ -24,7 +24,7 @@ import time
 import numpy as np
 
 from tensorboardX import SummaryWriter
-
+from prefetch_generator import BackgroundGenerator
 
 def adnet_train_sl(args, opts):
 
@@ -271,29 +271,35 @@ def adnet_train_sl(args, opts):
         #         batch_iterators_neg[curr_domain] = iter(data_loaders_neg[curr_domain])
         #         images, bbox, action_label, score_label, vid_idx = next(batch_iterators_neg[curr_domain])
 
-        batch_iterators = []
-        for data_loader in data_loaders:
-            batch_iterators.append(iter(data_loader))
-        for iteration in range(epoch_size):
-            if args.multidomain:
-                curr_domain = which_domain[iteration % len(which_domain)]
-            else:
-                curr_domain = 0
+        # batch_iterators = []
+        # for data_loader in data_loaders:
+        #     batch_iterators.append(iter(data_loader))
+        if args.multidomain:
+            curr_domain = which_domain[iteration % len(which_domain)]
+        else:
+            curr_domain = 0
+        # for iteration in range(epoch_size):
+        for iteration, batch in enumerate(BackgroundGenerator(data_loaders[curr_domain])):
+            # if args.multidomain:
+            #     curr_domain = which_domain[iteration % len(which_domain)]
+            # else:
+            #     curr_domain = 0
             try:
-                images, bbox, action_label, score_label, vid_idx = next(batch_iterators[curr_domain])
+                # images, bbox, action_label, score_label = next(batch_iterators[curr_domain])
+                images, bbox, action_label, score_label =batch
                 images=images.reshape(-1,3,112,112)
                 bbox=bbox.reshape(-1,4)
                 action_label=action_label.reshape(-1,11)
                 score_label=score_label.reshape(-1)
-                vid_idx=vid_idx.reshape(-1)
+                # vid_idx=vid_idx.reshape(-1)
             except StopIteration:
                 batch_iterators[curr_domain] = iter(data_loader[curr_domain])
-                images, bbox, action_label, score_label, vid_idx = next(batch_iterators[curr_domain])
+                images, bbox, action_label, score_label = next(batch_iterators[curr_domain])
                 images = images.reshape(-1, 3, 112, 112)
                 bbox = bbox.reshape(-1, 4)
                 action_label = action_label.reshape(-1, 11)
                 score_label = score_label.reshape(-1)
-                vid_idx = vid_idx.reshape(-1)
+                # vid_idx = vid_idx.reshape(-1)
         # for images, bbox, action_label, score_label, vid_idx in data_loaders[curr_domain]:
             # TODO: check if this requires grad is really false like in Variable
             pos_idx=torch.where(score_label>0.3)
@@ -334,10 +340,11 @@ def adnet_train_sl(args, opts):
             #     action_l = action_criterion(action_out, torch.max(action_label, 1)[1])
             # else:
             #     action_l = torch.Tensor([0])
-            if args.train_consecutive:
-                action_l = action_criterion(action_out, torch.max(action_label, 1)[1])
-            else:
-                action_l = action_criterion(action_out[pos_idx], torch.max(action_label[pos_idx], 1)[1])
+            # if args.train_consecutive:
+            #     action_l = action_criterion(action_out, torch.max(action_label, 1)[1])
+            # else:
+            #     action_l = action_criterion(action_out[pos_idx], torch.max(action_label[pos_idx], 1)[1])
+            action_l = action_criterion(action_out[pos_idx], torch.max(action_label[pos_idx], 1)[1])
             score_l = score_criterion(score_out, score_label.long())
             loss = action_l + score_l
             loss.backward()
@@ -359,8 +366,8 @@ def adnet_train_sl(args, opts):
             #t1 = time.time()
 
             if iteration % 2000 == 0 and iteration!=0:
-                print(score_out)
-                print(score_label)
+                # print(score_out)
+                # print(score_label)
                 #print('Timer: %.4f sec.' % (t1 - t0))
                 #print('iter ' + repr(iteration) + ' || Loss: %.4f ||' % (loss.data.item()), end=' ')
                 #if iteration==start_iter:
