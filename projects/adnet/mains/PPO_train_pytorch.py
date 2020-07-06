@@ -56,7 +56,7 @@ def main():
 
     # envs = make_vec_envs(args.env_name, args.seed, args.num_processes,
     #                      args.gamma, args.log_dir, device, False)
-    env = gym.make(args.env_name)
+    env = gym.make(args.env_name).unwrapped
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--eval_imgs', default=0, type=int,
@@ -64,7 +64,7 @@ def main():
     parser.add_argument('--gt_skip', default=1, type=int, help='frame sampling frequency')
     parser.add_argument('--dataset_year', default=2222, type=int,
                         help='dataset version, like ILSVRC2015, ILSVRC2017, 2222 means train.txt')
-    args2 = parser.parse_args(['--eval_imgs', '20000', '--gt_skip', '1', '--dataset_year', '2222'])
+    args2 = parser.parse_args(['--eval_imgs', '0', '--gt_skip', '1', '--dataset_year', '2222'])
 
     videos_infos, _ = get_ILSVRC_eval_infos(args2)
 

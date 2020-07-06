@@ -205,14 +205,14 @@ def adnet_train_sl(args, opts):
             # np.random.shuffle(which_domain)
 
             print('Saving state, epoch:', epoch-1)
-            domain_specific_nets_state_dict = []
-            for domain_specific_net in domain_specific_nets:
-                domain_specific_nets_state_dict.append(domain_specific_net.state_dict())
+            # domain_specific_nets_state_dict = []
+            # for domain_specific_net in domain_specific_nets:
+            #     domain_specific_nets_state_dict.append(domain_specific_net.state_dict())
 
             torch.save({
                 'epoch': epoch-1,
                 'adnet_state_dict': net.state_dict(),
-                'adnet_domain_specific_state_dict': domain_specific_nets,
+                # 'adnet_domain_specific_state_dict': domain_specific_nets,
                 'optimizer_state_dict': optimizer.state_dict(),
             }, os.path.join(args.save_folder, args.save_file) +
                        'epoch' + repr(epoch-1) + '_final.pth')
@@ -322,10 +322,10 @@ def adnet_train_sl(args, opts):
             t0 = time.time()
 
             # load ADNetDomainSpecific with video index
-            if args.cuda:
-                net.module.load_domain_specific(domain_specific_nets[curr_domain])
-            else:
-                net.load_domain_specific(domain_specific_nets[curr_domain])
+            # if args.cuda:
+            #     net.module.load_domain_specific(domain_specific_nets[curr_domain])
+            # else:
+            #     net.load_domain_specific(domain_specific_nets[curr_domain])
 
             # forward
             # print("before forward net", end=' : ')
@@ -358,10 +358,10 @@ def adnet_train_sl(args, opts):
             sco_l+=score_l.item()
 
             # save the ADNetDomainSpecific back to their module
-            if args.cuda:
-                domain_specific_nets[curr_domain].load_weights_from_adnet(net.module)
-            else:
-                domain_specific_nets[curr_domain].load_weights_from_adnet(net)
+            # if args.cuda:
+            #     domain_specific_nets[curr_domain].load_weights_from_adnet(net.module)
+            # else:
+            #     domain_specific_nets[curr_domain].load_weights_from_adnet(net)
 
             #t1 = time.time()
 
@@ -410,14 +410,14 @@ def adnet_train_sl(args, opts):
             if iteration % 5000 == 0 and iteration!=0:
                 print('Saving state, iter:', iteration)
 
-                domain_specific_nets_state_dict = []
-                for domain_specific_net in domain_specific_nets:
-                    domain_specific_nets_state_dict.append(domain_specific_net.state_dict())
+                # domain_specific_nets_state_dict = []
+                # for domain_specific_net in domain_specific_nets:
+                #     domain_specific_nets_state_dict.append(domain_specific_net.state_dict())
 
                 torch.save({
                     'epoch': epoch,
                     'adnet_state_dict': net.state_dict(),
-                    'adnet_domain_specific_state_dict': domain_specific_nets,
+                    # 'adnet_domain_specific_state_dict': domain_specific_nets,
                     'optimizer_state_dict': optimizer.state_dict(),
                 }, os.path.join(args.save_folder, args.save_file) +
                            'epoch' + repr(epoch) +"_"+ repr(iteration) +'.pth')
@@ -430,7 +430,7 @@ def adnet_train_sl(args, opts):
     torch.save({
         'epoch': opts['numEpoch']-1,
         'adnet_state_dict': net.state_dict(),
-        'adnet_domain_specific_state_dict': domain_specific_nets,
+        # 'adnet_domain_specific_state_dict': domain_specific_nets,
         'optimizer_state_dict': optimizer.state_dict(),
     }, os.path.join(args.save_folder, args.save_file) + '.pth')
 
