@@ -58,32 +58,32 @@ class Policy(nn.Module):
     def act(self, inputs, rnn_hxs, masks, deterministic=False):
         # value, actor_features, rnn_hxs = self.base(inputs, rnn_hxs, masks)
         actor_features,value=self.base.forward(inputs)
-        dist = self.dist(actor_features)
+        dist = self.dist(actor_features[0])
 
         if deterministic:
             action = dist.mode()
         else:
             action = dist.sample()
 
-        action_log_probs = dist.log_probs(action)
+        action_log_probs = dist.log_probs(action)[0]
         dist_entropy = dist.entropy().mean()
 
-        return value[1], action, action_log_probs, rnn_hxs
+        return value[0][1], action, action_log_probs, rnn_hxs
 
     def get_value(self, inputs, rnn_hxs, masks):
         # value, _, _ = self.base(inputs, rnn_hxs, masks)
         _, value = self.base.forward(inputs)
-        return value[1]
+        return value[0][1]
 
     def evaluate_actions(self, inputs, rnn_hxs, masks, action):
         # value, actor_features, rnn_hxs = self.base(inputs, rnn_hxs, masks)
         actor_features, value = self.base.forward(inputs)
-        dist = self.dist(actor_features)
+        dist = self.dist(actor_features[0])
 
-        action_log_probs = dist.log_probs(action)
+        action_log_probs = dist.log_probs(action)[0]
         dist_entropy = dist.entropy().mean()
 
-        return value, action_log_probs, dist_entropy, rnn_hxs
+        return value[0][1], action_log_probs, dist_entropy, rnn_hxs
 
 
 class NNBase(nn.Module):

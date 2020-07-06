@@ -20,7 +20,7 @@ from a2c_ppo_acktr.arguments import get_args
 from a2c_ppo_acktr.envs import make_vec_envs
 from a2c_ppo_acktr.model import Policy
 from a2c_ppo_acktr.storage import RolloutStorage
-from evaluation import evaluate
+# from evaluation import evaluate
 
 from options.general2 import opts
 from models.ADNet import adnet
@@ -45,6 +45,12 @@ def main():
     utils.cleanup_log_dir(log_dir)
     utils.cleanup_log_dir(eval_log_dir)
 
+    save_path = os.path.join(args.save_dir, args.algo)
+    try:
+        os.makedirs(save_path)
+    except OSError:
+        pass
+
     torch.set_num_threads(1)
     device = torch.device("cuda:0" if args.cuda else "cpu")
 
@@ -58,7 +64,7 @@ def main():
     parser.add_argument('--gt_skip', default=1, type=int, help='frame sampling frequency')
     parser.add_argument('--dataset_year', default=2222, type=int,
                         help='dataset version, like ILSVRC2015, ILSVRC2017, 2222 means train.txt')
-    args2 = parser.parse_args(['--eval_imgs', '2000', '--gt_skip', '1', '--dataset_year', '2222'])
+    args2 = parser.parse_args(['--eval_imgs', '20000', '--gt_skip', '1', '--dataset_year', '2222'])
 
     videos_infos, _ = get_ILSVRC_eval_infos(args2)
 
@@ -124,7 +130,7 @@ def main():
     #         drop_last=drop_last)
 
     rollouts = RolloutStorage(args.num_steps,
-                              opts['inputSize'], env.action_space,
+                              opts['inputSize_transpose'], env.action_space,
                               )
 
     obs = env.reset()
@@ -137,6 +143,7 @@ def main():
     # num_updates = int(
     #     args.num_env_steps) // args.num_steps // args.num_processes
     # for j in range(num_updates):
+    epoch=0
     j=-1
     while True:
         j+=1
@@ -164,10 +171,11 @@ def main():
 
             # Obser reward and next obs
             obs, new_state,reward, done, infos = env.step(action)
+            reward=torch.Tensor([reward])
 
-            for info in infos:
-                if 'episode' in info.keys():
-                    episode_rewards.append(info['episode']['r'])
+            # for info in infos:
+            #     if 'episode' in info.keys():
+            #         episode_rewards.append(info['episode']['r'])
 
             # If done then clean the history of observations.
             # masks = torch.FloatTensor(
@@ -200,7 +208,7 @@ def main():
             if action == opts['stop_action']:#finish one frame
                 t = 0
                 box_history_clip = []
-                rollouts.obs[rollouts.get_step()].copy_(env.get_current_patch)
+                rollouts.obs[rollouts.get_step()].copy_(env.get_current_patch())
 
             if done:  # if finish the clip
                 rollouts.obs[rollouts.get_step()].copy_(obs)
@@ -234,7 +242,7 @@ def main():
                                  args.gae_lambda, args.use_proper_time_limits)
 
         value_loss, action_loss, dist_entropy = agent.update(rollouts)
-        rollouts.obs[rollouts.get_step()].copy_(env.get_current_patch)
+        rollouts.obs[rollouts.get_step()].copy_(env.get_current_patch())
 
         rollouts.after_update()
 
@@ -243,36 +251,44 @@ def main():
 
         # save for every interval-th episode or for the last epoch
         if (j % args.save_interval == 0
-                or j == num_updates - 1) and args.save_dir != "":
-            save_path = os.path.join(args.save_dir, args.algo)
-            try:
-                os.makedirs(save_path)
-            except OSError:
-                pass
+                ) and args.save_dir != "":
 
-            torch.save([
-                actor_critic,
-                getattr(utils.get_vec_normalize(envs), 'ob_rms', None)
-            ], os.path.join(save_path, args.env_name + ".pt"))
+            torch.save({
+                'epoch': epoch,
+                'adnet_state_dict': actor_critic.base.state_dict(),
+                # 'adnet_domain_specific_state_dict': domain_specific_nets,
+                # 'optimizer_state_dict': optimizer.state_dict(),
+            }, os.path.join(save_path,'ADNet_RL_epoch' + repr(epoch) + "_" + repr(j) + '.pth'))
+            # torch.save([
+            #     actor_critic.base,
+            #     getattr(utils.get_vec_normalize(envs), 'ob_rms', None)
+            # ], os.path.join(save_path, args.env_name + ".pt"))
 
-        if j % args.log_interval == 0 and len(episode_rewards) > 1:
-            total_num_steps = (j + 1) * args.num_processes * args.num_steps
-            end = time.time()
-            print(
-                "Updates {}, num timesteps {}, FPS {} \n Last {} training episodes: mean/median reward {:.1f}/{:.1f}, min/max reward {:.1f}/{:.1f}\n"
-                .format(j, total_num_steps,
-                        int(total_num_steps / (end - start)),
-                        len(episode_rewards), np.mean(episode_rewards),
-                        np.median(episode_rewards), np.min(episode_rewards),
-                        np.max(episode_rewards), dist_entropy, value_loss,
-                        action_loss))
+        # if j % args.log_interval == 0 and len(episode_rewards) > 1:
+        #     total_num_steps = (j + 1) * args.num_processes * args.num_steps
+        #     end = time.time()
+        #     print(
+        #         "Updates {}, num timesteps {}, FPS {} \n Last {} training episodes: mean/median reward {:.1f}/{:.1f}, min/max reward {:.1f}/{:.1f}\n"
+        #         .format(j, total_num_steps,
+        #                 int(total_num_steps / (end - start)),
+        #                 len(episode_rewards), np.mean(episode_rewards),
+        #                 np.median(episode_rewards), np.min(episode_rewards),
+        #                 np.max(episode_rewards), dist_entropy, value_loss,
+        #                 action_loss))
 
-        if (args.eval_interval is not None and len(episode_rewards) > 1
-                and j % args.eval_interval == 0):
-            ob_rms = utils.get_vec_normalize(envs).ob_rms
-            evaluate(actor_critic, ob_rms, args.env_name, args.seed,
-                     args.num_processes, eval_log_dir, device)
+        # if (args.eval_interval is not None and len(episode_rewards) > 1
+        #         and j % args.eval_interval == 0):
+        #     ob_rms = utils.get_vec_normalize(envs).ob_rms
+        #     evaluate(actor_critic, ob_rms, args.env_name, args.seed,
+        #              args.num_processes, eval_log_dir, device)
 
+    torch.save({
+        'epoch': epoch,
+        'adnet_state_dict': actor_critic.base.state_dict(),
+        # 'adnet_domain_specific_state_dict': domain_specific_nets,
+        # 'optimizer_state_dict': optimizer.state_dict(),
+    }, os.path.join(save_path,'ADNet_RL_final.pth'))
 
 if __name__ == "__main__":
     main()
+    print("over")

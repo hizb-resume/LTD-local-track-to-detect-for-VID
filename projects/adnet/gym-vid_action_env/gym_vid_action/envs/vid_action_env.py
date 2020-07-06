@@ -1,4 +1,4 @@
-import os, subprocess, time, signal
+import os, subprocess, time, signal,random
 import gym
 from gym import error, spaces
 from gym import utils
@@ -63,19 +63,31 @@ class ActionEnv(gym.Env, utils.EzPickle):
             num_train_clips = min(self.opts['train']['rl_num_batches'], len(vid_clip_starts))
 
             # print("num_train_clips of vid " + str(vid_idx) + ": ", str(num_train_clips))
-
-            for clipIdx in range(num_train_clips):
+            n_clip=0
+            # for clipIdx in range(num_train_clips):
+            for clipIdx in range(len(vid_clip_starts)):
+                if n_clip>=num_train_clips:
+                    break
                 frameStart = vid_clip_starts[clipIdx]
                 frameEnd = vid_clip_ends[clipIdx]
+                n_obj1=len(vid_info['trackid'][frameStart])
+                n_obj2 = len(vid_info['trackid'][frameEnd])
+                if n_obj1==0 or n_obj2==0:
+                    continue
+                    # print("debug")
+                n_clip+=1
+                n_obj=min(n_obj1,n_obj2)
+                choose_obj=random.randint(0,n_obj-1)
 
                 clips['img_path'].append(vid_info['img_files'][frameStart:frameEnd])
                 clips['frame_start'].append(frameStart)
                 clips['frame_end'].append(frameEnd)
-                clips['init_bbox'].append(vid_info['gt'][frameStart])
-                clips['end_bbox'].append(vid_info['gt'][frameEnd])
+                clips['init_bbox'].append(vid_info['gt'][frameStart][choose_obj])
+                clips['end_bbox'].append(vid_info['gt'][frameEnd][choose_obj])
                 clips['vid_idx'].append(vid_idx)
 
-            if num_train_clips > 0:  # small hack
+            # if num_train_clips > 0:  # small hack
+            if len(clips['vid_idx']) > 0:  # small hack
                 self.videos.append(clips)
         self.clip_idx = -1  # hack for reset function
         self.vid_idx = 0

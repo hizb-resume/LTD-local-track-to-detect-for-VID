@@ -36,6 +36,7 @@ opts = {
     'samplePerFrame_large' : 40,
     'samplePerFrame_small' : 10,
     'inputSize' : [112, 112, 3],
+    'inputSize_transpose' : [3, 112, 112],
     'stopIou' : 0.93,
     'meta':{
         'inputSize' : [112, 112, 3]
