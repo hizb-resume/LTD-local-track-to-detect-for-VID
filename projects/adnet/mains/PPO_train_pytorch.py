@@ -1,4 +1,5 @@
 import _init_paths
+import argparse
 import copy
 import glob
 import os
@@ -26,7 +27,7 @@ from models.ADNet import adnet
 from utils.do_action import do_action
 from utils.overlap_ratio import overlap_ratio
 from utils.augmentations import ADNet_Augmentation2
-from utils.my_util import get_ILSVRC_videos_infos
+from utils.my_util import get_ILSVRC_eval_infos
 
 def main():
     args = get_args()
@@ -51,10 +52,19 @@ def main():
     #                      args.gamma, args.log_dir, device, False)
     env = gym.make(args.env_name)
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--eval_imgs', default=0, type=int,
+                        help='the num of imgs that picked from val.txt, 0 represent all imgs')
+    parser.add_argument('--gt_skip', default=1, type=int, help='frame sampling frequency')
+    parser.add_argument('--dataset_year', default=2222, type=int,
+                        help='dataset version, like ILSVRC2015, ILSVRC2017, 2222 means train.txt')
+    args2 = parser.parse_args(['--eval_imgs', '2000', '--gt_skip', '1', '--dataset_year', '2222'])
+
+    videos_infos, _ = get_ILSVRC_eval_infos(args2)
+
     mean = np.array(opts['means'], dtype=np.float32)
     mean = torch.from_numpy(mean).cuda()
     transform = ADNet_Augmentation2(opts, mean)
-    videos_infos, _ = get_ILSVRC_videos_infos()
 
     # for en in envs:
     #     en.init_data(videos_infos, opts, transform, do_action,overlap_ratio)
@@ -114,8 +124,8 @@ def main():
     #         drop_last=drop_last)
 
     rollouts = RolloutStorage(args.num_steps,
-                              env.observation_space.shape, env.action_space,
-                              actor_critic.recurrent_hidden_state_size)
+                              opts['inputSize'], env.action_space,
+                              )
 
     obs = env.reset()
     rollouts.obs[0].copy_(obs)
