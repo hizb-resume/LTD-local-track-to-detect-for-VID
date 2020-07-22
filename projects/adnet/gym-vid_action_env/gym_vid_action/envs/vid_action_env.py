@@ -102,6 +102,19 @@ class ActionEnv(gym.Env, utils.EzPickle):
         self.finish_epoch=False
         # self.box_history_clip=[]
 
+    def reset_env(self):
+        self.clip_idx = -1  # hack for reset function
+        self.vid_idx = 0
+
+        self.state = None  # current bbox
+        self.gt = None  # end bbox
+        self.current_img = None  # current image frame
+        self.current_img_cuda = None
+        self.current_patch = None  # current patch (transformed)
+        self.current_patch_cuda = None
+        self.current_img_idx = 0
+        self.finish_epoch = False
+
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]

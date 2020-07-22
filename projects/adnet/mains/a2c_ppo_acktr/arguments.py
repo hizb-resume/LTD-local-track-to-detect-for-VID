@@ -84,6 +84,11 @@ def get_args():
         default=200,
         help='number of forward steps in A2C (default: 5)')
     parser.add_argument(
+        '--num-epoch',
+        type=int,
+        default=15,
+        help='number of training epochs (default: 15)')
+    parser.add_argument(
         '--ppo-epoch',
         type=int,
         default=4,
@@ -106,7 +111,7 @@ def get_args():
     parser.add_argument(
         '--save-interval',
         type=int,
-        default=100,
+        default=2000,
         help='save interval, one save per n updates (default: 100)')
     parser.add_argument(
         '--eval-interval',
