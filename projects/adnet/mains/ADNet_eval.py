@@ -54,9 +54,9 @@ def str2bool(v):
 
 parser = argparse.ArgumentParser(
     description='ADNet eval')
-parser.add_argument('--weight_file', default='weights2/ADNet_SL_epoch24_10000.pth', type=str, help='The pretrained weight file')
+parser.add_argument('--weight_file', default='models/weights2/ADNet_SL_epoch24_10000.pth', type=str, help='The pretrained weight file')
 parser.add_argument('--weight_detector', default='../datasets/tem/train_output/model_0599999.pth', type=str, help='The pretrained weight file of detector')
-parser.add_argument('--weight_siamese', default='siameseWeight2/SiameseNet_epoch19_final.pth', type=str, help='The pretrained weight file of siamesenet')
+parser.add_argument('--weight_siamese', default='models/siameseWeight2/SiameseNet_epoch19_final.pth', type=str, help='The pretrained weight file of siamesenet')
 parser.add_argument('--results_file', default='../datasets/data/ILSVRC-vid-eval-delete', type=str, help='The eval results file')
 parser.add_argument('--v_start_id', default=0, type=int, help='The start no of eval videos')
 parser.add_argument('--v_end_id', default=0, type=int, help='The end no of eval videos')

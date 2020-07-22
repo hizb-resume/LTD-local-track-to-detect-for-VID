@@ -45,7 +45,7 @@ def main():
     utils.cleanup_log_dir(log_dir)
     utils.cleanup_log_dir(eval_log_dir)
 
-    save_path = os.path.join(args.save_dir, args.algo)
+    # save_path = os.path.join(args.save_dir, args.algo)
     try:
         os.makedirs(save_path)
     except OSError:

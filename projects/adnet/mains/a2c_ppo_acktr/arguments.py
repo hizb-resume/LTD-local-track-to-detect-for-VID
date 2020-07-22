@@ -5,7 +5,7 @@ import torch
 
 def get_args():
     parser = argparse.ArgumentParser(description='RL')
-    parser.add_argument('--resume', default='weights_mul_step3_new/ADNet_SL_.pth', type=str, help='Resume from checkpoint')
+    parser.add_argument('--resume', default='models/weights_mul_step3_new/ADNet_SL_.pth', type=str, help='Resume from checkpoint')
     parser.add_argument(
         '--algo', default='a2c', help='algorithm to use: a2c | ppo | acktr')
     parser.add_argument(
@@ -124,11 +124,11 @@ def get_args():
         help='environment to train on (default: PongNoFrameskip-v4)')
     parser.add_argument(
         '--log-dir',
-        default='./log/log_gym',
+        default='./logs/log_gym',
         help='directory to save agent logs (default: /tmp/gym)')
     parser.add_argument(
         '--save-dir',
-        default='./models/',
+        default='./models/ppo',
         help='directory to save agent logs (default: ./trained_models/)')
     parser.add_argument(
         '--no-cuda',
