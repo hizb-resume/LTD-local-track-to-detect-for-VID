@@ -214,7 +214,8 @@ class ActionEnv(gym.Env, utils.EzPickle):
 
         # just go to the next frame (means new patch and new image)
         else:
-            reward = 0
+            # reward = 0
+            reward = self.reward_original(np.array(self.gt), np.array(self.state))
             done = False
             # note: reset already read the current_img and current_img_patch
             self.current_img = cv2.imread(self.videos[self.vid_idx]['img_path'][self.clip_idx][self.current_img_idx])

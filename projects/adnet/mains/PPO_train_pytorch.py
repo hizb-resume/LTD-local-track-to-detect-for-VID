@@ -147,6 +147,11 @@ def main():
         rollouts.obs[0].copy_(obs)
         rollouts.to(device)
         j=-1
+
+        va = 0
+        n_va = 0
+        va_epoch = 0
+        n_va_epoch = 0
         while True:
             j+=1    #current clip number
             actor_critic.base.reset_action_dynamic()
@@ -170,6 +175,8 @@ def main():
                     value, action, action_log_prob, recurrent_hidden_states = actor_critic.act(
                         rollouts.obs[step], rollouts.recurrent_hidden_states[step],
                         rollouts.masks[step])
+                    va+=value
+                    n_va+=1
 
                 # Obser reward and next obs
                 obs, new_state,reward, done, infos = env.step(action)
@@ -199,6 +206,7 @@ def main():
                     infos['finish_epoch'] = finish_epoch
 
                 if t > opts['num_action_step_max']:
+                    #todo: in this situation, reward/feedback should be punished.
                     action = opts['stop_action']
                     reward, done, finish_epoch = env.go_to_next_frame()
                     infos['finish_epoch'] = finish_epoch
@@ -213,7 +221,8 @@ def main():
                     rollouts.obs[rollouts.get_step()].copy_(env.get_current_patch())
 
                 if done:  # if finish the clip
-                    rollouts.obs[rollouts.get_step()].copy_(obs)
+                    # rollouts.obs[rollouts.get_step()].copy_(obs)
+                    rollouts.obs[rollouts.get_step()].copy_(env.get_current_patch())
                     break
 
             with torch.no_grad():
@@ -248,7 +257,19 @@ def main():
 
             rollouts.after_update()
 
+            if n_va>=100:
+                ave_va=va/n_va
+                print("current clip: %d, n_va: %d, cur v: %.2f, cur ave v: %.2f"%(j,n_va,value,ave_va))
+                va_epoch+=va
+                n_va_epoch+=n_va
+                va=0
+                n_va=0
+
             if infos['finish_epoch']:
+                ave_va_epoch=va_epoch/n_va_epoch
+                print("epoch: %d, ave value of v: %.2f"%(epoch,ave_va_epoch))
+                va_epoch=0
+                n_va_epoch=0
                 break
 
             # save for every interval-th episode or for the last epoch
