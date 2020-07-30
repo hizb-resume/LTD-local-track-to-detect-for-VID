@@ -215,6 +215,8 @@ class ADNet(nn.Module):
             for k, v in pretrained_dict.items():
                 if 'module' in k:
                     name = k[7:]  # remove `module.`
+                else:
+                    name=k
                 new_state_dict[name] = v
             pretrained_dict = new_state_dict
 
@@ -318,27 +320,27 @@ def adnet(opts, base_network='vggm', trained_file=None, random_initialize_domain
 
     # initialize domain-specific network
     domain_nets = []
-    if multidomain:
-        num_videos = opts['num_videos']
-    else:
-        num_videos = 1
+    # if multidomain:
+    #     num_videos = opts['num_videos']
+    # else:
+    #     num_videos = 1
 
-    for idx in range(num_videos):
-        domain_nets.append(ADNetDomainSpecific(num_classes=num_classes, num_history=num_history))
+    # for idx in range(num_videos):
+    #     domain_nets.append(ADNetDomainSpecific(num_classes=num_classes, num_history=num_history))
 
-        scal = torch.Tensor([0.01])
+    #     scal = torch.Tensor([0.01])
 
-        if trained_file and not random_initialize_domain_specific:
-            domain_nets[idx].load_weights(trained_file, idx)
-        else:
-            # fc 6
-            nn.init.normal_(domain_nets[idx].fc6.weight.data)
-            domain_nets[idx].fc6.weight.data = domain_nets[idx].fc6.weight.data * scal.expand_as(domain_nets[idx].fc6.weight.data)
-            domain_nets[idx].fc6.bias.data.fill_(0)
-            # fc 7
-            nn.init.normal_(domain_nets[idx].fc7.weight.data)
-            domain_nets[idx].fc7.weight.data = domain_nets[idx].fc7.weight.data * scal.expand_as(domain_nets[idx].fc7.weight.data)
-            domain_nets[idx].fc7.bias.data.fill_(0)
+    #     if trained_file and not random_initialize_domain_specific:
+    #         domain_nets[idx].load_weights(trained_file, idx)
+    #     else:
+    #         # fc 6
+    #         nn.init.normal_(domain_nets[idx].fc6.weight.data)
+    #         domain_nets[idx].fc6.weight.data = domain_nets[idx].fc6.weight.data * scal.expand_as(domain_nets[idx].fc6.weight.data)
+    #         domain_nets[idx].fc6.bias.data.fill_(0)
+    #         # fc 7
+    #         nn.init.normal_(domain_nets[idx].fc7.weight.data)
+    #         domain_nets[idx].fc7.weight.data = domain_nets[idx].fc7.weight.data * scal.expand_as(domain_nets[idx].fc7.weight.data)
+    #         domain_nets[idx].fc7.bias.data.fill_(0)
 
     return adnet_model, domain_nets
 
