@@ -17,7 +17,9 @@ def str2bool(v):
 parser = argparse.ArgumentParser(
     description='my_util')
 parser.add_argument('--img_to_mp4', default=False, type=str2bool, help='generate mp4 video with imgs')
-parser.add_argument('--imgspath', default='ADNet_SL_/ILSVRC2015_val_00000000/', type=str,
+parser.add_argument('--mp4_fps', default=20, type=int, help='the fps of the output mp4 video')
+parser.add_argument('--skip', default=1, type=int, help='the  sampling interval of the input images')
+parser.add_argument('--imgspath', default='ADNet_SL_/ILSVRC2015_val_00000000', type=str,
                     help='the imgs path')
 
 def test():
@@ -717,7 +719,7 @@ def show_gt_box(vidpath,gt_path=None):
     out.release()
     cv2.destroyAllWindows()
 
-def imgs_to_mp4(imgspath,img_extension,outpath=None):
+def imgs_to_mp4(imgspath,img_extension,fps=20,skip=10,outpath=None):
     '''
 
     :param imgspath: the path of the images
@@ -726,7 +728,7 @@ def imgs_to_mp4(imgspath,img_extension,outpath=None):
     :return:
     '''
     if (outpath == None):
-        outpath = imgspath + 'output.mp4'
+        outpath = imgspath + '-output.mp4'
     paths=glob.glob(os.path.join(imgspath, '*.%s'%img_extension))
     paths.sort(key=str.lower)
 
@@ -734,12 +736,12 @@ def imgs_to_mp4(imgspath,img_extension,outpath=None):
     #length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     length=len(paths)
     #ground_truth = open(gt_path)
-    fps=20.0
+    # fps=20.0
     out = cv2.VideoWriter(outpath, cv2.VideoWriter_fourcc(*'MP4V'), fps, (640, 480))
     for f in range(length):
         # print('%d / %d : %s'%(f,length,paths[f]))
         #success, img = cap.read()
-        if f%10 !=0:
+        if f%skip !=0:
             continue
         img=cv2.imread(paths[f])
         vid_width, vid_height = img.shape[:2]
@@ -796,7 +798,7 @@ if __name__ == '__main__':
     #generate_vid_box_label('datasets/data/test/ILSVRC2015_train_00146003')
     #show_gt_box(vidpath='datasets/data/test/ILSVRC2015_train_00146003.mp4',gt_path='datasets/data/test/vid/ILSVRC2015_train_00146003/groundtruth.txt')
     if args.img_to_mp4:
-        imgs_to_mp4('/home/zb/project/detectron2/projects/adnet/mains/save_result_images/'+args.imgspath,'jpg')
+        imgs_to_mp4('/home/zb/project/detectron2/projects/adnet/mains/save_result_images/'+args.imgspath,'jpg',args.mp4_fps,args.skip)
     #do_iou_precise("mains/results_on_test_images_part2/ADNet_RL_epoch29-0.5/ILSVRC2015_train_00146003-bboxes.npy","mains/results_on_test_images_part2/ADNet_RL_epoch29-0.5/ILSVRC2015_train_00146003-ground_truth.npy")
     # test()
 
