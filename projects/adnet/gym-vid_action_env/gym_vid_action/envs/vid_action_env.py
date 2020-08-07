@@ -137,10 +137,10 @@ class ActionEnv(gym.Env, utils.EzPickle):
             iou_aft=self.overlap_ratio(self.gt, self.state)
             iou_change=iou_aft-iou_bef
             iou_ratio=20
-            if iou_change>0.01:
-                reward=iou_change*iou_ratio-0.1
-            elif iou_change<0.01:
-                reward=iou_change*iou_ratio-0.1
+            # if iou_change>0.01:
+            #     reward=iou_change*iou_ratio-0.1
+            # elif iou_change<0.01:
+            #     reward=iou_change*iou_ratio-0.1
             self.current_patch, _, _, _ = self.transform(self.current_img, self.state)
 
         return self.current_patch,self.state, reward, done, info
@@ -227,10 +227,11 @@ class ActionEnv(gym.Env, utils.EzPickle):
 
     def reward_original(self,gt, box):
         iou = self.overlap_ratio(gt, box)
-        if iou > 0.7:
-            reward = 1
-        else:
-            reward = -1
+        # if iou > 0.7:
+        #     reward = 1
+        # else:
+        #     reward = -1
+        reward=iou-0.5
 
         return reward
 
