@@ -60,6 +60,10 @@ class RolloutStorage(object):
 
         self.step = (self.step + 1) % self.num_steps
 
+    def update_action_reward(self,actions,rewards):
+        self.actions[self.step-1].copy_(actions)
+        self.rewards[self.step-1].copy_(rewards)
+
     def after_update(self):
         self.obs[0].copy_(self.obs[self.step])
         self.recurrent_hidden_states[0].copy_(self.recurrent_hidden_states[self.step])

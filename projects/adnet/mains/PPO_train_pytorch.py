@@ -204,12 +204,16 @@ def main():
                     action = opts['stop_action']
                     reward, done, finish_epoch = env.go_to_next_frame()
                     infos['finish_epoch'] = finish_epoch
+                    reward = torch.Tensor([reward])
+                    rollouts.update_action_reward(action,reward)
 
                 if t > opts['num_action_step_max']:
                     #todo: in this situation, reward/feedback should be punished.
                     action = opts['stop_action']
                     reward, done, finish_epoch = env.go_to_next_frame()
                     infos['finish_epoch'] = finish_epoch
+                    reward = torch.Tensor([reward])
+                    rollouts.update_action_reward(action, reward)
 
                 box_history_clip.append(list(new_state))
 
