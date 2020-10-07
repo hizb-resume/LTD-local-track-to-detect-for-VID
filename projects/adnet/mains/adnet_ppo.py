@@ -171,15 +171,20 @@ class Critic(nn.Module):
         return value
 
 class PPO(object):
-    def __init__(self, base_network, opts,resume_actor=None,resume_critic=None, num_classes=11, phase='pi', num_history=10, use_gpu=True):
+    def __init__(self, base_network, opts,resume_actor=None,resume_critic=None,
+                 basefile='models/weights_consecutive_frames6_4/ADNet_SL_epoch11_final.pth',num_classes=11, phase='pi', num_history=10, use_gpu=True):
         if resume_actor and resume_critic:
-            self.critic= torch.load(resume_critic)
-            self.main_actor=torch.load(resume_actor)
+            # self.critic= torch.load(resume_critic)
+            # self.main_actor=torch.load(resume_actor)
+            self.main_actor = Actor(base_network, opts)
+            self.critic = Critic(base_network, opts)
+            self.load_weithts(resume_actor,self.main_actor)
+            self.load_weithts(resume_critic, self.critic)
         else:
             self.main_actor=Actor(base_network, opts)
             self.critic=Critic(base_network, opts)
-            self.main_actor=self.actor_init(self.main_actor)
-            self.critic = self.critic_init(self.critic)
+            self.main_actor=self.actor_init(self.main_actor,basefile)
+            self.critic = self.critic_init(self.critic,basefile)
         self.target_actor=copy.deepcopy(self.main_actor)
         self.main_actor.eval()
         self.target_actor.eval()
@@ -200,7 +205,42 @@ class PPO(object):
             {'params': self.critic.value.parameters()}],
             lr=1e-3, momentum=opts['train']['momentum'], weight_decay=opts['train']['weightDecay'])
 
-    def actor_init(self,net):
+    def load_weithts(self,base_file,net):
+        other, ext = os.path.splitext(base_file)
+        if ext == '.pkl' or '.pth':
+            print('Loading weights into state dict...')
+            # self.load_state_dict(torch.load(base_file,
+            #                      map_location=lambda storage, loc: storage))
+
+            checkpoint = torch.load(base_file, map_location=lambda storage, loc: storage)
+
+            # load adnet
+            pretrained_dict = checkpoint['adnet_state_dict']
+            model_dict = net.state_dict()
+
+            # create new OrderedDict that does not contain `module.`
+            from collections import OrderedDict
+            new_state_dict = OrderedDict()
+            for k, v in pretrained_dict.items():
+                if 'module' in k:
+                    name = k[7:]  # remove `module.`
+                else:
+                    name = k
+                new_state_dict[name] = v
+            pretrained_dict = new_state_dict
+
+            # 1. filter out unnecessary keys
+            pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
+            # 2. overwrite entries in the existing state dict
+            model_dict.update(pretrained_dict)
+            # 3. load the new state dict
+            net.load_state_dict(model_dict)
+            print('Finished!')
+        else:
+            print('Sorry only .pth and .pkl files supported.')
+
+    def actor_init(self,net,basefile):
+        self.load_weithts(basefile,net)
         scal = torch.Tensor([0.01])
         # fc 4
         nn.init.normal_(net.fc4_5[0].weight.data)
@@ -220,7 +260,8 @@ class PPO(object):
         net.sigma.bias.data.fill_(0)
         return net
 
-    def critic_init(self,net):
+    def critic_init(self,net,basefile):
+        self.load_weithts(basefile, net)
         scal = torch.Tensor([0.01])
         # fc 4
         nn.init.normal_(net.fc4_5[0].weight.data)
@@ -237,8 +278,20 @@ class PPO(object):
         return net
 
     def Save_Model(self,path1,path2):
-        torch.save(self.main_actor, path1)
-        torch.save(self.critic, path2)
+        # torch.save(self.main_actor, path1)
+        # torch.save(self.critic, path2)
+        torch.save({
+            'epoch': epoch,
+            'adnet_state_dict': self.main_actor.state_dict(),
+            # 'adnet_domain_specific_state_dict': domain_specific_nets,
+            # 'optimizer_state_dict': optimizer.state_dict(),
+        }, path1)
+        torch.save({
+            'epoch': epoch,
+            'adnet_state_dict': self.critic.state_dict(),
+            # 'adnet_domain_specific_state_dict': domain_specific_nets,
+            # 'optimizer_state_dict': optimizer.state_dict(),
+        }, path2)
 
     def add(self,s,a,r):
         self.buffer_s.append(s)
@@ -287,7 +340,6 @@ class PPO(object):
         else:   # clipping method, find this is better (OpenAI's paper)
             for _ in range(self.A_UPDATE_STEPS):
                pi,_=self.main_actor(state)
-               print(pi)
                oldpi,_=self.target_actor(state)
                criterion=clip_actor_loss()
                aloss=criterion(pi,oldpi,action,adv)
