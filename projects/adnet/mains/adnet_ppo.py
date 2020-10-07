@@ -186,7 +186,7 @@ class PPO(object):
         self.critic.eval()
         self.A_UPDATE_STEPS=A_UPDATE_STEPS
         self.C_UPDATE_STEPS=C_UPDATE_STEPS
-        self.criterion = nn.MSELoss(reduce=False, size_average=False)
+        self.criterion = nn.MSELoss(reduce=True, size_average=True)
         self.buffer_s, self.buffer_a, self.buffer_r = [], [], []
         self.actor_optimizer = optim.SGD( [
             {'params': self.main_actor.base_network.parameters(), 'lr': 1e-4},
@@ -287,27 +287,31 @@ class PPO(object):
         else:   # clipping method, find this is better (OpenAI's paper)
             for _ in range(self.A_UPDATE_STEPS):
                pi,_=self.main_actor(state)
+               print(pi)
                oldpi,_=self.target_actor(state)
                criterion=clip_actor_loss()
                aloss=criterion(pi,oldpi,action,adv)
 
                self.main_actor.train()
                self.actor_optimizer.zero_grad()
-               aloss.backward(retain_graph=True)
+               # aloss.backward(retain_graph=True)
+               aloss.backward(retain_graph=False)
                self.actor_optimizer.step()
                self.main_actor.eval()   
 
         # update critic
+        self.critic.train()
         for _ in range(self.C_UPDATE_STEPS):           
             value=self.critic(state)
             print(value)
             closs =self.criterion(dc_r ,value)
 
-            self.critic.train()
+            # self.critic.train()
             self.critic_optimizer.zero_grad()
-            closs.backward(retain_graph=True)
+            # closs.backward(retain_graph=True)
+            closs.backward(retain_graph=False)
             self.critic_optimizer.step()
-            self.critic.eval()
+            # self.critic.eval()
 
 class clip_actor_loss(nn.Module):
     def __init__(self):
