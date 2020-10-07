@@ -176,13 +176,15 @@ class PPO(object):
         if resume_actor and resume_critic:
             # self.critic= torch.load(resume_critic)
             # self.main_actor=torch.load(resume_actor)
+            base_network2 = vggm().features[0:15]
             self.main_actor = Actor(base_network, opts)
-            self.critic = Critic(base_network, opts)
+            self.critic = Critic(base_network2, opts)
             self.load_weithts(resume_actor,self.main_actor)
             self.load_weithts(resume_critic, self.critic)
         else:
             self.main_actor=Actor(base_network, opts)
-            self.critic=Critic(base_network, opts)
+            base_network2 = vggm().features[0:15]
+            self.critic=Critic(base_network2, opts)
             self.main_actor=self.actor_init(self.main_actor,basefile)
             self.critic = self.critic_init(self.critic,basefile)
         self.target_actor=copy.deepcopy(self.main_actor)
@@ -277,7 +279,7 @@ class PPO(object):
         net.value.bias.data.fill_(0)
         return net
 
-    def Save_Model(self,path1,path2):
+    def Save_Model(self,epoch,path1,path2):
         # torch.save(self.main_actor, path1)
         # torch.save(self.critic, path2)
         torch.save({
@@ -355,7 +357,7 @@ class PPO(object):
         self.critic.train()
         for _ in range(self.C_UPDATE_STEPS):           
             value=self.critic(state)
-            print(value)
+            # print(value)
             closs =self.criterion(dc_r ,value)
 
             # self.critic.train()
@@ -522,7 +524,7 @@ def adnet_train_sl(args, opts):
                                         'epoch' + repr(epoch) +"_"+ repr(iteration) +'.pth'
                         save_path_critic = os.path.join(args.save_folder, args.save_file_critic) + \
                                           'epoch' + repr(epoch) + "_" + repr(iteration) + '.pth'
-                        agent.Save_Model(save_path_actor, save_path_critic)
+                        agent.Save_Model(epoch,save_path_actor, save_path_critic)
                         iteration+=1
                         t = time.time()
                         print("Current moment:{} ;current epoch:{} ; Total Reward: {}".format(str(t),str(epoch),str(Reward)))
