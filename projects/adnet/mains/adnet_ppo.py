@@ -313,6 +313,9 @@ class PPO(object):
         self.buffer_s, self.buffer_a, self.buffer_r = [], [], []
         return bs,ba,br
 
+    def reset_buff(self):
+        self.buffer_s, self.buffer_a, self.buffer_r = [], [], []
+
     def select_action(self,state):
         _,action=self.main_actor(state)
         return action
@@ -500,10 +503,22 @@ def adnet_train_sl(args, opts):
         for vid_info in videos_infos:
             frame_t=cv2.imread(vid_info['img_files'][0])
             opts['imgSize']=frame_t.shape[:2]
-            n_frames=vid_info['nframes']
+            # n_frames=vid_info['nframes']
+            n_frames=len(vid_info['img_files'])
+            # if(n_frames!=vid_info['nframes']):
+            #     print("pause")
             n_objs=len(vid_info['trackid'][0])
+            i=1
+            while(n_objs==0 and i<n_frames):
+                n_objs = len(vid_info['trackid'][i])
+                i+=1
             for obj_i in range(n_objs):
+                agent.reset_buff()
                 for frame_i in range(n_frames):
+                    # if(n_objs!=len(vid_info['gt'][frame_i])):
+                    #     print("pause")
+                    if(obj_i>=len(vid_info['gt'][frame_i])):
+                        break
                     bbox=vid_info['gt'][frame_i][obj_i]
                     image=cv2.imread(vid_info['img_files'][frame_i]).astype(np.float32)
                     image=torch.from_numpy(image).cuda()
@@ -539,7 +554,17 @@ def adnet_train_sl(args, opts):
                     Reward += reward
                     agent.add(state, action_score, reward)
 
+        save_path_actor = os.path.join(args.save_folder, args.save_file_actor) + \
+                          'epoch' + repr(epoch) + "_final" + '.pth'
+        save_path_critic = os.path.join(args.save_folder, args.save_file_critic) + \
+                           'epoch' + repr(epoch) + "_final" + '.pth'
+        agent.Save_Model(epoch, save_path_actor, save_path_critic)
 
+    save_path_actor = os.path.join(args.save_folder, args.save_file_actor) + \
+                      "__" + '.pth'
+    save_path_critic = os.path.join(args.save_folder, args.save_file_critic) + \
+                       "__" + '.pth'
+    agent.Save_Model(opts['numEpoch'], save_path_actor, save_path_critic)
         #
         #
         # if args.multidomain:
